@@ -52,14 +52,14 @@ const JobPositionsPage = () => {
         direction: sortDir
       });
       
-      if (response.data?.data) {
-        setPositions(response.data.data);
+      if (response.data) {
+        setPositions(response.data);
         setPageData({
-          page: response.data.page?.page || 1,
-          limit: response.data.page?.limit || 10,
-          offset: response.data.page?.offset || 0,
-          total: response.data.page?.total || 0,
-          total_pages: response.data.page?.total_pages || 1
+          page: response.page?.page || 1,
+          limit: response.page?.limit || 10,
+          offset: 0,
+          total: response.page?.total || 0,
+          total_pages: response.page?.total_pages || 1
         });
       }
     } catch (error: any) {
