@@ -37,10 +37,44 @@ axiosInstance.interceptors.request.use(
   }
 );
 
+// Helper function to convert snake_case to camelCase
+const toCamelCase = (str: string): string => {
+  return str.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
+};
+
+// Helper function to recursively convert object keys from snake_case to camelCase
+const convertKeysToUpperCase = (obj: any): any => {
+  if (obj === null || obj === undefined) return obj;
+  
+  if (Array.isArray(obj)) {
+    return obj.map(item => convertKeysToUpperCase(item));
+  }
+  
+  if (typeof obj === 'object' && obj.constructor === Object) {
+    const converted: any = {};
+    for (const key in obj) {
+      if (obj.hasOwnProperty(key)) {
+        const camelKey = toCamelCase(key);
+        converted[camelKey] = convertKeysToUpperCase(obj[key]);
+      }
+    }
+    return converted;
+  }
+  
+  return obj;
+};
+
 // Response interceptor
 axiosInstance.interceptors.response.use(
   (response) => {
-    console.log('API Response:', response.status, response.data);
+    console.log('API Response (raw):', response.status, response.data);
+    
+    // Transform snake_case to camelCase
+    if (response.data && typeof response.data === 'object') {
+      response.data = convertKeysToUpperCase(response.data);
+    }
+    
+    console.log('API Response (converted):', response.status, response.data);
     return response;
   },
   (error) => {

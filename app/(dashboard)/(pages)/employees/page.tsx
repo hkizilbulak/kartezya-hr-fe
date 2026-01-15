@@ -7,6 +7,7 @@ import Pagination from '@/components/Pagination';
 import { Plus, Edit, Trash2, Eye, Filter, ChevronUp, ChevronDown } from 'react-feather';
 import { toast } from 'react-toastify';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
+import EmployeeModal from '@/components/modals/EmployeeModal';
 
 const EmployeesPage = () => {
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -30,6 +31,11 @@ const EmployeesPage = () => {
     direction: 'ASC'
   });
 
+  // Modal state
+  const [showEmployeeModal, setShowEmployeeModal] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+  const [isEditingEmployee, setIsEditingEmployee] = useState(false);
+
   // Backend'den verileri çek
   const fetchEmployees = async (page: number = 1, search: string = '', status: string = '', sortKey: string = '', sortDir: 'ASC' | 'DESC' = 'ASC') => {
     try {
@@ -49,12 +55,14 @@ const EmployeesPage = () => {
       
       if (response.data?.data) {
         setEmployees(response.data.data);
+        // Backend response'u 'meta' alanını kullanıyor, 'page' değil
+        const meta = response.data.meta || {};
         setPageData({
-          page: response.data.page?.page || 1,
-          limit: response.data.page?.limit || 10,
-          offset: response.data.page?.offset || 0,
-          total: response.data.page?.total || 0,
-          total_pages: response.data.page?.total_pages || 1
+          page: Math.floor((meta.offset || 0) / (meta.limit || 10)) + 1,
+          limit: meta.limit || 10,
+          offset: meta.offset || 0,
+          total: meta.count || 0,
+          total_pages: Math.ceil((meta.count || 0) / (meta.limit || 10))
         });
       }
     } catch (error: any) {
@@ -112,8 +120,26 @@ const EmployeesPage = () => {
   };
 
   const handleEdit = (employee: Employee) => {
-    console.log('Edit employee:', employee);
-    // TODO: Implement edit modal
+    setSelectedEmployee(employee);
+    setIsEditingEmployee(true);
+    setShowEmployeeModal(true);
+  };
+
+  const handleAddNew = () => {
+    setSelectedEmployee(null);
+    setIsEditingEmployee(false);
+    setShowEmployeeModal(true);
+  };
+
+  const handleCloseEmployeeModal = () => {
+    setShowEmployeeModal(false);
+    setSelectedEmployee(null);
+    setIsEditingEmployee(false);
+  };
+
+  const handleSaveEmployee = () => {
+    // Refresh the employee list
+    fetchEmployees(pageData.page, searchFilter, statusFilter, sortConfig.key || '', sortConfig.direction);
   };
 
   const handleDelete = async (id: number) => {
@@ -215,7 +241,7 @@ const EmployeesPage = () => {
                 <Filter size={16} />
               </Button>
               
-              <Button variant="primary" size="sm" disabled={isLoading}>
+              <Button variant="primary" size="sm" disabled={isLoading} onClick={handleAddNew}>
                 <Plus size={16} className="me-1" />
                 Yeni Çalışan
               </Button>
@@ -368,6 +394,14 @@ const EmployeesPage = () => {
           </Col>
         </Row>
       )}
+
+      <EmployeeModal
+        show={showEmployeeModal}
+        onHide={handleCloseEmployeeModal}
+        onSave={handleSaveEmployee}
+        employee={selectedEmployee}
+        isEdit={isEditingEmployee}
+      />
     </>
   );
 };

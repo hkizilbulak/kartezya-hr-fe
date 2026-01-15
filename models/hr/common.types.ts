@@ -84,6 +84,17 @@ export interface Employee {
   createdAt: string;
   updatedAt: string;
   user?: User;
+  // Extra fields
+  address?: string;
+  city?: string;
+  state?: string;
+  gender?: string;
+  leaveDate?: string;
+  maritalStatus?: string;
+  totalExperience?: number;
+  emergencyContactName?: string;
+  emergencyContact?: string;
+  emergencyContactRelation?: string;
 }
 
 export interface User {
