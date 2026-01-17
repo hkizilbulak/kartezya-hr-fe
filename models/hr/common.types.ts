@@ -33,64 +33,114 @@ export interface LookupItem {
 // Leave Management Types
 export interface LeaveRequest {
   id: number;
-  employeeId: number;
-  leaveTypeId: number;
-  startDate: string;
-  endDate: string;
+  employee_id: number;
+  leave_type_id: number;
+  start_date: string;
+  end_date: string;
+  requested_days: number;
   reason?: string;
   status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
-  createdAt: string;
-  updatedAt: string;
+  is_paid: boolean;
+  approved_by?: number;
+  approved_at?: string;
+  rejected_at?: string;
+  rejection_reason?: string;
+  cancel_reason?: string;
+  cancelled_at?: string;
+  comments?: string;
+  created_at: string;
+  updated_at: string;
   employee?: Employee;
+  leave_type?: LeaveType;
+  // Helper properties
+  employeeId?: number;
+  leaveTypeId?: number;
   leaveType?: LeaveType;
+  startDate?: string;
+  endDate?: string;
+  requestedDays?: number;
+  isPaid?: boolean;
+  approvedBy?: number;
+  approvedAt?: string;
+  rejectedAt?: string;
+  rejectionReason?: string;
+  cancelReason?: string;
+  cancelledAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface LeaveType {
   id: number;
   name: string;
   description?: string;
-  isPaid: boolean;
-  isLimited: boolean;
+  is_paid: boolean;
+  is_limited: boolean;
+  max_days?: number;
+  is_accrual: boolean;
+  is_required_document: boolean;
+  created_at: string;
+  updated_at: string;
+  // Helper properties
+  isPaid?: boolean;
+  isLimited?: boolean;
   maxDays?: number;
-  isAccrual: boolean;
-  isRequiredDocument: boolean;
-  createdAt: string;
-  updatedAt: string;
+  isAccrual?: boolean;
+  isRequiredDocument?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface LeaveBalance {
   id: number;
-  employeeId: number;
-  leaveTypeId: number;
-  totalDays: number;
-  usedDays: number;
-  remainingDays: number;
+  employee_id: number;
+  leave_type_id: number;
+  total_days: number;
+  used_days: number;
+  remaining_days: number;
   year: number;
   employee?: Employee;
-  leaveType?: LeaveType;
+  leave_type?: LeaveType;
+  // Helper properties
+  employeeId?: number;
+  leaveTypeId?: number;
+  totalDays?: number;
+  usedDays?: number;
+  remainingDays?: number;
 }
 
 // Employee Types
 export interface Employee {
   id: number;
-  userId?: number;
-  firstName: string;
-  lastName: string;
+  user_id?: number;
+  first_name: string;
+  last_name: string;
   email: string;
   phone?: string;
-  birthDate?: string;
-  hireDate: string;
+  birth_date?: string;
+  hire_date: string;
   status: 'ACTIVE' | 'INACTIVE' | 'TERMINATED';
-  createdAt: string;
-  updatedAt: string;
+  created_at: string;
+  updated_at: string;
   user?: User;
+  // Helper properties
+  userId?: number;
+  firstName?: string;
+  lastName?: string;
+  birthDate?: string;
+  hireDate?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface User {
   id: number;
   email: string;
-  createdAt: string;
-  updatedAt: string;
+  created_at: string;
+  updated_at: string;
+  // Helper properties
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 // Company Types
@@ -101,26 +151,37 @@ export interface Company {
   phone?: string;
   email?: string;
   website?: string;
-  createdAt: string;
-  updatedAt: string;
+  created_at: string;
+  updated_at: string;
+  // Helper properties
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Department {
   id: number;
-  companyId: number;
+  company_id: number;
   name: string;
   manager?: string;
-  createdAt: string;
-  updatedAt: string;
+  created_at: string;
+  updated_at: string;
   company?: Company;
+  // Helper properties
+  companyId?: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface JobPosition {
   id: number;
   title: string;
   description?: string;
-  departmentId?: number;
-  createdAt: string;
-  updatedAt: string;
+  department_id?: number;
+  created_at: string;
+  updated_at: string;
   department?: Department;
+  // Helper properties
+  departmentId?: number;
+  createdAt?: string;
+  updatedAt?: string;
 }

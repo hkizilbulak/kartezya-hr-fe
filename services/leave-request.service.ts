@@ -6,10 +6,21 @@ import { getErrorMessage } from '@/helpers/HelperUtils';
 import { toast } from 'react-toastify';
 
 export interface CreateLeaveRequestRequest {
-  leaveTypeId: number;
-  startDate: string;
-  endDate: string;
+  employee_id: number;
+  leave_type_id: number;
+  start_date: string;
+  end_date: string;
   reason?: string;
+  is_paid?: boolean;
+}
+
+export interface UpdateLeaveRequestRequest {
+  employee_id?: number;
+  leave_type_id?: number;
+  start_date?: string;
+  end_date?: string;
+  reason?: string;
+  is_paid?: boolean;
 }
 
 export interface ApproveLeaveRequestRequest {
@@ -20,9 +31,33 @@ export interface RejectLeaveRequestRequest {
   rejectionReason: string;
 }
 
+export interface CancelLeaveRequestRequest {
+  reason: string;
+}
+
 class LeaveRequestService extends BaseService<LeaveRequest> {
   constructor() {
     super(HR_ENDPOINTS.LEAVE.REQUESTS);
+  }
+
+  // Create new leave request
+  async create(data: CreateLeaveRequestRequest): Promise<APIResponse<LeaveRequest>> {
+    try {
+      const response = await axiosInstance.post(this.baseUrl, data);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // Update leave request
+  async update(id: number, data: UpdateLeaveRequestRequest): Promise<APIResponse<LeaveRequest>> {
+    try {
+      const response = await axiosInstance.put(`${this.baseUrl}/${id}`, data);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   }
 
   // Get my leave requests (for employees)
@@ -61,9 +96,9 @@ class LeaveRequestService extends BaseService<LeaveRequest> {
   }
 
   // Cancel leave request (for employees - their own requests)
-  async cancelLeaveRequest(id: number): Promise<APIResponse<LeaveRequest>> {
+  async cancelLeaveRequest(id: number, data: CancelLeaveRequestRequest): Promise<APIResponse<LeaveRequest>> {
     try {
-      const response = await axiosInstance.post(`${this.baseUrl}/${id}/cancel`);
+      const response = await axiosInstance.post(`${this.baseUrl}/${id}/cancel`, data);
       toast.success('Leave request cancelled successfully!');
       return response.data;
     } catch (error) {
