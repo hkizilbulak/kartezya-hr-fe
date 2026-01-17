@@ -15,9 +15,8 @@ export interface LoginResponse {
     user: {
       id: number;
       email: string;
-      firstName: string;
-      lastName: string;
-      role: string;
+      password?: string;
+      roles: string[];
     };
   };
   error?: string;
@@ -26,9 +25,8 @@ export interface LoginResponse {
 export interface UserProfile {
   id: number;
   email: string;
-  firstName: string;
-  lastName: string;
-  role: string;
+  password?: string;
+  roles: string[];
 }
 
 // Cookie management utilities
@@ -59,40 +57,46 @@ export const authService = {
     try {
       const response = await axiosInstance.post(HR_ENDPOINTS.AUTH.LOGIN, credentials);
       console.log('Raw axios response:', response);
-      const data = response.data as LoginResponse;
-      console.log('Parsed response data:', data);
       
-      if (data.success && data.data.token) {
-        // Store token and user info in both localStorage and cookies
+      const data = response.data;
+      console.log('Full response data:', data);
+      console.log('Response data.data:', data.data);
+      console.log('Response data.data.user:', data.data?.user);
+      console.log('User roles:', data.data?.user?.roles);
+      
+      // Backend response yapısı: { success, data: { token, user: { id, email, roles } } }
+      if (data.success && data.data?.token && data.data?.user) {
+        const user = data.data.user;
+        console.log('User object:', user);
+        console.log('User roles array:', user.roles);
+        
+        // Store token and user info
         localStorage.setItem('hr_auth_token', data.data.token);
-        localStorage.setItem('hr_user_profile', JSON.stringify(data.data.user));
-        setCookie('hr_auth_token', data.data.token, 7); // 7 days
-        console.log('Token stored successfully');
+        localStorage.setItem('hr_user_profile', JSON.stringify(user));
+        setCookie('hr_auth_token', data.data.token, 7);
+        
+        console.log('Stored in localStorage - hr_user_profile:', localStorage.getItem('hr_user_profile'));
+        
+        return {
+          success: true,
+          data: {
+            token: data.data.token,
+            user: user
+          }
+        };
       }
       
-      return data;
+      throw new Error('Invalid login response format');
     } catch (error: any) {
       console.error('Auth service error:', error);
-      console.error('Error response:', error.response);
-      console.error('Error response data:', error.response?.data);
       
-      // Handle specific error cases
       let errorMessage = getErrorMessage(error);
-      console.log('Processed error message:', errorMessage);
-      
-      // Check for 401 Unauthorized error
       if (error.response && error.response.status === 401) {
         errorMessage = 'E-posta adresiniz yada şifreniz hatalı';
-        console.log('401 error detected, custom message:', errorMessage);
       }
       
-      // Don't show toast for login errors, let the component handle it
-      // toast.error(errorMessage);
-      
-      // Create a custom error object with user-friendly message
       const customError = new Error(String(errorMessage));
       (customError as any).originalError = error;
-      console.log('Throwing custom error:', customError);
       throw customError;
     }
   },

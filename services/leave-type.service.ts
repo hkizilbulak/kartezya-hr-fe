@@ -5,17 +5,24 @@ export interface LeaveType {
   id: number;
   name: string;
   description?: string;
-  maxDays: number;
-  isCarryOver: boolean;
-  createdAt: string;
-  updatedAt: string;
+  is_paid: boolean;
+  is_limited: boolean;
+  is_accrual: boolean;
+  is_required_document: boolean;
+  created_at?: string;
+  updated_at?: string;
+  created_by?: string;
+  modified_by?: string;
+  deleted?: boolean;
 }
 
 export interface CreateLeaveTypeRequest {
   name: string;
   description?: string;
-  maxDays: number;
-  isCarryOver: boolean;
+  is_paid: boolean;
+  is_limited: boolean;
+  is_accrual: boolean;
+  is_required_document: boolean;
 }
 
 class LeaveTypeService extends BaseService<LeaveType> {

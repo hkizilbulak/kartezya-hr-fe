@@ -1,15 +1,16 @@
 "use client";
 import { useState, useEffect } from 'react';
-import { Row, Col, Card, Table, Button, Form } from 'react-bootstrap';
+import { Row, Col, Card, Table, Button } from 'react-bootstrap';
 import { companyService } from '@/services';
 import { Company } from '@/models/hr/common.types';
 import Pagination from '@/components/Pagination';
 import CompanyModal from '@/components/modals/CompanyModal';
 import DeleteModal from '@/components/DeleteModal';
 import LoadingOverlay from '@/components/LoadingOverlay';
-import { Plus, Edit, Trash2, ChevronUp, ChevronDown, Filter } from 'react-feather';
+import { Plus, Edit, Trash2, ChevronUp, ChevronDown } from 'react-feather';
 import { toast } from 'react-toastify';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
+import '@/styles/table-list.scss';
 
 const CompaniesPage = () => {
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -19,16 +20,11 @@ const CompaniesPage = () => {
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
   const [isEdit, setIsEdit] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
-  const [searchFilter, setSearchFilter] = useState('');
 
-  const [pageData, setPageData] = useState({
-    page: 1,
-    limit: 10,
-    offset: 0,
-    total: 0,
-    total_pages: 1
-  });
+  const itemsPerPage = 10;
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
 
   const [sortConfig, setSortConfig] = useState<{
     key: 'name' | 'email' | 'phone' | null;
@@ -38,36 +34,23 @@ const CompaniesPage = () => {
     direction: 'ASC'
   });
 
-  // Backend'den verileri çek
-  const fetchCompanies = async (page: number = 1, search: string = '', sortKey: string = '', sortDir: 'ASC' | 'DESC' = 'ASC') => {
+  // Backend'den sayfalı veri çek
+  const fetchCompanies = async (page: number = 1, sortKey?: string, sortDir?: 'ASC' | 'DESC') => {
     try {
       setIsLoading(true);
-      const offset = (page - 1) * pageData.limit;
-      
-      const queryParams = new URLSearchParams();
-      queryParams.append('limit', pageData.limit.toString());
-      queryParams.append('offset', offset.toString());
-      if (search) queryParams.append('search', search);
-      if (sortKey) queryParams.append('sort', sortKey);
-      queryParams.append('direction', sortDir);
 
       const response = await companyService.getAll({ 
         page, 
-        size: pageData.limit,
-        search: search || undefined,
-        sort: sortKey || undefined,
+        size: itemsPerPage,
+        sort: sortKey,
         direction: sortDir
       });
       
       if (response.data) {
         setCompanies(response.data);
-        setPageData({
-          page: response.page?.page || 1,
-          limit: response.page?.limit || 10,
-          offset: 0,
-          total: response.page?.total || 0,
-          total_pages: response.page?.total_pages || 1
-        });
+        setTotalPages(response.page?.total_pages || 1);
+        setTotalItems(response.page?.total || 0);
+        setCurrentPage(page);
       }
     } catch (error: any) {
       const errorMessage = error.response?.data?.error || error.message || 'Veri çekme sırasında hata oluştu';
@@ -77,9 +60,9 @@ const CompaniesPage = () => {
     }
   };
 
-  // Sayfa yüklendiğinde verileri çek
+  // İlk yüklemede verileri çek
   useEffect(() => {
-    fetchCompanies();
+    fetchCompanies(1);
   }, []);
 
   const handleSort = (key: 'name' | 'email' | 'phone') => {
@@ -88,12 +71,7 @@ const CompaniesPage = () => {
       direction = 'DESC';
     }
     setSortConfig({ key, direction });
-    fetchCompanies(1, searchFilter, key, direction);
-  };
-
-  const handleSearchChange = (value: string) => {
-    setSearchFilter(value);
-    fetchCompanies(1, value, sortConfig.key || '', sortConfig.direction);
+    fetchCompanies(1, key, direction);
   };
 
   const getSortIcon = (columnKey: 'name' | 'email' | 'phone') => {
@@ -128,7 +106,7 @@ const CompaniesPage = () => {
       try {
         await companyService.delete(selectedCompany.id);
         toast.success('Şirket başarıyla silindi');
-        fetchCompanies(pageData.page, searchFilter, sortConfig.key || '', sortConfig.direction);
+        fetchCompanies(currentPage, sortConfig.key || undefined, sortConfig.direction);
         setShowDeleteModal(false);
         setSelectedCompany(null);
       } catch (error: any) {
@@ -155,7 +133,7 @@ const CompaniesPage = () => {
   };
 
   const handleModalSave = () => {
-    fetchCompanies(pageData.page, searchFilter, sortConfig.key || '', sortConfig.direction);
+    fetchCompanies(currentPage, sortConfig.key || undefined, sortConfig.direction);
   };
 
   const handleCloseModal = () => {
@@ -170,78 +148,19 @@ const CompaniesPage = () => {
   };
 
   const handlePageChange = (newPage: number) => {
-    fetchCompanies(newPage, searchFilter, sortConfig.key || '', sortConfig.direction);
+    fetchCompanies(newPage, sortConfig.key || undefined, sortConfig.direction);
   };
 
   return (
     <>
-      <style jsx global>{`
-        #page-content {
-          background-color: #f5f7fa;
-          min-height: 100vh;
-        }
-      `}</style>
-      
-      <style jsx>{`
-        .sortable-header {
-          transition: background-color 0.2s ease;
-          cursor: pointer;
-          user-select: none;
-        }
-        .sortable-header:hover {
-          background-color: rgba(98, 75, 255, 0.1) !important;
-        }
-        .table-box {
-          border-radius: 8px;
-          overflow: hidden;
-          border: none;
-          margin: 0;
-        }
-        .table-responsive {
-          border-radius: 0;
-          margin-bottom: 0;
-        }
-        table {
-          margin-bottom: 0;
-          table-layout: fixed;
-          width: 100%;
-        }
-        table td, table th {
-          padding: 12px 16px;
-          vertical-align: middle;
-          word-wrap: break-word;
-        }
-        table thead tr {
-          background-color: #f8f9fa;
-          border-bottom: 2px solid #dee2e6;
-        }
-        table thead tr:last-child td {
-          padding: 12px 16px;
-          background-color: white;
-          border-bottom: none;
-        }
-        table thead tr:last-child .filter-input {
-          width: 100%;
-        }
-      `}</style>
-
       <Row className="mb-4 px-3 pt-4">
         <Col lg={12} md={12} sm={12}>
           <div className="d-flex justify-content-between align-items-center mb-4">
             <h4 className="mb-0">Şirketler</h4>
             <div className="d-flex gap-2">
-              <Button 
-                variant="outline-secondary" 
-                size="sm" 
-                onClick={() => setShowFilters(!showFilters)}
-                disabled={isLoading}
-              >
-                <Filter size={16} />
-              </Button>
-              
               <Button variant="primary" size="sm" onClick={handleAddNew} disabled={isLoading}>
                 <Plus size={16} className="me-1" />
-                Yeni Şirket
+                Yeni
               </Button>
             </div>
           </div>
@@ -278,29 +197,8 @@ const CompaniesPage = () => {
                           >
                             Telefon {getSortIcon('phone')}
                           </th>
-                          <th>İşlemler</th>
+                          <th></th>
                         </tr>
-                        {showFilters && (
-                          <tr>
-                            <td className="border-top">
-                              <Form.Control
-                                type="text"
-                                placeholder="Şirket adı, email..."
-                                value={searchFilter}
-                                onChange={(e) => handleSearchChange(e.target.value)}
-                                className="filter-input"
-                                size="sm"
-                                disabled={isLoading}
-                              />
-                            </td>
-                            <td className="border-top">
-                            </td>
-                            <td className="border-top">
-                            </td>
-                            <td className="border-top">
-                            </td>
-                          </tr>
-                        )}
                       </thead>
                       <tbody>
                         {companies.length ? (
@@ -334,7 +232,7 @@ const CompaniesPage = () => {
                           !isLoading && (
                             <tr>
                               <td colSpan={4} className="text-center py-4">
-                                {companies.length === 0 ? 'Veri bulunamadı' : 'Arama kriterlerine uygun veri bulunamadı'}
+                                Veri bulunamadı
                               </td>
                             </tr>
                           )
@@ -349,15 +247,15 @@ const CompaniesPage = () => {
         </Col>
       </Row>
 
-      {!isLoading && (
+      {totalPages > 1 && !isLoading && (
         <Row className="mt-4">
           <Col lg={12} md={12} sm={12}>
             <div className="px-3">
               <Pagination
-                currentPage={pageData.page}
-                totalPages={pageData.total_pages}
-                totalItems={pageData.total}
-                itemsPerPage={pageData.limit}
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={totalItems}
+                itemsPerPage={itemsPerPage}
                 onPageChange={handlePageChange}
               />
             </div>

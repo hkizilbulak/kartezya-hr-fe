@@ -1,5 +1,3 @@
-import { v4 as uuid } from 'uuid';
-
 interface IMenuProps {
 	id: string;
 	title?: string;
@@ -10,71 +8,69 @@ interface IMenuProps {
 	children?: IMenuProps[];
 	badge?: string;
 	badgecolor?: string;
+	requiredRoles?: string[];
 }
 
 export const DashboardMenu: IMenuProps[] = [
 	{
-		id: uuid(),
+		id: 'dashboard',
 		title: 'Dashboard',
 		icon: 'home',
+		requiredRoles: ['ADMIN'],
 		link: '/'
 	},
 	{
-		id: uuid(),
+		id: 'employees',
 		title: 'Çalışanlar',
 		icon: 'user',
-		link: '/employees'
+		link: '/employees',
+		requiredRoles: ['ADMIN']
 	},
 	{
-		id: uuid(),
+		id: 'leave-management',
 		title: 'İzin Yönetimi',
 		icon: 'calendar',
 		children: [
 			{
-				id: uuid(),
+				id: 'leave-requests',
 				link: '/leave-management/requests',
-				name: 'İzin Talepleri'
-			},
-			{
-				id: uuid(),
-				link: '/leave-management/balances',
-				name: 'İzin Bakiyeleri'
-			},
-			{
-				id: uuid(),
-				link: '/leave-management/types',
-				name: 'İzin Türleri'
+				name: 'İzin Talepleri',
+				requiredRoles: ['ADMIN']
 			}
 		]
 	},
 	{
-		id: uuid(),
+		id: 'definitions',
 		title: 'Tanımlamalar',
-		icon: 'calendar',
+		icon: 'settings',
+		requiredRoles: ['ADMIN'],
 		children: [
 			{
-				id: uuid(),
+				id: 'companies',
 				name: 'Şirketler',
-				link: '/companies'
+				link: '/companies',
+				requiredRoles: ['ADMIN']
 			},
 			{
-				id: uuid(),
+				id: 'departments',
 				name: 'Departmanlar',
-				link: '/departments'
+				link: '/departments',
+				requiredRoles: ['ADMIN']
 			},
 			{
-				id: uuid(),
+				id: 'job-positions',
 				name: 'Pozisyonlar',
-				link: '/job-positions'
+				link: '/job-positions',
+				requiredRoles: ['ADMIN']
 			},
+			{
+				id: 'leave-types',
+				name: 'İzin Türleri',
+				link: '/leave-management/types',
+				requiredRoles: ['ADMIN']
+			}
 		]
 	},
-	{
-		id: uuid(),
-		title: 'Çalışma Bilgileri',
-		icon: 'file-text',
-		link: '/work-information'
-	}
 ];
 
 export default DashboardMenu;

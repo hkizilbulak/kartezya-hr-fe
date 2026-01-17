@@ -1,15 +1,16 @@
 "use client";
 import { useState, useEffect } from 'react';
-import { Row, Col, Card, Table, Button, Form } from 'react-bootstrap';
+import { Row, Col, Card, Table, Button } from 'react-bootstrap';
 import { departmentService } from '@/services';
 import { Department } from '@/models/hr/common.types';
 import Pagination from '@/components/Pagination';
 import DepartmentModal from '@/components/modals/DepartmentModal';
 import DeleteModal from '@/components/DeleteModal';
 import LoadingOverlay from '@/components/LoadingOverlay';
-import { Plus, Edit, Trash2, ChevronUp, ChevronDown, Filter } from 'react-feather';
+import { Plus, Edit, Trash2, ChevronUp, ChevronDown } from 'react-feather';
 import { toast } from 'react-toastify';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
+import '@/styles/table-list.scss';
 
 const DepartmentsPage = () => {
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -19,48 +20,37 @@ const DepartmentsPage = () => {
   const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
   const [isEdit, setIsEdit] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
-  const [searchFilter, setSearchFilter] = useState('');
 
-  const [pageData, setPageData] = useState({
-    page: 1,
-    limit: 10,
-    offset: 0,
-    total: 0,
-    total_pages: 1
-  });
-  
+  const itemsPerPage = 10;
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+
   const [sortConfig, setSortConfig] = useState<{
-    key: 'name' | 'manager' | null;
+    key: 'company' | 'name' | 'manager' | null;
     direction: 'ASC' | 'DESC';
   }>({
     key: null,
     direction: 'ASC'
   });
 
-  // Backend'den verileri çek
-  const fetchDepartments = async (page: number = 1, search: string = '', sortKey: string = '', sortDir: 'ASC' | 'DESC' = 'ASC') => {
+  // Backend'den sayfalı veri çek
+  const fetchDepartments = async (page: number = 1, sortKey: string = "company", sortDir?: 'ASC' | 'DESC') => {
     try {
       setIsLoading(true);
-      const offset = (page - 1) * pageData.limit;
       
       const response = await departmentService.getAll({ 
         page, 
-        size: pageData.limit,
-        search: search || undefined,
-        sort: sortKey || undefined,
+        size: itemsPerPage,
+        sort: sortKey,
         direction: sortDir
       });
       
       if (response.data) {
         setDepartments(response.data);
-        setPageData({
-          page: response.page?.page || 1,
-          limit: response.page?.limit || 10,
-          offset: 0,
-          total: response.page?.total || 0,
-          total_pages: response.page?.total_pages || 1
-        });
+        setTotalPages(response.page?.total_pages || 1);
+        setTotalItems(response.page?.total || 0);
+        setCurrentPage(page);
       }
     } catch (error: any) {
       const errorMessage = error.response?.data?.error || error.message || 'Veri çekme sırasında hata oluştu';
@@ -70,26 +60,21 @@ const DepartmentsPage = () => {
     }
   };
 
-  // Sayfa yüklendiğinde verileri çek
+  // İlk yüklemede verileri çek
   useEffect(() => {
-    fetchDepartments();
+    fetchDepartments(1);
   }, []);
 
-  const handleSort = (key: 'name' | 'manager') => {
+  const handleSort = (key: 'company' | 'name' | 'manager') => {
     let direction: 'ASC' | 'DESC' = 'ASC';
     if (sortConfig.key === key && sortConfig.direction === 'ASC') {
       direction = 'DESC';
     }
     setSortConfig({ key, direction });
-    fetchDepartments(1, searchFilter, key, direction);
+    fetchDepartments(1, key, direction);
   };
 
-  const handleSearchChange = (value: string) => {
-    setSearchFilter(value);
-    fetchDepartments(1, value, sortConfig.key || '', sortConfig.direction);
-  };
-
-  const getSortIcon = (columnKey: 'name' | 'manager') => {
+  const getSortIcon = (columnKey: 'company' | 'name' | 'manager') => {
     if (sortConfig.key !== columnKey) {
       return null;
     }
@@ -121,7 +106,7 @@ const DepartmentsPage = () => {
       try {
         await departmentService.delete(selectedDepartment.id);
         toast.success('Departman başarıyla silindi');
-        fetchDepartments(pageData.page, searchFilter, sortConfig.key || '', sortConfig.direction);
+        fetchDepartments(currentPage, sortConfig.key || undefined, sortConfig.direction);
         setShowDeleteModal(false);
         setSelectedDepartment(null);
       } catch (error: any) {
@@ -148,7 +133,7 @@ const DepartmentsPage = () => {
   };
 
   const handleModalSave = () => {
-    fetchDepartments(pageData.page, searchFilter, sortConfig.key || '', sortConfig.direction);
+    fetchDepartments(currentPage, sortConfig.key || undefined, sortConfig.direction);
   };
 
   const handleCloseModal = () => {
@@ -163,78 +148,19 @@ const DepartmentsPage = () => {
   };
 
   const handlePageChange = (newPage: number) => {
-    fetchDepartments(newPage, searchFilter, sortConfig.key || '', sortConfig.direction);
+    fetchDepartments(newPage, sortConfig.key || undefined, sortConfig.direction);
   };
 
   return (
     <>
-      <style jsx global>{`
-        #page-content {
-          background-color: #f5f7fa;
-          min-height: 100vh;
-        }
-      `}</style>
-
-      <style jsx>{`
-        .sortable-header {
-          transition: background-color 0.2s ease;
-          cursor: pointer;
-          user-select: none;
-        }
-        .sortable-header:hover {
-          background-color: rgba(98, 75, 255, 0.1) !important;
-        }
-        .table-box {
-          border-radius: 8px;
-          overflow: hidden;
-          border: none;
-          margin: 0;
-        }
-        .table-responsive {
-          border-radius: 0;
-          margin-bottom: 0;
-        }
-        table {
-          margin-bottom: 0;
-          table-layout: fixed;
-          width: 100%;
-        }
-        table td, table th {
-          padding: 12px 16px;
-          vertical-align: middle;
-          word-wrap: break-word;
-        }
-        table thead tr {
-          background-color: #f8f9fa;
-          border-bottom: 2px solid #dee2e6;
-        }
-        table thead tr:last-child td {
-          padding: 12px 16px;
-          background-color: white;
-          border-bottom: none;
-        }
-        table thead tr:last-child .filter-input {
-          width: 100%;
-        }
-      `}</style>
-
       <Row className="mb-4 px-3 pt-4">
         <Col lg={12} md={12} sm={12}>
           <div className="d-flex justify-content-between align-items-center mb-4">
             <h4 className="mb-0">Departmanlar</h4>
             <div className="d-flex gap-2">
-              <Button 
-                variant="outline-secondary" 
-                size="sm" 
-                onClick={() => setShowFilters(!showFilters)}
-                disabled={isLoading}
-              >
-                <Filter size={16} />
-              </Button>
-              
               <Button variant="primary" size="sm" onClick={handleAddNew} disabled={isLoading}>
                 <Plus size={16} className="me-1" />
-                Yeni Departman
+                Yeni
               </Button>
             </div>
           </div>
@@ -253,7 +179,12 @@ const DepartmentsPage = () => {
                     <Table hover className="mb-0">
                       <thead>
                         <tr>
-                          <th>Şirket</th>
+                          <th 
+                            onClick={() => handleSort('company')}
+                            className="sortable-header"
+                          >
+                            Şirket {getSortIcon('company')}
+                          </th>
                           <th 
                             onClick={() => handleSort('name')}
                             className="sortable-header"
@@ -266,29 +197,8 @@ const DepartmentsPage = () => {
                           >
                             Yönetici {getSortIcon('manager')}
                           </th>
-                          <th>İşlemler</th>
+                          <th></th>
                         </tr>
-                        {showFilters && (
-                          <tr>
-                            <td className="border-top">
-                            </td>
-                            <td className="border-top">
-                              <Form.Control
-                                type="text"
-                                placeholder="Departman adı, yönetici..."
-                                value={searchFilter}
-                                onChange={(e) => handleSearchChange(e.target.value)}
-                                className="filter-input"
-                                size="sm"
-                                disabled={isLoading}
-                              />
-                            </td>
-                            <td className="border-top">
-                            </td>
-                            <td className="border-top">
-                            </td>
-                          </tr>
-                        )}
                       </thead>
                       <tbody>
                         {departments.length ? (
@@ -337,15 +247,15 @@ const DepartmentsPage = () => {
         </Col>
       </Row>
 
-      {!isLoading && (
+      {totalPages > 1 && !isLoading && (
         <Row className="mt-4">
           <Col lg={12} md={12} sm={12}>
             <div className="px-3">
               <Pagination
-                currentPage={pageData.page}
-                totalPages={pageData.total_pages}
-                totalItems={pageData.total}
-                itemsPerPage={pageData.limit}
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={totalItems}
+                itemsPerPage={itemsPerPage}
                 onPageChange={handlePageChange}
               />
             </div>

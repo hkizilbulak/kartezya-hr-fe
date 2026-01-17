@@ -1,5 +1,5 @@
 'use client'
-import { Fragment, useContext, useMemo, useState } from 'react';
+import { Fragment, useContext, useMemo, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation'
 import { useMediaQuery } from 'react-responsive';
@@ -18,6 +18,7 @@ import SimpleBar from 'simplebar-react';
 import 'simplebar/dist/simplebar.min.css';
 
 import { DashboardMenu } from '@/routes/DashboardRoutes';
+import { useAuth } from '@/hooks/useAuth';
 
 type IProps = {
 	showMenu: boolean;
@@ -40,10 +41,53 @@ interface IMenuProps {
 	children?: IMenuProps[];
 	badge?: string;
 	badgecolor?: string;
+	requiredRoles?: string[];
 }
 
 const NavbarVertical = (props: IProps) => {
 	const location = usePathname()
+	const { user, isLoading } = useAuth();
+	
+	// Debug logging
+	if (typeof window !== 'undefined') {
+		console.log('NavbarVertical RENDER - isLoading:', isLoading, 'user:', user);
+	}
+	
+	// Check if user has required role for a menu item - memoized with useCallback
+	const hasRequiredRole = useCallback((requiredRoles?: string[]): boolean => {
+		console.log('hasRequiredRole called with:', requiredRoles, 'user:', user, 'isLoading:', isLoading);
+		
+		// If still loading, don't render restricted items
+		if (isLoading) {
+			console.log('Still loading, returning:', !requiredRoles || requiredRoles.length === 0);
+			return !requiredRoles || requiredRoles.length === 0;
+		}
+
+		// Eğer role requirement yoksa (undefined veya boş array), tüm kullanıcılar görebilir
+		if (!requiredRoles || requiredRoles.length === 0) {
+			console.log('No role requirement, allowing access');
+			return true; // No role restriction - everyone can see
+		}
+		
+		// Role requirement var
+		if (!user) {
+			console.log('⛔ No user, denying access to:', requiredRoles);
+			return false;
+		}
+
+		// Kritik: roles yoksa veya boş array ise, EMPLOYEE gibi davran = erişim yok
+		if (!user.roles || !Array.isArray(user.roles) || user.roles.length === 0) {
+			console.log('⛔ User has EMPTY ROLES [], denying access to required:', requiredRoles);
+			return false;
+		}
+
+		// Roles varsa, gerekli role'ün içinde olup olmadığını kontrol et
+		const hasRole = requiredRoles.some(requiredRole => 
+			user.roles?.includes(requiredRole)
+		);
+		console.log('✅ User has roles:', user.roles, 'Required:', requiredRoles, 'Allowed:', hasRole);
+		return hasRole;
+	}, [user, isLoading]);
 	
 	// Mevcut URL'ye göre hangi accordion'ın açık olması gerektiğini belirle
 	const getActiveAccordionKeys = useMemo(() => {
@@ -159,6 +203,11 @@ const NavbarVertical = (props: IProps) => {
 					className="navbar-nav flex-column"
 				>
 					{DashboardMenu.map(function (menu, index) {
+						// Check role access for this menu item
+						if (!hasRequiredRole(menu.requiredRoles)) {
+							return null;
+						}
+
 						if (menu.grouptitle) {
 							return (
 								<Card bsPrefix="nav-item" key={index}>
@@ -169,6 +218,16 @@ const NavbarVertical = (props: IProps) => {
 							);
 						} else {
 							if (menu.children) {
+								// Filter children based on role
+								const visibleChildren = menu.children.filter(child => 
+									hasRequiredRole(child.requiredRoles)
+								);
+
+								// Don't render if no visible children
+								if (visibleChildren.length === 0) {
+									return null;
+								}
+
 								return (
 									<Fragment key={index}>
 										{/* main menu / root menu level / root items */}
@@ -182,7 +241,7 @@ const NavbarVertical = (props: IProps) => {
 										</CustomToggle>
 										<Accordion.Collapse eventKey={index.toString()} as="li" bsPrefix="nav-item">
 											<ListGroup as="ul" bsPrefix="" className="nav flex-column">
-												{menu.children.map(function (menuLevel1Item, menuLevel1Index) {
+												{visibleChildren.map(function (menuLevel1Item, menuLevel1Index) {
 													if (menuLevel1Item.children) {
 														return (
 															<ListGroup.Item as="li" bsPrefix="nav-item" key={menuLevel1Index}>
