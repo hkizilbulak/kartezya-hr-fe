@@ -5,28 +5,42 @@ type IProps = {
     onClose: () => void;
     onHandleDelete: () => void;
     loading?: boolean;
+    title?: string;
+    message?: string;
+    cancelLabel?: string;
+    confirmLabel?: string;
+    loadingLabel?: string;
+    variant?: 'danger' | 'warning';
 }
 
-export default function DeleteModal({ onClose, onHandleDelete, loading = false }: IProps) {
+export default function DeleteModal({ 
+    onClose, 
+    onHandleDelete, 
+    loading = false,
+    title = 'Silme Onayı',
+    message = 'Silme işlemini onaylıyor musunuz?',
+    cancelLabel = 'Kapat',
+    confirmLabel = 'Sil',
+    loadingLabel = 'Siliniyor...',
+    variant = 'danger'
+}: IProps) {
     return (
         <Modal show={true} onHide={onClose} size="sm">
             <div className="position-relative">
-                <LoadingOverlay show={loading} message="Siliniyor..." />
+                <LoadingOverlay show={loading} message={loadingLabel} />
                 
                 <Modal.Header closeButton>
-                    <Modal.Title>Silme Onayı</Modal.Title>
+                    <Modal.Title>{title}</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
-                    <p>
-                        Silme işlemini onaylıyor musunuz?
-                    </p>
+                    <p>{message}</p>
                 </Modal.Body>
                 <Modal.Footer>
                     <Button variant="secondary" onClick={onClose} disabled={loading}>
-                        Kapat
+                        {cancelLabel}
                     </Button>
-                    <Button variant="danger" onClick={onHandleDelete} disabled={loading}>
-                        {loading ? 'Siliniyor...' : 'Sil'}
+                    <Button variant={variant} onClick={onHandleDelete} disabled={loading}>
+                        {loading ? loadingLabel : confirmLabel}
                     </Button>
                 </Modal.Footer>
             </div>

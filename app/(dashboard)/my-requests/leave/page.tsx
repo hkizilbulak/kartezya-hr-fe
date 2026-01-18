@@ -1,29 +1,28 @@
 "use client";
 import { useState, useEffect } from 'react';
-import { Row, Col, Card, Table, Button, Modal, Form } from 'react-bootstrap';
+import { Row, Col, Card, Table, Button } from 'react-bootstrap';
 import { leaveRequestService } from '@/services/leave-request.service';
-import { LeaveRequest, Employee } from '@/models/hr/common.types';
+import { leaveBalanceService } from '@/services/leave-balance.service';
+import { LeaveRequest, Employee, LeaveBalance } from '@/models/hr/common.types';
 import LeaveRequestModal from '@/components/modals/LeaveRequestModal';
+import DeleteModal from '@/components/DeleteModal';
 import Pagination from '@/components/Pagination';
 import LoadingOverlay from '@/components/LoadingOverlay';
-import { Check, X, Edit, ChevronUp, ChevronDown } from 'react-feather';
+import { Edit, Plus, ChevronUp, ChevronDown } from 'react-feather';
 import { toast } from 'react-toastify';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
 import '@/styles/table-list.scss';
 
-const LeaveRequestsPage = () => {
+const MyLeaveRequests = () => {
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const [showRejectModal, setShowRejectModal] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<LeaveRequest | null>(null);
-  const [rejectReason, setRejectReason] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
-  const [showCancelModal, setShowCancelModal] = useState(false);
-  const [cancelRequest, setCancelRequest] = useState<LeaveRequest | null>(null);
-  const [showApproveWarningModal, setShowApproveWarningModal] = useState(false);
-  const [approveWarningRequest, setApproveWarningRequest] = useState<LeaveRequest | null>(null);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [leaveBalance, setLeaveBalance] = useState<LeaveBalance | null>(null);
+  const [balanceLoading, setBalanceLoading] = useState(false);
 
   const itemsPerPage = 10;
   const [currentPage, setCurrentPage] = useState(1);
@@ -43,14 +42,15 @@ const LeaveRequestsPage = () => {
     try {
       setIsLoading(true);
 
-      const response = await leaveRequestService.getAll({ 
-        page, 
+      // Pagination ile kendi taleplerini getir
+      const response = await leaveRequestService.getMyLeaveRequests({
+        page,
         size: itemsPerPage,
         sort: sortKey,
         direction: sortDir
       });
       
-      console.log('Leave Requests Response:', response);
+      console.log('My Leave Requests Response:', response);
       
       if (response.data) {
         setLeaveRequests(response.data);
@@ -66,8 +66,22 @@ const LeaveRequestsPage = () => {
     }
   };
 
+  const fetchLeaveBalance = async () => {
+    try {
+      setBalanceLoading(true);
+      const response = await leaveBalanceService.getMyLeaveBalance();
+      setLeaveBalance(response.data);
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.error || error.message || 'Bakiye bilgisi alınırken hata oluştu';
+      toast.error(translateErrorMessage(errorMessage));
+    } finally {
+      setBalanceLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchLeaveRequests(1, sortConfig.key, sortConfig.direction);
+    fetchLeaveBalance();
   }, []);
 
   const handleSort = (key: 'name') => {
@@ -88,110 +102,23 @@ const LeaveRequestsPage = () => {
       <ChevronDown size={16} className="ms-1" style={{ display: 'inline' }} />;
   };
 
-  const handleApprove = async (request: LeaveRequest) => {
-    const leaveTypeName = request.leave_type?.name || request.leaveType?.name;
-    const requestedDays = request.requested_days || request.requestedDays;
-    const remainingDays = request.remaining_days;
-
-    // Yıllık izin için bakiye kontrolü
-    if (leaveTypeName === 'Yıllık İzin' || leaveTypeName === 'Annual Leave') {
-      if (
-        remainingDays !== undefined && 
-        remainingDays !== null && 
-        requestedDays !== undefined && 
-        requestedDays !== null &&
-        remainingDays < requestedDays
-      ) {
-        // Yetersiz bakiye - uyarı göster
-        setApproveWarningRequest(request);
-        setShowApproveWarningModal(true);
-        return;
-      }
-    }
-
-    // Bakiye yeterli veya yıllık izin değil - doğrudan onayla
-    await performApprove(request);
-  };
-
-  const performApprove = async (request: LeaveRequest) => {
-    setActionLoading(true);
-    try {
-      await leaveRequestService.approveLeaveRequest(request.id, {});
-      toast.success('İzin talebi onaylandı');
-      fetchLeaveRequests(currentPage, sortConfig.key || undefined, sortConfig.direction);
-      setShowApproveWarningModal(false);
-      setApproveWarningRequest(null);
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.message || error.message || 'Onaylama sırasında hata oluştu';
-      toast.error(translateErrorMessage(errorMessage));
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const handleApproveWithWarning = async () => {
-    if (approveWarningRequest) {
-      await performApprove(approveWarningRequest);
-    }
-  };
-
-  const handleRejectClick = (request: LeaveRequest) => {
-    setSelectedRequest(request);
-    setRejectReason('');
-    setShowRejectModal(true);
-  };
-
-  const handleReject = async () => {
-    if (!selectedRequest || !rejectReason.trim()) {
-      toast.error('Red nedeni boş olamaz');
-      return;
-    }
-
-    setActionLoading(true);
-    try {
-      await leaveRequestService.rejectLeaveRequest(selectedRequest.id, { 
-        rejectionReason: rejectReason 
-      });
-      fetchLeaveRequests(currentPage, sortConfig.key || undefined, sortConfig.direction);
-      setShowRejectModal(false);
-      setSelectedRequest(null);
-      setRejectReason('');
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.message || error.message || 'Red işlemi sırasında hata oluştu';
-      toast.error(translateErrorMessage(errorMessage));
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const handleCancelClick = (request: LeaveRequest) => {
-    setCancelRequest(request);
-    setShowCancelModal(true);
-  };
-
   const handleCancelConfirm = async () => {
-    if (!cancelRequest) return;
-    
+    if (!selectedRequest) return;
     setActionLoading(true);
     try {
-      // Backend CancelLeaveRequest struct'ında reason required
-      await leaveRequestService.cancelLeaveRequest(cancelRequest.id, {
+      await leaveRequestService.cancelLeaveRequest(selectedRequest.id, {
         reason: 'İzin talebi iptal edildi'
       });
       toast.success('İzin talebi iptal edildi');
       fetchLeaveRequests(currentPage, sortConfig.key || undefined, sortConfig.direction);
-      setShowCancelModal(false);
-      setCancelRequest(null);
+      setSelectedRequest(null);
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || error.message || 'İptal işlemi sırasında hata oluştu';
       toast.error(translateErrorMessage(errorMessage));
     } finally {
       setActionLoading(false);
+      setShowCancelConfirm(false)
     }
-  };
-
-  const handleCancel = async (request: LeaveRequest) => {
-    handleCancelClick(request);
   };
 
   const handlePageChange = (newPage: number) => {
@@ -201,7 +128,7 @@ const LeaveRequestsPage = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'PENDING':
-        return <span className="badge bg-warning">Bekliyor</span>;
+        return <span className="badge bg-warning">Onay Bekliyor</span>;
       case 'APPROVED':
         return <span className="badge bg-success">Onaylandı</span>;
       case 'REJECTED':
@@ -241,6 +168,12 @@ const LeaveRequestsPage = () => {
     setShowModal(true);
   };
 
+  const handleNew = () => {
+    setSelectedRequest(null);
+    setIsEdit(false);
+    setShowModal(true);
+  };
+
   const handleCloseModal = () => {
     setShowModal(false);
     setSelectedRequest(null);
@@ -256,7 +189,53 @@ const LeaveRequestsPage = () => {
       <Row className="mb-4 px-3 pt-4">
         <Col lg={12} md={12} sm={12}>
           <div className="d-flex justify-content-between align-items-center mb-4">
-            <h4 className="mb-0">İzin Talepleri</h4>
+            <h4 className="mb-0">İzin Taleplerim</h4>
+            <Button 
+              variant="primary" 
+              size="sm"
+              onClick={handleNew}
+              disabled={isLoading}
+            >
+              <Plus size={16} className="me-2" style={{ display: 'inline' }} />
+              Yeni
+            </Button>
+          </div>
+        </Col>
+      </Row>
+
+      <Row>
+        <Col lg={12} md={12} sm={12}>
+          <div className="px-3 mb-4">
+            <Card className="border-0 shadow-sm">
+              <Card.Body>
+                <Row className="text-center">
+                  <Col md={4} sm={6} xs={12} className="mb-3 mb-md-0">
+                    <div className="d-flex flex-column align-items-center">
+                      <h6 className="text-muted mb-2">Toplam İzin</h6>
+                      <h4 className="text-primary fw-bold">
+                        {balanceLoading ? '-' : (leaveBalance?.total_days || leaveBalance?.totalDays || 0)} Gün
+                      </h4>
+                    </div>
+                  </Col>
+                  <Col md={4} sm={6} xs={12} className="mb-3 mb-md-0">
+                    <div className="d-flex flex-column align-items-center">
+                      <h6 className="text-muted mb-2">Kullanılan İzin</h6>
+                      <h4 className="text-warning fw-bold">
+                        {balanceLoading ? '-' : (leaveBalance?.used_days || leaveBalance?.usedDays || 0)} Gün
+                      </h4>
+                    </div>
+                  </Col>
+                  <Col md={4} sm={6} xs={12}>
+                    <div className="d-flex flex-column align-items-center">
+                      <h6 className="text-muted mb-2">Kalan İzin</h6>
+                      <h4 className="text-success fw-bold">
+                        {balanceLoading ? '-' : (leaveBalance?.remaining_days || leaveBalance?.remainingDays || 0)} Gün
+                      </h4>
+                    </div>
+                  </Col>
+                </Row>
+              </Card.Body>
+            </Card>
           </div>
         </Col>
       </Row>
@@ -273,9 +252,6 @@ const LeaveRequestsPage = () => {
                     <Table hover className="mb-0">
                       <thead>
                         <tr>
-                          <th>Talep Tarihi</th>
-                          <th>Çalışan ID</th>
-                          <th>Çalışan Adı</th>
                           <th>İzin Türü</th>
                           <th>Başlangıç Tarihi</th>
                           <th>Bitiş Tarihi</th>
@@ -291,14 +267,9 @@ const LeaveRequestsPage = () => {
                             const startDate = request.start_date || request.startDate;
                             const endDate = request.end_date || request.endDate;
                             const requestedDays = request.requested_days || request.requestedDays;
-                            const createdAt = request.created_at || request.createdAt;
-                            const employeeId = request.employee?.id || '-';
 
                             return (
                               <tr key={request.id}>
-                                <td>{formatDate(createdAt)}</td>
-                                <td>{employeeId}</td>
-                                <td>{getEmployeeName(request.employee)}</td>
                                 <td>{leaveTypeName}</td>
                                 <td>{formatDate(startDate)}</td>
                                 <td>{formatDate(endDate)}</td>
@@ -309,45 +280,28 @@ const LeaveRequestsPage = () => {
                                     {request.status === 'PENDING' && (
                                       <>
                                         <Button
-                                          variant="outline-success"
+                                          variant="outline-primary"
                                           size="sm"
-                                          title="Onayla"
-                                          onClick={() => handleApprove(request)}
+                                          title="Düzenle"
+                                          onClick={() => handleEdit(request)}
                                           disabled={isLoading || actionLoading}
                                         >
-                                          <Check size={14} />
+                                          <Edit size={14} />
                                         </Button>
                                         <Button
                                           variant="outline-danger"
                                           size="sm"
-                                          title="Reddet"
-                                          onClick={() => handleRejectClick(request)}
+                                          title="İptal Et"
+                                          onClick={() => {
+                                            setSelectedRequest(request);
+                                            setShowCancelConfirm(true);
+                                          }}
                                           disabled={isLoading || actionLoading}
                                         >
-                                          <X size={14} />
+                                          İptal Et
                                         </Button>
                                       </>
                                     )}
-                                    {request.status !== 'REJECTED' && request.status !== 'CANCELLED' && (
-                                      <Button
-                                        variant="outline-secondary"
-                                        size="sm"
-                                        title="İptal Et"
-                                        onClick={() => handleCancel(request)}
-                                        disabled={isLoading || actionLoading}
-                                      >
-                                        İptal Et
-                                      </Button>
-                                    )}
-                                    <Button
-                                      variant="outline-primary"
-                                      size="sm"
-                                      title="Düzenle"
-                                      onClick={() => handleEdit(request)}
-                                      disabled={isLoading || actionLoading}
-                                    >
-                                      <Edit size={14} />
-                                    </Button>
                                   </div>
                                 </td>
                               </tr>
@@ -356,7 +310,7 @@ const LeaveRequestsPage = () => {
                         ) : (
                           !isLoading && (
                             <tr>
-                              <td colSpan={9} className="text-center py-4">
+                              <td colSpan={6} className="text-center py-4">
                                 Veri bulunamadı
                               </td>
                             </tr>
@@ -388,91 +342,6 @@ const LeaveRequestsPage = () => {
         </Row>
       )}
 
-      <Modal show={showRejectModal} onHide={() => setShowRejectModal(false)} centered>
-        <Modal.Header closeButton>
-          <Modal.Title>İzin Talebini Reddet</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Form.Group>
-            <Form.Label>Red Nedeni</Form.Label>
-            <Form.Control
-              as="textarea"
-              rows={3}
-              placeholder="İzin talebini neden reddettiğinizi yazınız..."
-              value={rejectReason}
-              onChange={(e) => setRejectReason(e.target.value)}
-              disabled={actionLoading}
-            />
-          </Form.Group>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button 
-            variant="secondary" 
-            onClick={() => setShowRejectModal(false)}
-            disabled={actionLoading}
-          >
-            İptal
-          </Button>
-          <Button 
-            variant="danger" 
-            onClick={handleReject}
-            disabled={actionLoading || !rejectReason.trim()}
-          >
-            {actionLoading ? 'İşleniyor...' : 'Reddet'}
-          </Button>
-        </Modal.Footer>
-      </Modal>
-
-      <Modal show={showCancelModal} onHide={() => setShowCancelModal(false)} centered>
-        <Modal.Header closeButton>
-          <Modal.Title>İzin Talebini İptal Et</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <p>Bu izin talebini iptal etmek istediğinizden emin misiniz?</p>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button 
-            variant="secondary" 
-            onClick={() => setShowCancelModal(false)}
-            disabled={actionLoading}
-          >
-            İptal
-          </Button>
-          <Button 
-            variant="danger" 
-            onClick={handleCancelConfirm}
-            disabled={actionLoading}
-          >
-            {actionLoading ? 'İşleniyor...' : 'İptal Et'}
-          </Button>
-        </Modal.Footer>
-      </Modal>
-
-      <Modal show={showApproveWarningModal} onHide={() => setShowApproveWarningModal(false)} centered>
-        <Modal.Header closeButton>
-          <Modal.Title>Yetersiz Bakiye Uyarısı</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <p>Bu izin talebi için yeterli bakiye bulunmamaktadır. Yine de onaylamak istiyor musunuz?</p>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button 
-            variant="secondary" 
-            onClick={() => setShowApproveWarningModal(false)}
-            disabled={actionLoading}
-          >
-            İptal
-          </Button>
-          <Button 
-            variant="success" 
-            onClick={handleApproveWithWarning}
-            disabled={actionLoading}
-          >
-            {actionLoading ? 'İşleniyor...' : 'Onayla'}
-          </Button>
-        </Modal.Footer>
-      </Modal>
-
       <LeaveRequestModal
         show={showModal}
         onHide={handleCloseModal}
@@ -480,8 +349,22 @@ const LeaveRequestsPage = () => {
         leaveRequest={selectedRequest}
         isEdit={isEdit}
       />
+
+      {showCancelConfirm && (
+        <DeleteModal
+          onClose={() => setShowCancelConfirm(false)}
+          onHandleDelete={handleCancelConfirm}
+          loading={actionLoading}
+          title="İptal Onayı"
+          message="İzin talebini iptal etmek istediğinizden emin misiniz?"
+          cancelLabel="Vazgeç"
+          confirmLabel="İptal Et"
+          loadingLabel="İptal Ediliyor"
+          variant="danger"
+        />
+      )}
     </>
   );
 };
 
-export default LeaveRequestsPage;
+export default MyLeaveRequests;

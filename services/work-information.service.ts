@@ -34,13 +34,6 @@ export interface WorkInformation {
   updatedAt: string;
 }
 
-export interface CreateWorkInformationRequest {
-  employeeId: number;
-  jobPositionId: number;
-  salary: number;
-  startDate: string;
-}
-
 class WorkInformationService extends BaseService<WorkInformation> {
   constructor() {
     super(HR_ENDPOINTS.WORK_INFORMATION);

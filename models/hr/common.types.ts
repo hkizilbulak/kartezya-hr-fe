@@ -30,6 +30,12 @@ export interface LookupItem {
   name: string;
 }
 
+// User Info for Employee Response
+export interface UserInfo {
+  id: number;
+  email: string;
+}
+
 // Leave Management Types
 export interface LeaveRequest {
   id: number;
@@ -38,6 +44,7 @@ export interface LeaveRequest {
   start_date: string;
   end_date: string;
   requested_days: number;
+  remaining_days?: number; // Leave balance remaining days (only for annual leave)
   reason?: string;
   status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
   is_paid: boolean;
@@ -112,35 +119,22 @@ export interface LeaveBalance {
 // Employee Types
 export interface Employee {
   id: number;
-  user_id?: number;
+  user?: UserInfo;
   first_name: string;
   last_name: string;
   email: string;
   phone?: string;
-  birth_date?: string;
+  address?: string;
+  state?: string;
+  city?: string;
+  gender?: string;
+  date_of_birth?: string;
   hire_date: string;
-  status: 'ACTIVE' | 'INACTIVE' | 'TERMINATED';
-  created_at: string;
-  updated_at: string;
-  user?: User;
-  // Helper properties
-  userId?: number;
-  firstName?: string;
-  lastName?: string;
-  birthDate?: string;
-  hireDate?: string;
-  createdAt?: string;
-  updatedAt?: string;
-}
-
-export interface User {
-  id: number;
-  email: string;
-  created_at: string;
-  updated_at: string;
-  // Helper properties
-  createdAt?: string;
-  updatedAt?: string;
+  total_experience?: number;
+  marital_status?: string;
+  emergency_contact?: string;
+  emergency_contact_name?: string;
+  emergency_contact_relation?: string;
 }
 
 // Company Types

@@ -24,6 +24,7 @@ export const HR_ENDPOINTS = {
   WORK_INFORMATION_ME: '/work-information/me',
   // Leave Management
   LEAVE: {
+    BASE: '/leave',
     TYPES: '/leave/types',
     TYPES_LOOKUP: '/leave/types/lookup',
     REQUESTS: '/leave/requests',

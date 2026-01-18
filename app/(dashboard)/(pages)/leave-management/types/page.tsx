@@ -1,7 +1,8 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { Row, Col, Card, Table, Button } from 'react-bootstrap';
-import { leaveTypeService, LeaveType } from '@/services/leave-type.service';
+import { leaveTypeService } from '@/services/leave-type.service';
+import { LeaveType } from '@/models/hr/common.types';
 import Pagination from '@/components/Pagination';
 import LeaveTypeModal from '@/components/modals/LeaveTypeModal';
 import DeleteModal from '@/components/DeleteModal';

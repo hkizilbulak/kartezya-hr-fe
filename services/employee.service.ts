@@ -3,26 +3,19 @@ import { BaseService } from './base.service';
 import { Employee } from '@/models/hr/common.types';
 import axiosInstance from '@/helpers/api/axiosInstance';
 
-export interface CreateEmployeeRequest {
-  firstName: string;
-  lastName: string;
-  email: string;
-  password: string;
+interface UpdateMyProfileRequest {
+  email?: string;
   phone?: string;
   address?: string;
-  birthDate?: string;
-  hireDate: string;
-  emergencyContactName?: string;
-  emergencyContactPhone?: string;
-}
-
-export interface ListEmployeesParams {
-  limit?: number;
-  offset?: number;
-  search?: string;
-  status?: string;
-  sort?: string;
-  direction?: 'ASC' | 'DESC';
+  state?: string;
+  city?: string;
+  gender?: string;
+  date_of_birth?: string;
+  total_experience?: number;
+  marital_status?: string;
+  emergency_contact?: string;
+  emergency_contact_name?: string;
+  emergency_contact_relation?: string;
 }
 
 class EmployeeService extends BaseService<Employee> {
@@ -30,18 +23,31 @@ class EmployeeService extends BaseService<Employee> {
     super(HR_ENDPOINTS.EMPLOYEES);
   }
 
-  async listWithFilters(params: ListEmployeesParams) {
-    const queryParams = new URLSearchParams();
-    
-    if (params.limit) queryParams.append('limit', params.limit.toString());
-    if (params.offset !== undefined) queryParams.append('offset', params.offset.toString());
-    if (params.search) queryParams.append('search', params.search);
-    if (params.status) queryParams.append('status', params.status);
-    if (params.sort) queryParams.append('sort', params.sort);
-    if (params.direction) queryParams.append('direction', params.direction);
+  async getMyProfile() {
+    try {
+      const response = await axiosInstance.get(`${this.baseUrl}/me`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  }
 
-    const url = `${this.baseUrl}?${queryParams.toString()}`;
-    return axiosInstance.get(url);
+  async updateProfile(employeeId: number, data: Partial<Employee>) {
+    try {
+      const response = await axiosInstance.put(`${this.baseUrl}/${employeeId}`, data);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async updateMyProfile(data: UpdateMyProfileRequest) {
+    try {
+      const response = await axiosInstance.put(`${this.baseUrl}/me`, data);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   }
 }
 

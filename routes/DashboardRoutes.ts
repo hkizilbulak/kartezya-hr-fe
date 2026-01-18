@@ -20,6 +20,24 @@ export const DashboardMenu: IMenuProps[] = [
 		link: '/'
 	},
 	{
+		id: 'my-profile',
+		title: 'Personel Bilgilerim',
+		icon: 'user',
+		link: '/my-profile'
+	},
+	{
+		id: 'my-requests',
+		title: 'Taleplerim',
+		icon: 'file-text',
+		children: [
+			{
+				id: 'my-leave-requests',
+				link: '/my-requests/leave',
+				name: 'İzin Taleplerim'
+			}
+		]
+	},
+	{
 		id: 'employees',
 		title: 'Çalışanlar',
 		icon: 'user',

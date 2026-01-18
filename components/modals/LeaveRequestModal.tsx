@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form, Row, Col, Alert } from 'react-bootstrap';
-import { LeaveRequest, Employee } from '@/models/hr/common.types';
+import { LeaveRequest } from '@/models/hr/common.types';
 import { leaveRequestService } from '@/services/leave-request.service';
-import { leaveTypeService, LeaveType } from '@/services/leave-type.service';
-import { employeeService } from '@/services/employee.service';
-import { translateErrorMessage, getFieldErrorMessage } from '@/helpers/ErrorUtils';
+import { leaveTypeService } from '@/services/leave-type.service';
+import { translateErrorMessage } from '@/helpers/ErrorUtils';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'react-toastify';
 import LoadingOverlay from '@/components/LoadingOverlay';
@@ -25,83 +24,103 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
   isEdit = false
 }) => {
   const { user } = useAuth();
+
   const [formData, setFormData] = useState({
-    employeeId: '',
     leaveTypeId: '',
     startDate: '',
     endDate: '',
     reason: ''
   });
-  const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([]);
-  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [leaveTypes, setLeaveTypes] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<{[key: string]: string}>({});
   const [calculatedDays, setCalculatedDays] = useState(0);
 
-  const isAdmin = user?.roles?.includes('ADMIN') || user?.roles?.includes('admin');
-
   useEffect(() => {
     if (show) {
       fetchLeaveTypes();
-      // Her zaman çalışanları yükle (admin veya non-admin edit için)
-      fetchEmployees();
     }
   }, [show]);
 
   useEffect(() => {
-    if (isEdit && leaveRequest && leaveTypes.length > 0 && employees.length > 0) {
-      // Nested objelerden ID'leri çıkar
-      const empId = (leaveRequest.employee_id || leaveRequest.employeeId || leaveRequest.employee?.id)?.toString() || '';
+    if (isEdit && leaveRequest && leaveTypes.length > 0) {
+      // Edit modunda form'u doldur
       const leaveTypeId = (leaveRequest.leave_type_id || leaveRequest.leaveTypeId || leaveRequest.leave_type?.id)?.toString() || '';
       
-      console.log('Edit mode - Full leaveRequest object:', JSON.stringify(leaveRequest, null, 2));
-      console.log('Edit mode - Loading data:', {
-        leaveRequest,
-        leaveTypes: leaveTypes.length,
-        employees: employees.length,
-        empId,
-        leaveTypeId,
-        employee_from_nested: leaveRequest.employee?.id,
-        leave_type_from_nested: leaveRequest.leave_type?.id
-      });
+      const startDate = (leaveRequest.start_date || leaveRequest.startDate)?.split('T')[0] || '';
+      const endDate = (leaveRequest.end_date || leaveRequest.endDate)?.split('T')[0] || '';
       
       setFormData({
-        employeeId: empId,
         leaveTypeId: leaveTypeId,
-        startDate: (leaveRequest.start_date || leaveRequest.startDate)?.split('T')[0] || '',
-        endDate: (leaveRequest.end_date || leaveRequest.endDate)?.split('T')[0] || '',
+        startDate: startDate,
+        endDate: endDate,
         reason: leaveRequest.reason || ''
       });
     } else if (!isEdit) {
+      // Create modunda form'u sıfırla ve günün tarihini set et
+      const today = new Date();
+      const todayString = today.toISOString().split('T')[0];
+      
       setFormData({
-        employeeId: isAdmin ? '' : user?.id?.toString() || '',
         leaveTypeId: '',
-        startDate: '',
-        endDate: '',
+        startDate: todayString,
+        endDate: todayString,
         reason: ''
       });
+      
+      // Calculate working days for today dynamically
+      const calculateTodayDays = async () => {
+        try {
+          const response = await leaveRequestService.calculateWorkingDays(
+            todayString + 'T00:00:00Z',
+            todayString + 'T00:00:00Z'
+          );
+          if (response.data && response.data.working_days !== undefined) {
+            setCalculatedDays(response.data.working_days);
+          }
+        } catch (error) {
+          // Fallback to client-side calculation if backend fails
+          setCalculatedDays(1);
+        }
+      };
+      
+      calculateTodayDays();
     }
     setFieldErrors({});
-    setCalculatedDays(0);
-  }, [show, leaveRequest, isEdit, user, isAdmin, leaveTypes, employees]);
+  }, [show, leaveRequest, isEdit, leaveTypes]);
 
   // Gün sayısını hesapla
   useEffect(() => {
     if (formData.startDate && formData.endDate) {
-      const startDate = new Date(formData.startDate);
-      const endDate = new Date(formData.endDate);
+      const calculateDays = async () => {
+        try {
+          const response = await leaveRequestService.calculateWorkingDays(
+            formData.startDate + 'T00:00:00Z',
+            formData.endDate + 'T00:00:00Z'
+          );
+          if (response.data && response.data.working_days !== undefined) {
+            setCalculatedDays(response.data.working_days);
+          }
+        } catch (error) {
+          // Fallback to client-side calculation if backend fails
+          const startDate = new Date(formData.startDate);
+          const endDate = new Date(formData.endDate);
+          
+          if (startDate <= endDate) {
+            const timeDiff = endDate.getTime() - startDate.getTime();
+            const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
+            setCalculatedDays(daysDiff);
+          }
+        }
+      };
       
-      if (startDate <= endDate) {
-        const timeDiff = endDate.getTime() - startDate.getTime();
-        const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1; // +1 to include both start and end dates
-        setCalculatedDays(daysDiff);
-      }
+      calculateDays();
     }
   }, [formData.startDate, formData.endDate]);
 
   const fetchLeaveTypes = async () => {
     try {
-      const response = await leaveTypeService.getAll();
+      const response = await leaveTypeService.getLookup();
       const types = response.data || [];
       setLeaveTypes(types);
     } catch (error) {
@@ -110,47 +129,51 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
     }
   };
 
-  const fetchEmployees = async () => {
-    try {
-      const response: any = await employeeService.getAll();
-      
-      let emps: Employee[] = [];
-      
-      // Response formatını kontrol et
-      if (Array.isArray(response)) {
-        emps = response;
-      } else if (response.data && Array.isArray(response.data)) {
-        emps = response.data;
-      } else if (response.data && response.data.items && Array.isArray(response.data.items)) {
-        emps = response.data.items;
-      }
-      
-      // Eğer hala boş ise ve data property varsa kontrol et
-      if (emps.length === 0 && response?.data) {
-        emps = Array.isArray(response.data) ? response.data : [];
-      }
-      
-      setEmployees(emps);
-    } catch (error) {
-      console.error('Error fetching employees:', error);
-      toast.error('Çalışanlar yüklenemedi');
-    }
-  };
-
-  const getEmployeeName = (emp: Employee): string => {
-    const firstName = emp.first_name || emp.firstName || '';
-    const lastName = emp.last_name || emp.lastName || '';
-    return `${firstName} ${lastName}`.trim();
-  };
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    
+    // Tarih aralığı doğrulaması
+    if (name === 'startDate' && formData.endDate) {
+      const startDate = new Date(value);
+      const endDate = new Date(formData.endDate);
+      
+      // Eğer başlangıç tarihi bitiş tarihinden sonraysa, bitiş tarihini başlangıç tarihine eşitle
+      if (startDate > endDate) {
+        setFormData(prev => ({
+          ...prev,
+          [name]: value,
+          endDate: value
+        }));
+      } else {
+        setFormData(prev => ({
+          ...prev,
+          [name]: value
+        }));
+      }
+    } else if (name === 'endDate' && formData.startDate) {
+      const startDate = new Date(formData.startDate);
+      const endDate = new Date(value);
+      
+      // Eğer bitiş tarihi başlangıç tarihinden önceyse, başlangıç tarihini bitiş tarihine eşitle
+      if (endDate < startDate) {
+        setFormData(prev => ({
+          ...prev,
+          startDate: value,
+          [name]: value
+        }));
+      } else {
+        setFormData(prev => ({
+          ...prev,
+          [name]: value
+        }));
+      }
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
 
-    // Anlık validasyon - hata varsa temizle
     if (fieldErrors[name]) {
       setFieldErrors(prev => ({
         ...prev,
@@ -162,12 +185,6 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
   const validateForm = (): boolean => {
     const errors: {[key: string]: string} = {};
 
-    // ADMIN ise çalışan seçmeli
-    if (isAdmin && !formData.employeeId.trim()) {
-      errors['employeeId'] = 'Çalışan seçiniz';
-    }
-
-    // Zorunlu alanları kontrol et
     if (!formData.leaveTypeId.trim()) {
       errors['leaveTypeId'] = 'İzin türü seçiniz';
     }
@@ -178,7 +195,6 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
       errors['endDate'] = 'Bitiş tarihi seçiniz';
     }
 
-    // Tarih validasyonu
     if (formData.startDate && formData.endDate) {
       const startDate = new Date(formData.startDate);
       const endDate = new Date(formData.endDate);
@@ -202,31 +218,20 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
     setLoading(true);
 
     try {
-      // Seçilen izin türünü bul
-      const selectedLeaveType = leaveTypes.find(t => t.id.toString() === formData.leaveTypeId);
 
-      // Tarihleri düzeltme - sadece tarih kısmını al (saat bilgisini atla)
-      const startDate = new Date(formData.startDate + 'T00:00:00');
-      const endDate = new Date(formData.endDate + 'T00:00:00');
-
-      // employee_id'yi belirle
-      let employeeId: number;
-      if (isAdmin) {
-        employeeId = parseInt(formData.employeeId);
-      } else {
-        employeeId = user?.id || 0;
-      }
+      // Parse dates as UTC to avoid timezone issues
+      const [startYear, startMonth, startDay] = formData.startDate.split('-');
+      const startDate = new Date(Date.UTC(parseInt(startYear), parseInt(startMonth) - 1, parseInt(startDay)));
+      
+      const [endYear, endMonth, endDay] = formData.endDate.split('-');
+      const endDate = new Date(Date.UTC(parseInt(endYear), parseInt(endMonth) - 1, parseInt(endDay)));
 
       const submitData = {
-        employee_id: employeeId,
         leave_type_id: parseInt(formData.leaveTypeId),
         start_date: startDate.toISOString(),
         end_date: endDate.toISOString(),
         reason: formData.reason.trim() || undefined,
-        is_paid: selectedLeaveType?.is_paid || false
       };
-
-      console.log('Submitting leave request:', submitData);
 
       if (isEdit && leaveRequest) {
         await leaveRequestService.update(leaveRequest.id, submitData);
@@ -272,41 +277,6 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
 
         <Form onSubmit={handleSubmit}>
           <Modal.Body>
-            {isAdmin && (
-              <Form.Group className="mb-3">
-                <Form.Label>Çalışan <span className="text-danger">*</span></Form.Label>
-                <Form.Select
-                  name="employeeId"
-                  value={formData.employeeId}
-                  onChange={handleInputChange}
-                  isInvalid={!!fieldErrors.employeeId}
-                >
-                  <option value="">Çalışan seçiniz</option>
-                  {employees.map((emp) => (
-                    <option key={emp.id} value={emp.id.toString()}>
-                      {getEmployeeName(emp)}
-                    </option>
-                  ))}
-                </Form.Select>
-                {fieldErrors.employeeId && (
-                  <div className="text-danger mt-1" style={{ fontSize: '0.875rem' }}>
-                    {fieldErrors.employeeId}
-                  </div>
-                )}
-              </Form.Group>
-            )}
-
-            {!isAdmin && isEdit && (
-              <Form.Group className="mb-3">
-                <Form.Label>Çalışan</Form.Label>
-                <Form.Control
-                  type="text"
-                  value={getEmployeeName(employees.find(emp => emp.id.toString() === formData.employeeId) || {} as Employee)}
-                  readOnly
-                />
-              </Form.Group>
-            )}
-
             <Form.Group className="mb-3">
               <Form.Label>İzin Türü <span className="text-danger">*</span></Form.Label>
               <Form.Select
@@ -391,7 +361,7 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
               İptal
             </Button>
             <Button variant="primary" type="submit" disabled={loading}>
-              {loading ? 'Kaydediliyor...' : 'Kaydet'}
+              {loading ? 'Kaydediliyor...' : isEdit ? 'Güncelle' : 'Talep Oluştur'}
             </Button>
           </Modal.Footer>
         </Form>

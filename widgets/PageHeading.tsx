@@ -4,6 +4,7 @@ import { Row, Col, Button } from "react-bootstrap";
 type IProps = {
   heading: string;
   showCreateButton?: boolean;
+  showFilterButton?: boolean;
   createButtonText?: string;
   onCreate?: () => void;
   onToggleFilter?: () => void;
@@ -12,6 +13,7 @@ type IProps = {
 const PageHeading = ({
   heading,
   showCreateButton = true,
+  showFilterButton = true,
   createButtonText,
   onCreate,
   onToggleFilter,
@@ -36,14 +38,16 @@ const PageHeading = ({
                   </span>
                 </Button>
               )}
-              <Button
-                className={"d-flex align-items-center"}
-                variant="warning"
-                onClick={onToggleFilter}
-              >
-                <i className={`fe fe-filter`}></i>
-                <span className={"d-none d-lg-flex ms-2"}>Filtrele</span>
-              </Button>
+              {showFilterButton && (
+                <Button
+                  className={"d-flex align-items-center"}
+                  variant="warning"
+                  onClick={onToggleFilter}
+                >
+                  <i className={`fe fe-filter`}></i>
+                  <span className={"d-none d-lg-flex ms-2"}>Filtrele</span>
+                </Button>
+              )}
             </div>
           </div>
         </div>
