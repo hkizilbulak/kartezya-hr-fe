@@ -26,7 +26,7 @@ const LeaveRequestsPage = () => {
   const [showApproveWarningModal, setShowApproveWarningModal] = useState(false);
   const [approveWarningRequest, setApproveWarningRequest] = useState<LeaveRequest | null>(null);
 
-  const itemsPerPage = 3;
+  const itemsPerPage = 10;
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);

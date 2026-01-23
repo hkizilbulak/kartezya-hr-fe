@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form, Row, Col } from 'react-bootstrap';
 import { Employee } from '@/models/hr/common.types';
 import { employeeService, lookupService } from '@/services';
-import { CompanyLookup, DepartmentLookup, JobPositionLookup } from '@/services/lookup.service';
+import { CompanyLookup, DepartmentLookup, JobPositionLookup, GradeLookup } from '@/services/lookup.service';
 import { translateErrorMessage, getFieldErrorMessage } from '@/helpers/ErrorUtils';
 import { toast } from 'react-toastify';
 import LoadingOverlay from '@/components/LoadingOverlay';
@@ -29,11 +29,21 @@ interface FormData {
   gender: string;
   date_of_birth: string;
   hire_date: string;
+  leave_date: string;
   total_experience: string;
   marital_status: string;
   emergency_contact: string;
   emergency_contact_name: string;
   emergency_contact_relation: string;
+  grade_id: string;
+  is_grade_up: boolean;
+  contract_no: string;
+  profession_start_date: string;
+  note: string;
+  mother_name: string;
+  father_name: string;
+  nationality: string;
+  identity_no: string;
   roles: string[];
 }
 
@@ -56,19 +66,61 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
     gender: '',
     date_of_birth: '',
     hire_date: '',
+    leave_date: '',
     total_experience: '',
     marital_status: '',
     emergency_contact: '',
     emergency_contact_name: '',
     emergency_contact_relation: 'Diğer',
+    grade_id: '',
+    is_grade_up: false,
+    contract_no: '',
+    profession_start_date: '',
+    note: '',
+    mother_name: '',
+    father_name: '',
+    nationality: '',
+    identity_no: '',
     roles: ['EMPLOYEE']
   });
 
   const [loading, setLoading] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<{[key: string]: string}>({});
+  const [grades, setGrades] = useState<GradeLookup[]>([]);
+
+  useEffect(() => {
+    // Fetch grades when modal opens
+    if (show) {
+      fetchGrades();
+    }
+  }, [show]);
+
+  const fetchGrades = async () => {
+    try {
+      const response = await lookupService.getGradesLookup();
+      if (response.success && response.data) {
+        setGrades(response.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch grades:', error);
+      // Silent fail - grades list will be empty
+    }
+  };
 
   useEffect(() => {
     if (isEdit && employee) {
+      // Calculate experience if it's 0 or empty
+      let experienceValue = employee.total_experience?.toString() || '';
+      
+      if (!experienceValue || employee.total_experience === 0) {
+        // Calculate from profession_start_date if available
+        const professionStartDate = (employee as any).profession_start_date;
+        if (professionStartDate) {
+          const calculated = calculateExperienceFromProfessionStartDate(professionStartDate);
+          experienceValue = calculated.toString();
+        }
+      }
+
       setFormData({
         email: employee.email || '',
         company_email: (employee as any).company_email || '',
@@ -81,11 +133,21 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
         gender: employee.gender || '',
         date_of_birth: employee.date_of_birth ? employee.date_of_birth.split('T')[0] : '',
         hire_date: employee.hire_date ? employee.hire_date.split('T')[0] : '',
-        total_experience: employee.total_experience?.toString() || '',
+        leave_date: employee.leave_date ? employee.leave_date.split('T')[0] : '',
+        total_experience: experienceValue,
         marital_status: employee.marital_status || '',
         emergency_contact: employee.emergency_contact || '',
         emergency_contact_name: employee.emergency_contact_name || '',
         emergency_contact_relation: employee.emergency_contact_relation || 'Diğer',
+        grade_id: (employee as any).grade_id?.toString() || '',
+        is_grade_up: (employee as any).is_grade_up || false,
+        contract_no: (employee as any).contract_no || '',
+        profession_start_date: (employee as any).profession_start_date ? (employee as any).profession_start_date.split('T')[0] : '',
+        note: (employee as any).note || '',
+        mother_name: (employee as any).mother_name || '',
+        father_name: (employee as any).father_name || '',
+        nationality: (employee as any).nationality || '',
+        identity_no: (employee as any).identity_no || '',
         roles: (employee as any).roles || ['EMPLOYEE']
       });
     } else {
@@ -101,11 +163,21 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
         gender: '',
         date_of_birth: '',
         hire_date: '',
+        leave_date: '',
         total_experience: '',
         marital_status: '',
         emergency_contact: '',
         emergency_contact_name: '',
         emergency_contact_relation: 'Diğer',
+        grade_id: '',
+        is_grade_up: false,
+        contract_no: '',
+        profession_start_date: '',
+        note: '',
+        mother_name: '',
+        father_name: '',
+        nationality: '',
+        identity_no: '',
         roles: ['EMPLOYEE']
       });
     }
@@ -117,6 +189,51 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
     setFormData(prev => ({
       ...prev,
       [name]: value
+    }));
+
+    if (fieldErrors[name]) {
+      setFieldErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
+    }
+  };
+
+  const calculateExperienceFromProfessionStartDate = (startDate: string): number => {
+    if (!startDate) return 0;
+    
+    const start = new Date(startDate);
+    const today = new Date();
+    
+    let years = today.getFullYear() - start.getFullYear();
+    const monthDiff = today.getMonth() - start.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < start.getDate())) {
+      years--;
+    }
+    
+    // Calculate months difference
+    let months = monthDiff;
+    if (months < 0) {
+      months += 12;
+    }
+    
+    // If months >= 6, add 0.5 to years
+    if (months >= 6) {
+      return years + 0.5;
+    }
+    
+    return years;
+  };
+
+  const handleProfessionStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    const calculatedExperience = calculateExperienceFromProfessionStartDate(value);
+    
+    setFormData(prev => ({
+      ...prev,
+      [name]: value,
+      total_experience: calculatedExperience.toString()
     }));
 
     if (fieldErrors[name]) {
@@ -191,11 +308,21 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
         gender: formData.gender,
         date_of_birth: formData.date_of_birth || undefined,
         hire_date: formData.hire_date,
+        leave_date: formData.leave_date || undefined,
         total_experience: formData.total_experience ? parseFloat(formData.total_experience) : 0,
         marital_status: formData.marital_status,
         emergency_contact: formData.emergency_contact.trim(),
         emergency_contact_name: formData.emergency_contact_name.trim(),
         emergency_contact_relation: formData.emergency_contact_relation,
+        grade_id: formData.grade_id ? parseInt(formData.grade_id) : null,
+        is_grade_up: formData.is_grade_up,
+        contract_no: formData.contract_no.trim(),
+        profession_start_date: formData.profession_start_date || undefined,
+        note: formData.note.trim(),
+        mother_name: formData.mother_name.trim(),
+        father_name: formData.father_name.trim(),
+        nationality: formData.nationality.trim(),
+        identity_no: formData.identity_no.trim(),
         roles: formData.roles
       };
 
@@ -390,6 +517,60 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
               </Col>
             </Row>
 
+            <Row className="mb-3">
+              <Col md={6}>
+                <Form.Group>
+                  <Form.Label>Kimlik No</Form.Label>
+                  <Form.Control
+                    type="text"
+                    name="identity_no"
+                    value={formData.identity_no}
+                    onChange={handleInputChange}
+                    placeholder="Kimlik numarasını giriniz"
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group>
+                  <Form.Label>Uyruk</Form.Label>
+                  <Form.Control
+                    type="text"
+                    name="nationality"
+                    value={formData.nationality}
+                    onChange={handleInputChange}
+                    placeholder="Uyruk giriniz"
+                  />
+                </Form.Group>
+              </Col>
+            </Row>
+
+            <Row className="mb-3">
+              <Col md={6}>
+                <Form.Group>
+                  <Form.Label>Annesi</Form.Label>
+                  <Form.Control
+                    type="text"
+                    name="mother_name"
+                    value={formData.mother_name}
+                    onChange={handleInputChange}
+                    placeholder="Anne adı giriniz"
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group>
+                  <Form.Label>Babası</Form.Label>
+                  <Form.Control
+                    type="text"
+                    name="father_name"
+                    value={formData.father_name}
+                    onChange={handleInputChange}
+                    placeholder="Baba adı giriniz"
+                  />
+                </Form.Group>
+              </Col>
+            </Row>
+
             {/* Contact Information */}
             <h6 className="mb-3 text-secondary">İletişim Bilgileri</h6>
 
@@ -436,11 +617,11 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
               </Col>
             </Row>
 
-            {/* Employment Information */}
-            <h6 className="mb-3 text-secondary">İstihdam Bilgileri</h6>
+            {/* Employment & Contract Information */}
+            <h6 className="mb-3 text-secondary">İstihdam & Sözleşme Bilgileri</h6>
 
             <Row className="mb-3">
-              <Col md={12}>
+              <Col md={6}>
                 <Form.Group>
                   <Form.Label>İşe Başlama Tarihi <span className="text-danger">*</span></Form.Label>
                   <Form.Control
@@ -457,10 +638,47 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
                   )}
                 </Form.Group>
               </Col>
+              <Col md={6}>
+                <Form.Group>
+                  <Form.Label>Meslek Başlama Tarihi</Form.Label>
+                  <Form.Control
+                    type="date"
+                    name="profession_start_date"
+                    value={formData.profession_start_date}
+                    onChange={handleProfessionStartDateChange}
+                  />
+                </Form.Group>
+              </Col>
             </Row>
 
             <Row className="mb-3">
-              <Col md={12}>
+              <Col md={6}>
+                <Form.Group>
+                  <Form.Label>Sözleşme No</Form.Label>
+                  <Form.Control
+                    type="text"
+                    name="contract_no"
+                    value={formData.contract_no}
+                    onChange={handleInputChange}
+                    placeholder="Sözleşme numarasını giriniz"
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group>
+                  <Form.Label>İşten Ayrılma Tarihi</Form.Label>
+                  <Form.Control
+                    type="date"
+                    name="leave_date"
+                    value={formData.leave_date}
+                    onChange={handleInputChange}
+                  />
+                </Form.Group>
+              </Col>
+            </Row>
+
+            <Row className="mb-3">
+              <Col md={6}>
                 <Form.Group>
                   <Form.Label>Toplam Deneyim (Yıl)</Form.Label>
                   <Form.Control
@@ -474,13 +692,63 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
                   />
                 </Form.Group>
               </Col>
+              <Col md={6}>
+                <Form.Group>
+                  <Form.Label>Grade</Form.Label>
+                  <Form.Select
+                    name="grade_id"
+                    value={formData.grade_id}
+                    onChange={handleInputChange}
+                  >
+                    <option value="">Seçiniz</option>
+                    {grades.map(grade => (
+                      <option key={grade.id} value={grade.id.toString()}>
+                        {grade.name}
+                      </option>
+                    ))}
+                  </Form.Select>
+                </Form.Group>
+              </Col>
+            </Row>
+
+            <Row className="mb-3">
+              <Col md={6}>
+                <Form.Group>
+                  <Form.Check
+                    type="checkbox"
+                    id="is_grade_up"
+                    label="Grade Yükseltildi"
+                    checked={formData.is_grade_up}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      is_grade_up: e.target.checked
+                    }))}
+                  />
+                </Form.Group>
+              </Col>
+            </Row>
+
+            <Row className="mb-3">
+              <Col md={12}>
+                <Form.Group>
+                  <Form.Label>Not</Form.Label>
+                  <Form.Control
+                    as="textarea"
+                    name="note"
+                    value={formData.note}
+                    onChange={handleInputChange}
+                    placeholder="Not giriniz"
+                    rows={2}
+                  />
+                </Form.Group>
+              </Col>
             </Row>
 
             {/* Emergency Contact */}
             <h6 className="mb-3 text-secondary">Acil Durum İletişim</h6>
 
             <Row className="mb-3">
-              <Col md={6}>
+              <Col md={4}>
                 <Form.Group>
                   <Form.Label>Ad Soyad</Form.Label>
                   <Form.Control
@@ -492,7 +760,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
                   />
                 </Form.Group>
               </Col>
-              <Col md={6}>
+              <Col md={4}>
                 <Form.Group>
                   <Form.Label>Telefon</Form.Label>
                   <Form.Control
@@ -504,10 +772,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
                   />
                 </Form.Group>
               </Col>
-            </Row>
-
-            <Row className="mb-3">
-              <Col md={12}>
+              <Col md={4}>
                 <Form.Group>
                   <Form.Label>İlişki</Form.Label>
                   <Form.Select

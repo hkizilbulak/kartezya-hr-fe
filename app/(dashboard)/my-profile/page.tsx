@@ -28,7 +28,11 @@ const validationSchema = Yup.object().shape({
   marital_status: Yup.string(),
   emergency_contact: Yup.string(),
   emergency_contact_name: Yup.string(),
-  emergency_contact_relation: Yup.string()
+  emergency_contact_relation: Yup.string(),
+  mother_name: Yup.string(),
+  father_name: Yup.string(),
+  nationality: Yup.string(),
+  identity_no: Yup.string()
 });
 
 const Profile = () => {
@@ -84,7 +88,11 @@ const Profile = () => {
         marital_status: values.marital_status || '',
         emergency_contact: values.emergency_contact || '',
         emergency_contact_name: values.emergency_contact_name || '',
-        emergency_contact_relation: values.emergency_contact_relation || ''
+        emergency_contact_relation: values.emergency_contact_relation || '',
+        mother_name: values.mother_name || '',
+        father_name: values.father_name || '',
+        nationality: values.nationality || '',
+        identity_no: values.identity_no || ''
       };
 
       const response = await employeeService.updateMyProfile(updateData);
@@ -143,7 +151,11 @@ const Profile = () => {
     marital_status: employee.marital_status || '',
     emergency_contact: employee.emergency_contact || '',
     emergency_contact_name: employee.emergency_contact_name || '',
-    emergency_contact_relation: employee.emergency_contact_relation || ''
+    emergency_contact_relation: employee.emergency_contact_relation || '',
+    mother_name: (employee as any).mother_name || '',
+    father_name: (employee as any).father_name || '',
+    nationality: (employee as any).nationality || '',
+    identity_no: (employee as any).identity_no || ''
   };
 
   return (
@@ -393,6 +405,44 @@ const Profile = () => {
                                 ))}
                               </>
                             </FormSelectField>
+                          </Row>
+
+                          <Row className="mb-4">
+                            <FormTextField
+                              as={Col}
+                              md={6}
+                              controlId="identity_no"
+                              label="Kimlik No"
+                              name="identity_no"
+                              type="text"
+                            />
+                            <FormTextField
+                              as={Col}
+                              md={6}
+                              controlId="nationality"
+                              label="Uyruk"
+                              name="nationality"
+                              type="text"
+                            />
+                          </Row>
+
+                          <Row className="mb-4">
+                            <FormTextField
+                              as={Col}
+                              md={6}
+                              controlId="mother_name"
+                              label="Annesi"
+                              name="mother_name"
+                              type="text"
+                            />
+                            <FormTextField
+                              as={Col}
+                              md={6}
+                              controlId="father_name"
+                              label="Babası"
+                              name="father_name"
+                              type="text"
+                            />
                           </Row>
 
                           {/* Emergency Contact Section Title */}

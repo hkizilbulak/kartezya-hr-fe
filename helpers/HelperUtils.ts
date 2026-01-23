@@ -18,6 +18,23 @@ export function capitalizeSentence(sentence: string) {
     return sentence.toLocaleLowerCase('tr-TR').replace(/(?:^|\s|,|;|!|:|-|\.|\?)[a-z0-9ğçşüöı]/g, letter => letter.toUpperCase());
 }
 
+// Türkçe karakterleri doğru şekilde uppercase yapan function
+export function turkishToUpperCase(text: string): string {
+    const turkishUpperCaseMap: { [key: string]: string } = {
+        'i': 'İ',
+        'ş': 'Ş',
+        'ğ': 'Ğ',
+        'ü': 'Ü',
+        'ö': 'Ö',
+        'ç': 'Ç',
+    };
+    
+    return text
+        .split('')
+        .map(char => turkishUpperCaseMap[char] || char.toUpperCase())
+        .join('');
+}
+
 export function getErrorMessage(error: any) {
     const axiosError = (error as AxiosError<any>);
     const errorData = axiosError.response?.data;

@@ -15,11 +15,21 @@ interface CreateEmployeeRequest {
   gender?: string;
   date_of_birth?: string;
   hire_date: string;
+  leave_date?: string;
   total_experience?: number;
   marital_status?: string;
   emergency_contact?: string;
   emergency_contact_name?: string;
   emergency_contact_relation?: string;
+  grade_id?: number;
+  is_grade_up?: boolean;
+  contract_no?: string;
+  profession_start_date?: string;
+  note?: string;
+  mother_name?: string;
+  father_name?: string;
+  nationality?: string;
+  identity_no?: string;
   roles: string[];
 }
 
@@ -35,11 +45,21 @@ interface UpdateEmployeeRequest {
   gender?: string;
   date_of_birth?: string;
   hire_date?: string;
+  leave_date?: string;
   total_experience?: number;
   marital_status?: string;
   emergency_contact?: string;
   emergency_contact_name?: string;
   emergency_contact_relation?: string;
+  grade_id?: number;
+  is_grade_up?: boolean;
+  contract_no?: string;
+  profession_start_date?: string;
+  note?: string;
+  mother_name?: string;
+  father_name?: string;
+  nationality?: string;
+  identity_no?: string;
   roles?: string[];
 }
 
@@ -56,6 +76,10 @@ interface UpdateMyProfileRequest {
   emergency_contact?: string;
   emergency_contact_name?: string;
   emergency_contact_relation?: string;
+  mother_name?: string;
+  father_name?: string;
+  nationality?: string;
+  identity_no?: string;
 }
 
 class EmployeeService extends BaseService<Employee> {

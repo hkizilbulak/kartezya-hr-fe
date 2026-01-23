@@ -17,6 +17,8 @@ export const HR_ENDPOINTS = {
   // Job Positions
   JOB_POSITIONS: '/job-positions',
   JOB_POSITIONS_LOOKUP: '/job-positions/lookup',
+  // Grades
+  GRADES_LOOKUP: '/lookup/grades',
   // Employees
   EMPLOYEES: '/employees',
   // Work Information

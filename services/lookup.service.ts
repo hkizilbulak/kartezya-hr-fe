@@ -12,6 +12,7 @@ export interface DepartmentLookup {
   id: number;
   name: string;
   manager?: string;
+  company_id?: number;
 }
 
 export interface JobPositionLookup {
@@ -20,6 +21,11 @@ export interface JobPositionLookup {
 }
 
 export interface LeaveTypeLookup {
+  id: number;
+  name: string;
+}
+
+export interface GradeLookup {
   id: number;
   name: string;
 }
@@ -78,6 +84,17 @@ export const lookupService = {
       return response.data;
     } catch (error) {
       console.error('Failed to fetch leave types lookup:', getErrorMessage(error));
+      throw error;
+    }
+  },
+
+  // Get grades lookup (public - no auth required)
+  getGradesLookup: async (): Promise<APIResponse<GradeLookup[]>> => {
+    try {
+      const response = await axiosInstance.get('/lookup/grades');
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch grades lookup:', getErrorMessage(error));
       throw error;
     }
   },

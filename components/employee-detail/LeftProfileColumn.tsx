@@ -77,11 +77,6 @@ export default function LeftProfileColumn({
             </div>
           </div>
         </div>
-
-        {/* Edit Details Button */}
-        <Button className={styles.editButton} variant="primary">
-          Detayları Düzenle
-        </Button>
       </div>
     </div>
   );

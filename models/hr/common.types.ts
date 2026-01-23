@@ -131,11 +131,21 @@ export interface Employee {
   gender?: string;
   date_of_birth?: string;
   hire_date: string;
+  leave_date?: string;
   total_experience?: number;
   marital_status?: string;
   emergency_contact?: string;
   emergency_contact_name?: string;
   emergency_contact_relation?: string;
+  grade_id?: number;
+  is_grade_up?: boolean;
+  contract_no?: string;
+  profession_start_date?: string;
+  note?: string;
+  mother_name?: string;
+  father_name?: string;
+  nationality?: string;
+  identity_no?: string;
   roles?: string[];
   work_information?: {
     company_name: string;
@@ -196,6 +206,8 @@ export interface EmployeeWorkInformation {
   job_position_id: number;
   start_date: string;
   end_date?: string;
+  personnel_no?: string;
+  work_email?: string;
   created_at: string;
   updated_at: string;
   employee?: Employee;
