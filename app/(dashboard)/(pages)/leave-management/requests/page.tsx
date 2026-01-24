@@ -532,6 +532,13 @@ const LeaveRequestsPage = () => {
             <Modal.Title>Yetersiz Bakiye Uyarısı</Modal.Title>
           </Modal.Header>
           <Modal.Body>
+            {approveWarningRequest && (
+              <p>
+                Çalışan: {getEmployeeName(approveWarningRequest.employee)}<br />
+                İstenen Gün: {approveWarningRequest.requested_days || '-'}<br />
+                Mevcut Bakiye: {approveWarningRequest.remaining_days || '-'}
+              </p>
+            )}
             <p>Bu izin talebi için yeterli bakiye bulunmamaktadır. Yine de onaylamak istiyor musunuz?</p>
           </Modal.Body>
           <Modal.Footer>

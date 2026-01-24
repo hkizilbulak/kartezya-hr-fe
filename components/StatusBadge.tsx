@@ -1,7 +1,6 @@
 import React from 'react';
 import { Badge } from 'react-bootstrap';
 import { CheckCircle, XCircle, Clock, AlertCircle, User, Calendar } from 'react-feather';
-import { turkishToUpperCase } from '@/helpers/HelperUtils';
 
 interface StatusBadgeProps {
   status: 'active' | 'inactive' | 'pending' | 'approved' | 'rejected' | 'warning' | 'success' | 'danger' | 'info';
@@ -60,25 +59,25 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({
     
     switch (status) {
       case 'active':
-        return turkishToUpperCase('Aktif');
+        return "AKTİF";
       case 'inactive':
-        return turkishToUpperCase('Pasif');
+        return "PASİF";
       case 'pending':
-        return turkishToUpperCase('Bekliyor');
+        return "ONAY BEKLİYOR";
       case 'approved':
-        return turkishToUpperCase('Onaylandı');
+        return "ONAYLANDI";
       case 'rejected':
-        return turkishToUpperCase('Reddedildi');
+        return "REDDEDİLDİ";
       case 'warning':
-        return turkishToUpperCase('Uyarı');
+        return "UAYRI";
       case 'success':
-        return turkishToUpperCase('Başarılı');
+        return "BAŞARILI";
       case 'danger':
-        return turkishToUpperCase('Hata');
+        return "HATA";
       case 'info':
-        return turkishToUpperCase('Bilgi');
+        return "BİLGİ";
       default:
-        return turkishToUpperCase('Bilinmiyor');
+        return "BİLİNMİYOR";
     }
   };
 

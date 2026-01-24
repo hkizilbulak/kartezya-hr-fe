@@ -6,7 +6,9 @@ export enum EmployeeStatus {
 
 export enum UserRole {
   ADMIN = 'ADMIN',
-  EMPLOYEE = 'EMPLOYEE'
+  EMPLOYEE = 'EMPLOYEE',
+  HR = 'HR',
+  FINANCE = 'FINANCE'
 }
 
 export enum LeaveRequestStatus {

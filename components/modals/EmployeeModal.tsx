@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form, Row, Col } from 'react-bootstrap';
 import { Employee } from '@/models/hr/common.types';
+import { UserRole } from '@/models/enums/hr.enum';
 import { employeeService, lookupService } from '@/services';
-import { CompanyLookup, DepartmentLookup, JobPositionLookup, GradeLookup } from '@/services/lookup.service';
-import { translateErrorMessage, getFieldErrorMessage } from '@/helpers/ErrorUtils';
+import { GradeLookup } from '@/services/lookup.service';
+import { translateErrorMessage } from '@/helpers/ErrorUtils';
+import { genderOptions, maritalStatusOptions, emergencyContactRelationOptions } from '@/contants/options';
 import { toast } from 'react-toastify';
 import LoadingOverlay from '@/components/LoadingOverlay';
 
@@ -14,8 +16,6 @@ interface EmployeeModalProps {
   employee?: Employee | null;
   isEdit?: boolean;
 }
-
-const AVAILABLE_ROLES = ['ADMIN', 'EMPLOYEE', 'HR', 'FINANCE'];
 
 interface FormData {
   email: string;
@@ -30,7 +30,7 @@ interface FormData {
   date_of_birth: string;
   hire_date: string;
   leave_date: string;
-  total_experience: string;
+  total_experience: number | string;
   marital_status: string;
   emergency_contact: string;
   emergency_contact_name: string;
@@ -121,33 +121,42 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
         }
       }
 
+      // Normalize gender value to match options
+      const normalizedGender = employee.gender ? employee.gender.trim().toUpperCase() : '';
+      
+      // Normalize marital status value to match options
+      const normalizedMaritalStatus = employee.marital_status ? employee.marital_status.trim().toUpperCase() : '';
+      
+      // Normalize emergency contact relation value to match options
+      const normalizedRelation = employee.emergency_contact_relation ? employee.emergency_contact_relation.trim().toUpperCase() : 'OTHER';
+
       setFormData({
-        email: employee.email || '',
-        company_email: (employee as any).company_email || '',
-        first_name: employee.first_name || '',
-        last_name: employee.last_name || '',
-        phone: employee.phone || '',
-        address: employee.address || '',
-        state: employee.state || '',
-        city: employee.city || '',
-        gender: employee.gender || '',
+        email: (employee.email || '').trim(),
+        company_email: ((employee as any).company_email || '').trim(),
+        first_name: (employee.first_name || '').trim(),
+        last_name: (employee.last_name || '').trim(),
+        phone: (employee.phone || '').trim(),
+        address: (employee.address || '').trim(),
+        state: (employee.state || '').trim(),
+        city: (employee.city || '').trim(),
+        gender: normalizedGender,
         date_of_birth: employee.date_of_birth ? employee.date_of_birth.split('T')[0] : '',
         hire_date: employee.hire_date ? employee.hire_date.split('T')[0] : '',
         leave_date: employee.leave_date ? employee.leave_date.split('T')[0] : '',
         total_experience: experienceValue,
-        marital_status: employee.marital_status || '',
-        emergency_contact: employee.emergency_contact || '',
-        emergency_contact_name: employee.emergency_contact_name || '',
-        emergency_contact_relation: employee.emergency_contact_relation || 'Diğer',
+        marital_status: normalizedMaritalStatus,
+        emergency_contact: (employee.emergency_contact || '').trim(),
+        emergency_contact_name: (employee.emergency_contact_name || '').trim(),
+        emergency_contact_relation: normalizedRelation,
         grade_id: (employee as any).grade_id?.toString() || '',
         is_grade_up: (employee as any).is_grade_up || false,
-        contract_no: (employee as any).contract_no || '',
+        contract_no: ((employee as any).contract_no || '').trim(),
         profession_start_date: (employee as any).profession_start_date ? (employee as any).profession_start_date.split('T')[0] : '',
-        note: (employee as any).note || '',
-        mother_name: (employee as any).mother_name || '',
-        father_name: (employee as any).father_name || '',
-        nationality: (employee as any).nationality || '',
-        identity_no: (employee as any).identity_no || '',
+        note: ((employee as any).note || '').trim(),
+        mother_name: ((employee as any).mother_name || '').trim(),
+        father_name: ((employee as any).father_name || '').trim(),
+        nationality: ((employee as any).nationality || '').trim(),
+        identity_no: ((employee as any).identity_no || '').trim(),
         roles: (employee as any).roles || ['EMPLOYEE']
       });
     } else {
@@ -168,7 +177,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
         marital_status: '',
         emergency_contact: '',
         emergency_contact_name: '',
-        emergency_contact_relation: 'Diğer',
+        emergency_contact_relation: 'OTHER',
         grade_id: '',
         is_grade_up: false,
         contract_no: '',
@@ -206,24 +215,21 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
     const today = new Date();
     
     let years = today.getFullYear() - start.getFullYear();
-    const monthDiff = today.getMonth() - start.getMonth();
+    let months = today.getMonth() - start.getMonth();
     
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < start.getDate())) {
-      years--;
+    // Adjust if day hasn't occurred yet this month
+    if (today.getDate() < start.getDate()) {
+      months--;
     }
     
-    // Calculate months difference
-    let months = monthDiff;
+    // Adjust if months are negative
     if (months < 0) {
+      years--;
       months += 12;
     }
     
-    // If months >= 6, add 0.5 to years
-    if (months >= 6) {
-      return years + 0.5;
-    }
-    
-    return years;
+    // Return total years as a decimal number (e.g., 2.25 for 2 years 3 months)
+    return parseFloat((years + months / 12).toFixed(2));
   };
 
   const handleProfessionStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -305,15 +311,15 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
         address: formData.address.trim(),
         state: formData.state.trim(),
         city: formData.city.trim(),
-        gender: formData.gender,
+        gender: formData.gender || undefined,
         date_of_birth: formData.date_of_birth || undefined,
         hire_date: formData.hire_date,
         leave_date: formData.leave_date || undefined,
-        total_experience: formData.total_experience ? parseFloat(formData.total_experience) : 0,
-        marital_status: formData.marital_status,
+        total_experience: parseFloat(formData.total_experience as string),
+        marital_status: formData.marital_status || undefined,
         emergency_contact: formData.emergency_contact.trim(),
         emergency_contact_name: formData.emergency_contact_name.trim(),
-        emergency_contact_relation: formData.emergency_contact_relation,
+        emergency_contact_relation: formData.emergency_contact_relation || undefined,
         grade_id: formData.grade_id ? parseInt(formData.grade_id) : null,
         is_grade_up: formData.is_grade_up,
         contract_no: formData.contract_no.trim(),
@@ -496,8 +502,11 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
                     onChange={handleInputChange}
                   >
                     <option value="">Seçiniz</option>
-                    <option value="Erkek">Erkek</option>
-                    <option value="Kadın">Kadın</option>
+                    {genderOptions.map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
                   </Form.Select>
                 </Form.Group>
               </Col>
@@ -510,8 +519,11 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
                     onChange={handleInputChange}
                   >
                     <option value="">Seçiniz</option>
-                    <option value="Evli">Evli</option>
-                    <option value="Bekar">Bekar</option>
+                    {maritalStatusOptions.map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
                   </Form.Select>
                 </Form.Group>
               </Col>
@@ -687,8 +699,6 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
                     value={formData.total_experience}
                     onChange={handleInputChange}
                     placeholder="0"
-                    step="0.5"
-                    min="0"
                   />
                 </Form.Group>
               </Col>
@@ -780,12 +790,12 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
                     value={formData.emergency_contact_relation}
                     onChange={handleInputChange}
                   >
-                    <option value="Anne">Anne</option>
-                    <option value="Baba">Baba</option>
-                    <option value="Eş">Eş</option>
-                    <option value="Çocuk">Çocuk</option>
-                    <option value="Kardeş">Kardeş</option>
-                    <option value="Diğer">Diğer</option>
+                    <option value="">Seçiniz</option>
+                    {emergencyContactRelationOptions.map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
                   </Form.Select>
                 </Form.Group>
               </Col>
@@ -795,7 +805,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
             <h6 className="mb-3 text-secondary">Roller <span className="text-danger">*</span></h6>
             
             <div className="mb-3 p-3" style={{ backgroundColor: '#f8f9fa', borderRadius: '4px' }}>
-              {AVAILABLE_ROLES.map(role => (
+              {Object.values(UserRole).map(role => (
                 <Form.Check
                   key={role}
                   type="checkbox"

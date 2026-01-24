@@ -6,10 +6,8 @@ import { employeeService, workInformationService } from '@/services';
 import { Employee, EmployeeWorkInformation } from '@/models/hr/common.types';
 import { toast } from 'react-toastify';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
-import { turkishToUpperCase } from '@/helpers/HelperUtils';
-import { Edit, Plus, Trash2 } from 'react-feather';
+import { Edit, Trash2 } from 'react-feather';
 import LeftProfileColumn from '@/components/employee-detail/LeftProfileColumn';
-import EmployeeInfoCard from '@/components/employee-detail/EmployeeInfoCard';
 import EmployeeModal from '@/components/modals/EmployeeModal';
 import WorkInformationModal from '@/components/modals/WorkInformationModal';
 import DeleteModal from '@/components/DeleteModal';
@@ -58,11 +56,8 @@ const EmployeeDetailPage = () => {
 
   const fetchWorkInformations = async (empId: number) => {
     try {
-      console.log('Fetching work informations for employee:', empId);
       const response = await workInformationService.getByEmployeeId(empId);
-      
-      console.log('Work information response:', response);
-      
+            
       if (response?.data) {
         let allWorkInfos: any[] = [];
         
@@ -74,9 +69,7 @@ const EmployeeDetailPage = () => {
           // Direct array response
           allWorkInfos = response.data as any[];
         }
-        
-        console.log('All work informations:', allWorkInfos);
-        
+                
         // Sort by start_date descending (en yeni en üstte)
         const sorted = allWorkInfos.sort((a: any, b: any) => {
           const dateA = new Date(a.start_date || 0).getTime();
@@ -84,14 +77,11 @@ const EmployeeDetailPage = () => {
           return dateB - dateA;
         });
         
-        console.log('Sorted work informations:', sorted);
         setWorkInformations(sorted as EmployeeWorkInformation[]);
       } else {
-        console.log('No data in response');
         setWorkInformations([]);
       }
     } catch (error) {
-      console.error('Failed to fetch work informations:', error);
       setWorkInformations([]);
     }
   };
@@ -274,37 +264,37 @@ const EmployeeDetailPage = () => {
                     <Row>
                       <Col md={6}>
                         <div className="mb-3">
-                          <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>{turkishToUpperCase('Ad Soyad')}</label>
+                          <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>AD SOYAD</label>
                           <p className="mb-2">{employee.first_name} {employee.last_name}</p>
                         </div>
                         <div className="mb-3">
-                          <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>{turkishToUpperCase('Doğum Tarihi')}</label>
+                          <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>DOĞUM TARİHİ</label>
                           <p className="mb-2">{employee.date_of_birth ? formatDate(employee.date_of_birth) : '-'}</p>
                         </div>
                         <div className="mb-3">
-                          <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>{turkishToUpperCase('Cinsiyet')}</label>
+                          <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>CİNSİYET</label>
                           <p className="mb-2">{(employee as any).gender || '-'}</p>
                         </div>
                         <div className="mb-3">
-                          <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>{turkishToUpperCase('Kimlik No')}</label>
+                          <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>KİMLİK NO</label>
                           <p className="mb-0">{(employee as any).identity_no || '-'}</p>
                         </div>
                       </Col>
                       <Col md={6}>
                         <div className="mb-3">
-                          <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>{turkishToUpperCase('Medeni Durum')}</label>
+                          <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>MEDENİ DURUM</label>
                           <p className="mb-2">{(employee as any).marital_status || '-'}</p>
                         </div>
                         <div className="mb-3">
-                          <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>{turkishToUpperCase('Toplam Deneyim')}</label>
+                          <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>TOPLAM DENEYİM</label>
                           <p className="mb-2">{getDisplayExperience()}</p>
                         </div>
                         <div className="mb-3">
-                          <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>{turkishToUpperCase('Uyruk')}</label>
+                          <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>UYRUK</label>
                           <p className="mb-2">{(employee as any).nationality || '-'}</p>
                         </div>
                         <div className="mb-3">
-                          <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>{turkishToUpperCase('Annesi')}</label>
+                          <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>ANNE ADI</label>
                           <p className="mb-0">{(employee as any).mother_name || '-'}</p>
                         </div>
                       </Col>
@@ -312,7 +302,7 @@ const EmployeeDetailPage = () => {
                     <Row>
                       <Col md={6}>
                         <div className="mb-3">
-                          <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>{turkishToUpperCase('Babası')}</label>
+                          <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>BABA ADI</label>
                           <p className="mb-0">{(employee as any).father_name || '-'}</p>
                         </div>
                       </Col>
@@ -326,29 +316,29 @@ const EmployeeDetailPage = () => {
                     <Row>
                       <Col md={6}>
                         <div className="mb-3">
-                          <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>{turkishToUpperCase('E-posta')}</label>
+                          <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>E-POSTA</label>
                           <p className="mb-2">{employee.email}</p>
                         </div>
                         <div className="mb-3">
-                          <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>{turkishToUpperCase('Şirket E-posta')}</label>
+                          <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>ŞİRKET E-POSTA</label>
                           <p className="mb-2">{employee.company_email || '-'}</p>
                         </div>
                         <div className="mb-3">
-                          <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>{turkishToUpperCase('Telefon')}</label>
+                          <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>TELEFON NO</label>
                           <p className="mb-0">{employee.phone || '-'}</p>
                         </div>
                       </Col>
                       <Col md={6}>
                         <div className="mb-3">
-                          <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>{turkishToUpperCase('Adres')}</label>
+                          <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>ADRES</label>
                           <p className="mb-2">{employee.address || '-'}</p>
                         </div>
                         <div className="mb-3">
-                          <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>{turkishToUpperCase('İl')}</label>
+                          <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>İL</label>
                           <p className="mb-2">{employee.city || '-'}</p>
                         </div>
                         <div className="mb-3">
-                          <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>{turkishToUpperCase('İlçe')}</label>
+                          <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>İLÇE</label>
                           <p className="mb-0">{employee.state || '-'}</p>
                         </div>
                       </Col>
@@ -362,33 +352,33 @@ const EmployeeDetailPage = () => {
                     <Row>
                       <Col md={6}>
                         <div className="mb-3">
-                          <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>{turkishToUpperCase('İşe Başlama Tarihi')}</label>
+                          <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>İŞE BAŞLAMA TARİHİ</label>
                           <p className="mb-2">{employee.hire_date ? formatDate(employee.hire_date) : '-'}</p>
                         </div>
                         <div className="mb-3">
-                          <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>{turkishToUpperCase('İşten Ayrılma Tarihi')}</label>
+                          <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>İŞTEN AYRILMA TARİHİ</label>
                           <p className="mb-2">{employee.leave_date ? formatDate(employee.leave_date) : '-'}</p>
                         </div>
                         <div className="mb-3">
-                          <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>{turkishToUpperCase('Toplam Deneyim')}</label>
+                          <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>TOPLAM DENEYİM</label>
                           <p className="mb-2">{getDisplayExperience()}</p>
                         </div>
                         <div className="mb-3">
-                          <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>{turkishToUpperCase('Meslek Başlama Tarihi')}</label>
+                          <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>MESLEĞE BAŞLAMA TARİHİ</label>
                           <p className="mb-0">{(employee as any).profession_start_date ? formatDate((employee as any).profession_start_date) : '-'}</p>
                         </div>
                       </Col>
                       <Col md={6}>
                         <div className="mb-3">
-                          <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>{turkishToUpperCase('Sözleşme No')}</label>
+                          <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>SÖZLEŞME NO</label>
                           <p className="mb-2">{(employee as any).contract_no || '-'}</p>
                         </div>
                         <div className="mb-3">
-                          <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>{turkishToUpperCase('Grade')}</label>
+                          <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>GRADE</label>
                           <p className="mb-2">{(employee as any).grade_id ? `Grade ${(employee as any).grade_id}` : '-'}</p>
                         </div>
                         <div className="mb-3">
-                          <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>{turkishToUpperCase('Grade Yükseltildi')}</label>
+                          <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>GRADE YÜKSELTİLECEK Mİ</label>
                           <p className="mb-3">
                             <span style={{
                               display: 'inline-block',
@@ -405,7 +395,7 @@ const EmployeeDetailPage = () => {
                         </div>
                         {(employee as any).note && (
                           <div className="mb-3">
-                            <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>{turkishToUpperCase('Not')}</label>
+                            <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>NOT</label>
                             <p className="mb-0" style={{ whiteSpace: 'pre-wrap' }}>{(employee as any).note}</p>
                           </div>
                         )}
@@ -420,19 +410,19 @@ const EmployeeDetailPage = () => {
                     <Row>
                       <Col md={4}>
                         <div className="mb-3">
-                          <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>{turkishToUpperCase('Ad Soyad')}</label>
+                          <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>AD SOYAD</label>
                           <p className="mb-0">{employee.emergency_contact_name || '-'}</p>
                         </div>
                       </Col>
                       <Col md={4}>
                         <div className="mb-3">
-                          <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>{turkishToUpperCase('Telefon')}</label>
+                          <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>TELEFON NO</label>
                           <p className="mb-0">{employee.emergency_contact || '-'}</p>
                         </div>
                       </Col>
                       <Col md={4}>
                         <div className="mb-3">
-                          <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>{turkishToUpperCase('İlişkisi')}</label>
+                          <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>İLİŞKİSİ</label>
                           <p className="mb-0">{employee.emergency_contact_relation || '-'}</p>
                         </div>
                       </Col>
@@ -476,31 +466,31 @@ const EmployeeDetailPage = () => {
                             </p>
                           </div>
                           <div style={{ textAlign: 'right' }}>
-                            <label style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '0.4rem' }}>{turkishToUpperCase('Yönetici')}</label>
+                            <label style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '0.4rem' }}>Yönetici</label>
                             <p style={{ fontSize: '13px', color: '#374151', marginBottom: 0 }}>{workInfo.department?.manager || '-'}</p>
                           </div>
                         </div>
 
                         <Row className="g-3" style={{ marginTop: '1.5rem' }}>
                           <Col md={6}>
-                            <label style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '0.4rem' }}>{turkishToUpperCase('Başlama Tarihi')}</label>
+                            <label style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '0.4rem' }}>BAŞLAMA TARİHİ</label>
                             <p style={{ fontSize: '13px', color: '#374151', marginBottom: 0 }}>{workInfo.start_date ? formatDate(workInfo.start_date) : '-'}</p>
                           </Col>
 
                           <Col md={6}>
-                            <label style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '0.4rem' }}>{turkishToUpperCase('Bitiş Tarihi')}</label>
+                            <label style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '0.4rem' }}>BİTİŞ TARİHİ</label>
                             <p style={{ fontSize: '13px', color: '#374151', marginBottom: 0 }}>{workInfo.end_date ? formatDate(workInfo.end_date) : '-'}</p>
                           </Col>
                         </Row>
 
                         <Row className="g-3" style={{ marginTop: '0.5rem' }}>
                           <Col md={6}>
-                            <label style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '0.4rem' }}>{turkishToUpperCase('Sicil No')}</label>
+                            <label style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '0.4rem' }}>SİCİL NO</label>
                             <p style={{ fontSize: '13px', color: '#374151', marginBottom: 0 }}>{workInfo.personnel_no || (workInfo as any).personnelNo || '-'}</p>
                           </Col>
 
                           <Col md={6}>
-                            <label style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '0.4rem' }}>{turkishToUpperCase('İş E-postası')}</label>
+                            <label style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '0.4rem' }}>İŞ E-POSTASI</label>
                             <p style={{ fontSize: '13px', color: '#374151', marginBottom: 0 }}>{workInfo.work_email || (workInfo as any).workEmail || '-'}</p>
                           </Col>
                         </Row>

@@ -410,29 +410,71 @@ const MyLeaveRequests = () => {
             <div className="d-lg-none mb-4">
               <Card className="border-0 shadow-sm">
                 <Card.Body>
-                  <Row className="text-center">
-                    <Col md={4} sm={6} xs={12} className="mb-3 mb-md-0">
-                      <div className="d-flex flex-column align-items-center">
-                        <h6 className="text-muted mb-2">Hakedilen İzin</h6>
-                        <h4 className="text-primary fw-bold">
+                  <Row>
+                    <Col md={4} sm={6} xs={12} className="mb-4 mb-md-0">
+                      <div className="d-flex flex-column">
+                        <h6 className="text-muted mb-2" style={{ fontSize: '13px', fontWeight: 500 }}>Hakedilen İzin</h6>
+                        <h4 className="text-primary fw-bold mb-2">
                           {balanceLoading ? '-' : (leaveBalance?.total_days || leaveBalance?.totalDays || 0)} Gün
                         </h4>
+                        <div style={{
+                          width: '100%',
+                          height: '8px',
+                          backgroundColor: '#e5e7eb',
+                          borderRadius: '4px',
+                          overflow: 'hidden'
+                        }}>
+                          <div style={{
+                            height: '100%',
+                            backgroundColor: '#3b82f6',
+                            width: `${leaveBalance && (leaveBalance?.total_days || leaveBalance?.totalDays) ? 100 : 0}%`,
+                            borderRadius: '4px'
+                          }}></div>
+                        </div>
                       </div>
                     </Col>
-                    <Col md={4} sm={6} xs={12} className="mb-3 mb-md-0">
-                      <div className="d-flex flex-column align-items-center">
-                        <h6 className="text-muted mb-2">Kullanılan İzin</h6>
-                        <h4 className="text-warning fw-bold">
+                    <Col md={4} sm={6} xs={12} className="mb-4 mb-md-0">
+                      <div className="d-flex flex-column">
+                        <h6 className="text-muted mb-2" style={{ fontSize: '13px', fontWeight: 500 }}>Kullanılan İzin</h6>
+                        <h4 className="text-warning fw-bold mb-2">
                           {balanceLoading ? '-' : (leaveBalance?.used_days || leaveBalance?.usedDays || 0)} Gün
                         </h4>
+                        <div style={{
+                          width: '100%',
+                          height: '8px',
+                          backgroundColor: '#e5e7eb',
+                          borderRadius: '4px',
+                          overflow: 'hidden'
+                        }}>
+                          <div style={{
+                            height: '100%',
+                            backgroundColor: '#f59e0b',
+                            width: `${calculateProgressPercentage(leaveBalance?.used_days || leaveBalance?.usedDays, leaveBalance?.total_days || leaveBalance?.totalDays)}%`,
+                            borderRadius: '4px'
+                          }}></div>
+                        </div>
                       </div>
                     </Col>
                     <Col md={4} sm={6} xs={12}>
-                      <div className="d-flex flex-column align-items-center">
-                        <h6 className="text-muted mb-2">Kalan İzin</h6>
-                        <h4 className="text-success fw-bold">
+                      <div className="d-flex flex-column">
+                        <h6 className="text-muted mb-2" style={{ fontSize: '13px', fontWeight: 500 }}>Kalan İzin</h6>
+                        <h4 className="text-success fw-bold mb-2">
                           {balanceLoading ? '-' : (leaveBalance?.remaining_days || leaveBalance?.remainingDays || 0)} Gün
                         </h4>
+                        <div style={{
+                          width: '100%',
+                          height: '8px',
+                          backgroundColor: '#e5e7eb',
+                          borderRadius: '4px',
+                          overflow: 'hidden'
+                        }}>
+                          <div style={{
+                            height: '100%',
+                            backgroundColor: '#10b981',
+                            width: `${calculateProgressPercentage(leaveBalance?.remaining_days || leaveBalance?.remainingDays, leaveBalance?.total_days || leaveBalance?.totalDays)}%`,
+                            borderRadius: '4px'
+                          }}></div>
+                        </div>
                       </div>
                     </Col>
                   </Row>

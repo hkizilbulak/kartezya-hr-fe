@@ -1,6 +1,5 @@
 import { HR_ENDPOINTS } from '@/contants/urls';
 import axiosInstance from '@/helpers/api/axiosInstance';
-import { getErrorMessage } from '@/helpers/HelperUtils';
 import { getAvatarByUserId } from '@/helpers/avatarUtils';
 
 export interface LoginRequest {
@@ -88,7 +87,7 @@ export const authService = {
       throw new Error('Invalid login response format');
     } catch (error: any) {
       
-      let errorMessage = getErrorMessage(error);
+      let errorMessage = "Bilinmeyen hata oluştu";
       if (error.response && error.response.status === 401) {
         errorMessage = 'E-posta adresiniz yada şifreniz hatalı';
       }

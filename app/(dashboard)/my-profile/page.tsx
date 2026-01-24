@@ -24,6 +24,7 @@ const validationSchema = Yup.object().shape({
   gender: Yup.string(),
   date_of_birth: Yup.string(),
   hire_date: Yup.string(),
+  profession_start_date: Yup.string(),
   total_experience: Yup.number(),
   marital_status: Yup.string(),
   emergency_contact: Yup.string(),
@@ -67,6 +68,34 @@ const Profile = () => {
     return dateStr.split('T')[0];
   };
 
+  const calculateExperienceFromProfessionStartDate = (startDate: string): number => {
+    if (!startDate) return 0;
+    
+    try {
+      const start = new Date(startDate);
+      const today = new Date();
+      
+      let years = today.getFullYear() - start.getFullYear();
+      let months = today.getMonth() - start.getMonth();
+      
+      // Eğer gün açısından ileri gitmediysek ayı azalt
+      if (today.getDate() < start.getDate()) {
+        months--;
+      }
+      
+      // Eğer ay negatifse düzelt
+      if (months < 0) {
+        years--;
+        months += 12;
+      }
+      
+      // Return numeric value (years + months/12 for decimal precision)
+      return months >= 6 ? years + 0.5 : years;
+    } catch (error) {
+      return 0;
+    }
+  };
+
   const handleSubmit = async (values: any, { setSubmitting }: any) => {
     try {
       setError(null);
@@ -84,6 +113,7 @@ const Profile = () => {
         city: values.city || '',
         gender: values.gender || '',
         date_of_birth: values.date_of_birth ? new Date(values.date_of_birth).toISOString() : '',
+        profession_start_date: values.profession_start_date ? new Date(values.profession_start_date).toISOString() : '',
         total_experience: values.total_experience || 0,
         marital_status: values.marital_status || '',
         emergency_contact: values.emergency_contact || '',
@@ -147,15 +177,18 @@ const Profile = () => {
     gender: employee.gender || '',
     date_of_birth: formatDateForInput(employee.date_of_birth),
     hire_date: formatDateForInput(employee.hire_date),
-    total_experience: employee.total_experience || 0,
+    profession_start_date: formatDateForInput((employee as any).profession_start_date),
+    total_experience: typeof employee.total_experience === 'string' 
+      ? parseFloat(employee.total_experience) || 0
+      : (employee.total_experience || 0),
     marital_status: employee.marital_status || '',
     emergency_contact: employee.emergency_contact || '',
     emergency_contact_name: employee.emergency_contact_name || '',
     emergency_contact_relation: employee.emergency_contact_relation || '',
-    mother_name: (employee as any).mother_name || '',
-    father_name: (employee as any).father_name || '',
-    nationality: (employee as any).nationality || '',
-    identity_no: (employee as any).identity_no || ''
+    mother_name: employee.mother_name || '',
+    father_name: employee.father_name || '',
+    nationality: employee.nationality || '',
+    identity_no: employee.identity_no || ''
   };
 
   return (
@@ -257,7 +290,18 @@ const Profile = () => {
                       validationSchema={validationSchema}
                       onSubmit={handleSubmit}
                     >
-                      {({ isSubmitting: formIsSubmitting, values, setFieldValue }) => (
+                      {({ isSubmitting: formIsSubmitting, values, setFieldValue }) => {
+                        // Calculate experience whenever profession_start_date changes
+                        useEffect(() => {
+                          if (values.profession_start_date) {
+                            const calculatedExperience = calculateExperienceFromProfessionStartDate(values.profession_start_date);
+                            if (calculatedExperience !== values.total_experience) {
+                              setFieldValue('total_experience', calculatedExperience);
+                            }
+                          }
+                        }, [values.profession_start_date, setFieldValue]);
+
+                        return (
                         <FormikForm>
                           {/* Name Section */}
                           <Row className="mb-4">
@@ -342,20 +386,20 @@ const Profile = () => {
 
                           {/* City and State Section */}
                           <Row className="mb-4">
-                            <FormTextField
+                          <FormTextField
                               as={Col}
                               md={6}
-                              controlId="state"
+                              controlId="city"
                               label="İl"
-                              name="state"
+                              name="city"
                               type="text"
                             />
                             <FormTextField
                               as={Col}
                               md={6}
-                              controlId="city"
+                              controlId="state"
                               label="İlçe"
-                              name="city"
+                              name="state"
                               type="text"
                             />
                           </Row>
@@ -369,27 +413,6 @@ const Profile = () => {
                               label="Doğum Tarihi"
                               name="date_of_birth"
                               type="date"
-                            />
-                            <FormTextField
-                              as={Col}
-                              md={6}
-                              controlId="hire_date"
-                              label="İşe Giriş Tarihi"
-                              name="hire_date"
-                              type="date"
-                              disabled
-                            />
-                          </Row>
-
-                          {/* Experience and Marital Status Section */}
-                          <Row className="mb-4">
-                            <FormTextField
-                              as={Col}
-                              md={6}
-                              controlId="total_experience"
-                              label="Toplam Deneyim (Yıl)"
-                              name="total_experience"
-                              type="number"
                             />
                             <FormSelectField
                               as={Col}
@@ -407,6 +430,33 @@ const Profile = () => {
                             </FormSelectField>
                           </Row>
 
+                          <Row className="mb-4">
+                          <FormTextField
+                              as={Col}
+                              md={4}
+                              controlId="hire_date"
+                              label="İşe Giriş Tarihi"
+                              name="hire_date"
+                              type="date"
+                              disabled
+                            />
+                            <FormTextField
+                              as={Col}
+                              md={4}
+                              controlId="profession_start_date"
+                              label="Meslek Başlangıç Tarihi"
+                              name="profession_start_date"
+                              type="date"
+                            />
+                            <FormTextField
+                              as={Col}
+                              md={4}
+                              controlId="total_experience"
+                              label="Toplam Deneyim (Yıl)"
+                              name="total_experience"
+                              type="number"
+                            />
+                          </Row>
                           <Row className="mb-4">
                             <FormTextField
                               as={Col}
@@ -501,7 +551,7 @@ const Profile = () => {
                             </Col>
                           </Row>
                         </FormikForm>
-                      )}
+                      )}}
                     </Formik>
                   </div>
                 </Card.Body>

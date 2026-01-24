@@ -16,7 +16,6 @@ export const DashboardMenu: IMenuProps[] = [
 		id: 'dashboard',
 		title: 'Dashboard',
 		icon: 'home',
-		requiredRoles: ['ADMIN'],
 		link: '/'
 	},
 	{

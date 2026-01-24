@@ -71,6 +71,7 @@ interface UpdateMyProfileRequest {
   city?: string;
   gender?: string;
   date_of_birth?: string;
+  profession_start_date?: string;
   total_experience?: number;
   marital_status?: string;
   emergency_contact?: string;
