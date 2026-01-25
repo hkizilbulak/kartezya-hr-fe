@@ -7,7 +7,10 @@ export const HR_ENDPOINTS = {
   AUTH: {
     LOGIN: '/auth/login',
     PROFILE: '/auth/profile',
-    LOGOUT: '/auth/logout'
+    LOGOUT: '/auth/logout',
+    VALIDATE_RESET_TOKEN: '/auth/validate-reset-token',
+    RESET_PASSWORD: '/auth/reset-password',
+    CHANGE_PASSWORD: '/auth/change-password'
   },
   // Companies
   COMPANIES: '/companies',

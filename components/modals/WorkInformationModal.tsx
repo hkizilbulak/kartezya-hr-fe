@@ -264,7 +264,7 @@ const WorkInformationModal: React.FC<WorkInformationModalProps> = ({
   return (
     <Modal show={show} onHide={onHide} size="lg">
       <div className="position-relative">
-        <LoadingOverlay show={loading || loadingLookups} message="Kaydediliyor..." />
+        <LoadingOverlay show={loading} message="Kaydediliyor..." />
 
         <Modal.Header closeButton>
           <Modal.Title>

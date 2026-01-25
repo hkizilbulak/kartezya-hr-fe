@@ -12,6 +12,7 @@ import EmployeeModal from '@/components/modals/EmployeeModal';
 import WorkInformationModal from '@/components/modals/WorkInformationModal';
 import DeleteModal from '@/components/DeleteModal';
 import styles from './page.module.scss';
+import { genderOptions, maritalStatusOptions, emergencyContactRelationOptions } from '@/contants/options';
 
 const EmployeeDetailPage = () => {
   const router = useRouter();
@@ -30,6 +31,13 @@ const EmployeeDetailPage = () => {
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [selectedWorkInfo, setSelectedWorkInfo] = useState<EmployeeWorkInformation | null>(null);
   const [workInfoToDelete, setWorkInfoToDelete] = useState<EmployeeWorkInformation | null>(null);
+
+  // Helper function to get display value for enum
+  const getEnumDisplayValue = (enumValue: string, options: any[]): string => {
+    if (!enumValue) return '-';
+    const option = options.find(opt => opt.value === enumValue);
+    return option ? option.label : enumValue;
+  };
 
   useEffect(() => {
     fetchEmployeeDetails();
@@ -214,11 +222,11 @@ const EmployeeDetailPage = () => {
         <LeftProfileColumn 
           employee={{
             name: `${employee.first_name} ${employee.last_name}`,
-            jobTitle: employee.work_information?.job_title || '-',
+            jobTitle: workInformations.length > 0 ? (workInformations[0].job_position?.title || '-') : (employee.work_information?.job_title || '-'),
             initials: getInitials(employee.first_name, employee.last_name),
-            company: employee.work_information?.company_name || '-',
-            department: employee.work_information?.department_name || '-',
-            manager: employee.work_information?.manager || '-',
+            company: workInformations.length > 0 ? (workInformations[0].company?.name || '-') : (employee.work_information?.company_name || '-'),
+            department: workInformations.length > 0 ? (workInformations[0].department?.name || '-') : (employee.work_information?.department_name || '-'),
+            manager: workInformations.length > 0 ? (workInformations[0].department?.manager || '-') : (employee.work_information?.manager || '-'),
             email: employee.email,
             phone: employee.phone || '-',
             address: employee.address || '-',
@@ -273,7 +281,7 @@ const EmployeeDetailPage = () => {
                         </div>
                         <div className="mb-3">
                           <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>CİNSİYET</label>
-                          <p className="mb-2">{(employee as any).gender || '-'}</p>
+                          <p className="mb-2">{getEnumDisplayValue((employee as any).gender, genderOptions)}</p>
                         </div>
                         <div className="mb-3">
                           <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>KİMLİK NO</label>
@@ -283,7 +291,7 @@ const EmployeeDetailPage = () => {
                       <Col md={6}>
                         <div className="mb-3">
                           <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>MEDENİ DURUM</label>
-                          <p className="mb-2">{(employee as any).marital_status || '-'}</p>
+                          <p className="mb-2">{getEnumDisplayValue((employee as any).marital_status, maritalStatusOptions)}</p>
                         </div>
                         <div className="mb-3">
                           <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>TOPLAM DENEYİM</label>
@@ -423,7 +431,7 @@ const EmployeeDetailPage = () => {
                       <Col md={4}>
                         <div className="mb-3">
                           <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>İLİŞKİSİ</label>
-                          <p className="mb-0">{employee.emergency_contact_relation || '-'}</p>
+                          <p className="mb-0">{getEnumDisplayValue(employee.emergency_contact_relation || '', emergencyContactRelationOptions)}</p>
                         </div>
                       </Col>
                     </Row>

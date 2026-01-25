@@ -1,4 +1,4 @@
-import { Fragment } from 'react';
+import { Fragment, useState } from 'react';
 import { useMediaQuery } from 'react-responsive';
 import {
     Image,
@@ -8,12 +8,13 @@ import {
 import { User } from 'react-feather';
 import useMounted from '@/hooks/useMounted';
 import { useAuth } from '@/hooks/useAuth';
+import ChangePasswordModal from '@/components/modals/ChangePasswordModal';
 
 const QuickMenu = () => {
 
     const { user, logout } = useAuth();
-
     const hasMounted = useMounted();
+    const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
 
     const isDesktop = useMediaQuery({
         query: '(min-width: 1224px)'
@@ -21,6 +22,10 @@ const QuickMenu = () => {
 
     const handleLogout = () => {
         logout();
+    };
+
+    const handleChangePasswordClick = () => {
+        setShowChangePasswordModal(true);
     };
 
     const QuickMenuDesktop = () => {
@@ -70,6 +75,9 @@ const QuickMenu = () => {
                                 <h5 className="mb-1">{user?.firstName} {user?.lastName}</h5>
                             </div>
                             <div className=" dropdown-divider mt-3 mb-2"></div>
+                        </Dropdown.Item>
+                        <Dropdown.Item onClick={handleChangePasswordClick}>
+                            <i className="fe fe-lock me-2"></i>Şifre Değişikliği
                         </Dropdown.Item>
                         <Dropdown.Item onClick={handleLogout}>
                             <i className="fe fe-power me-2"></i>Çıkış Yap
@@ -127,6 +135,9 @@ const QuickMenu = () => {
                             </div>
                             <div className=" dropdown-divider mt-3 mb-2"></div>
                         </Dropdown.Item>
+                        <Dropdown.Item onClick={handleChangePasswordClick}>
+                            <i className="fe fe-lock me-2"></i>Şifre Değişikliği
+                        </Dropdown.Item>
                         <Dropdown.Item onClick={handleLogout}>
                             <i className="fe fe-power me-2"></i>Çıkış Yap
                         </Dropdown.Item>
@@ -139,6 +150,10 @@ const QuickMenu = () => {
     return (
         <Fragment>
             {hasMounted && isDesktop ? <QuickMenuDesktop /> : <QuickMenuMobile />}
+            <ChangePasswordModal 
+                show={showChangePasswordModal}
+                onHide={() => setShowChangePasswordModal(false)}
+            />
         </Fragment>
     )
 }

@@ -60,6 +60,15 @@ const Home = () => {
 
     const [loading, setLoading] = useState(true);
 
+    // Per-component loading states
+    const [loadingStats, setLoadingStats] = useState(false);
+    const [loadingGenderData, setLoadingGenderData] = useState(false);
+    const [loadingPositionData, setLoadingPositionData] = useState(false);
+    const [loadingCompanyDeptData, setLoadingCompanyDeptData] = useState(false);
+    const [loadingLeaveRequests, setLoadingLeaveRequests] = useState(false);
+    const [loadingLeaveBalance, setLoadingLeaveBalance] = useState(false);
+    const [loadingEmployeeProfile, setLoadingEmployeeProfile] = useState(false);
+
     const COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2'];
 
     useEffect(() => {
@@ -73,12 +82,21 @@ const Home = () => {
     // Admin/Manager dashboard veri yükleme
     const fetchAllDashboardData = async () => {
         try {
-            setLoading(true);
+            setLoadingStats(true);
+            setLoadingGenderData(true);
+            setLoadingPositionData(true);
+            setLoadingCompanyDeptData(true);
             
             // Fetch main dashboard data
-            const mainResponse = await dashboardService.getDashboardData();
-            if (mainResponse.success && mainResponse.data) {
-                setStats(mainResponse.data);
+            try {
+                const mainResponse = await dashboardService.getDashboardData();
+                if (mainResponse.success && mainResponse.data) {
+                    setStats(mainResponse.data);
+                }
+            } catch (error) {
+                console.error('Error fetching stats:', error);
+            } finally {
+                setLoadingStats(false);
             }
 
             // Fetch gender chart data
@@ -89,6 +107,8 @@ const Home = () => {
                 }
             } catch (error) {
                 console.error('Error fetching gender data:', error);
+            } finally {
+                setLoadingGenderData(false);
             }
 
             // Fetch position chart data
@@ -99,6 +119,8 @@ const Home = () => {
                 }
             } catch (error) {
                 console.error('Error fetching position data:', error);
+            } finally {
+                setLoadingPositionData(false);
             }
 
             // Fetch company-department chart data
@@ -109,18 +131,20 @@ const Home = () => {
                 }
             } catch (error) {
                 console.error('Error fetching company-department data:', error);
+            } finally {
+                setLoadingCompanyDeptData(false);
             }
         } catch (error: any) {
             console.error('Dashboard veri yükleme hatası:', error);
-        } finally {
-            setLoading(false);
         }
     };
 
     // Employee dashboard veri yükleme
     const fetchEmployeeDashboardData = async () => {
         try {
-            setLoading(true);
+            setLoadingLeaveRequests(true);
+            setLoadingLeaveBalance(true);
+            setLoadingEmployeeProfile(true);
 
             // Çalışanın izin taleplerini yükle
             try {
@@ -130,6 +154,8 @@ const Home = () => {
                 }
             } catch (error) {
                 console.error('Error fetching leave requests:', error);
+            } finally {
+                setLoadingLeaveRequests(false);
             }
 
             // Çalışanın izin bakiyesini yükle
@@ -140,6 +166,8 @@ const Home = () => {
                 }
             } catch (error) {
                 console.error('Error fetching leave balance:', error);
+            } finally {
+                setLoadingLeaveBalance(false);
             }
 
             // Çalışanın profil bilgisini yükle
@@ -150,25 +178,13 @@ const Home = () => {
                 }
             } catch (error) {
                 console.error('Error fetching employee profile:', error);
+            } finally {
+                setLoadingEmployeeProfile(false);
             }
         } catch (error: any) {
             console.error('Employee dashboard veri yükleme hatası:', error);
-        } finally {
-            setLoading(false);
         }
     };
-
-    if (loading) {
-        return (
-            <Container fluid className="px-6 py-4">
-                <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '60vh' }}>
-                    <Spinner animation="border" role="status">
-                        <span className="visually-hidden">Yükleniyor...</span>
-                    </Spinner>
-                </div>
-            </Container>
-        );
-    }
 
     // EMPLOYEE Dashboard
     if (isEmployee) {
@@ -229,7 +245,13 @@ const Home = () => {
                                         </div>
                                     </div>
                                     <div>
-                                        {leaveBalance ? (
+                                        {loadingLeaveBalance ? (
+                                            <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '60px' }}>
+                                                <Spinner animation="border" role="status" size="sm">
+                                                    <span className="visually-hidden">Yükleniyor...</span>
+                                                </Spinner>
+                                            </div>
+                                        ) : leaveBalance ? (
                                             <>
                                                 <h1 className="fw-bold">{leaveBalance.remaining_days || 0}</h1>
                                                 <p className="mb-0">
@@ -260,15 +282,25 @@ const Home = () => {
                                         </div>
                                     </div>
                                     <div>
-                                        <h1 className="fw-bold">
-                                            {myLeaveRequests.filter(r => r.status === 'PENDING').length}
-                                        </h1>
-                                        <p className="mb-0">
-                                            <span className="text-warning me-2">
-                                                <i className="fe fe-alert-circle me-1"></i>
-                                            </span>
-                                            Beklemede olan
-                                        </p>
+                                        {loadingLeaveRequests ? (
+                                            <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '60px' }}>
+                                                <Spinner animation="border" role="status" size="sm">
+                                                    <span className="visually-hidden">Yükleniyor...</span>
+                                                </Spinner>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <h1 className="fw-bold">
+                                                    {myLeaveRequests.filter(r => r.status === 'PENDING').length}
+                                                </h1>
+                                                <p className="mb-0">
+                                                    <span className="text-warning me-2">
+                                                        <i className="fe fe-alert-circle me-1"></i>
+                                                    </span>
+                                                    Beklemede olan
+                                                </p>
+                                            </>
+                                        )}
                                     </div>
                                 </Card.Body>
                             </Card>
@@ -287,15 +319,25 @@ const Home = () => {
                                         </div>
                                     </div>
                                     <div>
-                                        <h1 className="fw-bold">
-                                            {myLeaveRequests.filter(r => r.status === 'APPROVED').length}
-                                        </h1>
-                                        <p className="mb-0">
-                                            <span className="text-info me-2">
-                                                <i className="fe fe-check-circle me-1"></i>
-                                            </span>
-                                            Onaylanan talepler
-                                        </p>
+                                        {loadingLeaveRequests ? (
+                                            <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '60px' }}>
+                                                <Spinner animation="border" role="status" size="sm">
+                                                    <span className="visually-hidden">Yükleniyor...</span>
+                                                </Spinner>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <h1 className="fw-bold">
+                                                    {myLeaveRequests.filter(r => r.status === 'APPROVED').length}
+                                                </h1>
+                                                <p className="mb-0">
+                                                    <span className="text-info me-2">
+                                                        <i className="fe fe-check-circle me-1"></i>
+                                                    </span>
+                                                    Onaylanan talepler
+                                                </p>
+                                            </>
+                                        )}
                                     </div>
                                 </Card.Body>
                             </Card>
@@ -314,15 +356,25 @@ const Home = () => {
                                         </div>
                                     </div>
                                     <div>
-                                        <h1 className="fw-bold">
-                                            {myLeaveRequests.filter(r => r.status === 'REJECTED').length}
-                                        </h1>
-                                        <p className="mb-0">
-                                            <span className="text-danger me-2">
-                                                <i className="fe fe-x-circle me-1"></i>
-                                            </span>
-                                            Reddedilen talepler
-                                        </p>
+                                        {loadingLeaveRequests ? (
+                                            <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '60px' }}>
+                                                <Spinner animation="border" role="status" size="sm">
+                                                    <span className="visually-hidden">Yükleniyor...</span>
+                                                </Spinner>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <h1 className="fw-bold">
+                                                    {myLeaveRequests.filter(r => r.status === 'REJECTED').length}
+                                                </h1>
+                                                <p className="mb-0">
+                                                    <span className="text-danger me-2">
+                                                        <i className="fe fe-x-circle me-1"></i>
+                                                    </span>
+                                                    Reddedilen talepler
+                                                </p>
+                                            </>
+                                        )}
                                     </div>
                                 </Card.Body>
                             </Card>
@@ -357,15 +409,15 @@ const Home = () => {
                                         </Col>
                                         <Col md={6} className="mb-3">
                                             <h6 className="text-white-50 mb-1">Çalışılan Şirket</h6>
-                                            <p className="mb-0 text-white-75">{employeeProfile?.work_information?.company_name || 'N/A'}</p>
+                                            <p className="mb-0 text-white-75">{employeeProfile?.work_information && employeeProfile.work_information.length > 0 ? employeeProfile.work_information[0]?.company_name : 'N/A'}</p>
                                         </Col>
                                         <Col md={6} className="mb-3">
                                             <h6 className="text-white-50 mb-1">Departman</h6>
-                                            <p className="mb-0 text-white-75">{employeeProfile?.work_information?.department_name || 'N/A'}</p>
+                                            <p className="mb-0 text-white-75">{employeeProfile?.work_information && employeeProfile.work_information.length > 0 ? employeeProfile.work_information[0]?.department_name : 'N/A'}</p>
                                         </Col>
                                         <Col md={6} className="mb-3">
                                             <h6 className="text-white-50 mb-1">Pozisyon</h6>
-                                            <p className="mb-0 text-white-75">{employeeProfile?.work_information?.job_title || 'N/A'}</p>
+                                            <p className="mb-0 text-white-75">{employeeProfile?.work_information && employeeProfile.work_information.length > 0 ? employeeProfile.work_information[0]?.job_title : 'N/A'}</p>
                                         </Col>
                                     </div>
                                 </Card.Body>
@@ -394,65 +446,120 @@ const Home = () => {
                                 </Card.Body>
                             </Card>
                         </Col>
-
-                        
                     </Row>
 
-                    {/* Son İzin Taleplerini Tablo Olarak Göster */}
-                    <Row>
-                        <Col lg={12} md={12} xs={12} className="mb-6">
-                            <Card className="border-0">
-                                <Card.Header>
-                                    <h5 className="mb-0">Son İzin Taleplerini</h5>
-                                </Card.Header>
+                    {/* Bekleyen İzin Taleplerim ve Kariyer Geçmişi Timeline */}
+                    <Row className="mb-4">
+                        <Col lg={6} md={12} xs={12} className="mb-6">
+                            <div className="d-flex justify-content-between align-items-center mb-3">
+                                <h6 style={{ fontWeight: 700, fontSize: '16px', margin: 0 }}>Bekleyen İzin Taleplerim</h6>
+                                <a href="/my-requests/leave" className="text-decoration-none" style={{ fontSize: '14px', fontWeight: 500 }}>
+                                    Tüm İzin Taleplerim →
+                                </a>
+                            </div>
+                            <Card className="border-0 shadow-sm">
                                 <Card.Body className="p-0">
-                                    {myLeaveRequests.length > 0 ? (
+                                    <div className="table-box">
                                         <div className="table-responsive">
-                                            <table className="table table-hover">
-                                                <thead className="table-light">
-                                                    <tr>
-                                                        <th>Başlama Tarihi</th>
-                                                        <th>Bitiş Tarihi</th>
-                                                        <th>Tür</th>
-                                                        <th>Gün Sayısı</th>
-                                                        <th>Durum</th>
-                                                        <th>Tarih</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {myLeaveRequests.slice(0, 5).map((request) => (
-                                                        <tr key={request.id}>
-                                                            <td>{formatDate(request.start_date)}</td>
-                                                            <td>{formatDate(request.end_date)}</td>
-                                                            <td>{request.leave_type?.name || 'N/A'}</td>
-                                                            <td>
-                                                                <span className="badge bg-primary">
-                                                                    {request.requested_days}
-                                                                </span>
-                                                            </td>
-                                                            <td>
-                                                                <span className={`badge bg-${
-                                                                    request.status === 'APPROVED' ? 'success' :
-                                                                    request.status === 'REJECTED' ? 'danger' :
-                                                                    request.status === 'CANCELLED' ? 'secondary' :
-                                                                    'warning'
-                                                                }`}>
-                                                                    {request.status === 'PENDING' ? 'Beklemede' :
-                                                                    request.status === 'APPROVED' ? 'Onaylı' :
-                                                                    request.status === 'REJECTED' ? 'Reddedildi' :
-                                                                    request.status === 'CANCELLED' ? 'İptal Edildi' :
-                                                                    request.status}
-                                                                </span>
-                                                            </td>
-                                                            <td>{formatDate(request.created_at)}</td>
+                                            {myLeaveRequests.filter(r => r.status === 'PENDING').length > 0 ? (
+                                                <table className="table table-hover mb-0">
+                                                    <thead>
+                                                        <tr style={{ backgroundColor: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                                                            <th style={{ padding: '12px 16px' }}>Başlangıç Tarihi</th>
+                                                            <th style={{ padding: '12px 16px' }}>Bitiş Tarihi</th>
+                                                            <th style={{ padding: '12px 16px' }}>İzin Türü</th>
+                                                            <th style={{ padding: '12px 16px' }}>Kullanılan Gün</th>
                                                         </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
+                                                    </thead>
+                                                    <tbody>
+                                                        {myLeaveRequests.filter(r => r.status === 'PENDING').map((request) => (
+                                                            <tr key={request.id}>
+                                                                <td style={{ padding: '12px 16px', verticalAlign: 'middle' }}>{formatDate(request.start_date)}</td>
+                                                                <td style={{ padding: '12px 16px', verticalAlign: 'middle' }}>{formatDate(request.end_date)}</td>
+                                                                <td style={{ padding: '12px 16px', verticalAlign: 'middle' }}>{request.leave_type?.name || 'N/A'}</td>
+                                                                <td style={{ padding: '12px 16px', verticalAlign: 'middle' }}>{request.requested_days || '-'}</td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            ) : (
+                                                <div className="p-5 text-center text-muted">
+                                                    <p>Bekleyen izin talebiniz yok</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </Card.Body>
+                            </Card>
+                        </Col>
+
+                        {/* Kariyer Geçmişi Timeline */}
+                        <Col lg={6} md={12} xs={12} className="mb-6">
+                            <h6 style={{ fontWeight: 700, fontSize: '16px', marginBottom: '1rem', fontFamily: 'Poppins, sans-serif' }}>Kariyer Geçmişim</h6>
+                            <Card className="border-0 shadow-sm">
+                                <Card.Body className={
+                                        employeeProfile?.work_information &&
+                                        employeeProfile.work_information.length > 0
+                                        ? ""
+                                        : "p-0"
+                                    }>
+                                    {employeeProfile?.work_information && employeeProfile.work_information.length > 0 ? (
+                                        <div style={{ position: 'relative', paddingLeft: '20px' }}>
+                                            {employeeProfile.work_information.map((workInfo: any, index: number) => (
+                                                <div key={workInfo.id} style={{ marginBottom: '20px', position: 'relative' }}>
+                                                    {/* Timeline dot */}
+                                                    <div
+                                                        style={{
+                                                            position: 'absolute',
+                                                            left: '-25px',
+                                                            top: '6px',
+                                                            width: '12px',
+                                                            height: '12px',
+                                                            backgroundColor: '#624bff',
+                                                            borderRadius: '50%',
+                                                            border: '3px solid white',
+                                                            boxShadow: '0 0 0 2px #624bff',
+                                                        }}
+                                                    />
+                                                    
+                                                    {/* Timeline line (sadece son item hariç) */}
+                                                    {index < employeeProfile.work_information.length - 1 && (
+                                                        <div
+                                                            style={{
+                                                                position: 'absolute',
+                                                                left: '-20px',
+                                                                top: '24px',
+                                                                width: '2px',
+                                                                height: '40px',
+                                                                backgroundColor: '#e5e7eb',
+                                                            }}
+                                                        />
+                                                    )}
+
+                                                    {/* Timeline content */}
+                                                    <div>
+                                                        <h6 style={{ marginBottom: '4px', fontWeight: 600, color: '#111827', fontFamily: 'Poppins, sans-serif' }}>
+                                                            {workInfo.job_title}
+                                                        </h6>
+                                                        <p style={{ marginBottom: '4px', fontSize: '13px', color: '#6b7280', fontFamily: 'Poppins, sans-serif' }}>
+                                                            <strong>{workInfo.company_name}</strong> • {workInfo.department_name}
+                                                        </p>
+                                                        <p style={{ marginBottom: '8px', fontSize: '12px', color: '#9ca3af', fontFamily: 'Poppins, sans-serif' }}>
+                                                            {formatDate(workInfo.start_date)} 
+                                                            {workInfo.end_date ? ` → ${formatDate(workInfo.end_date)}` : ' → Devam Ediyor'}
+                                                        </p>
+                                                        {workInfo.manager && (
+                                                            <p style={{ marginBottom: '0', fontSize: '12px', color: '#9ca3af', fontFamily: 'Poppins, sans-serif' }}>
+                                                                👤 Yönetici: {workInfo.manager}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ))}
                                         </div>
                                     ) : (
                                         <div className="p-5 text-center text-muted">
-                                            <p>Henüz izin talebiniz yok</p>
+                                            <p>Kariyer geçmişi bulunamadı</p>
                                         </div>
                                     )}
                                 </Card.Body>
@@ -596,8 +703,10 @@ const Home = () => {
                                         </PieChart>
                                     </ResponsiveContainer>
                                 ) : (
-                                    <div className="text-center text-muted py-5">
-                                        <p>Veri bulunamadı</p>
+                                    <div className="d-flex justify-content-center align-items-center py-5" style={{ minHeight: '300px' }}>
+                                        <Spinner animation="border" role="status" size="sm">
+                                            <span className="visually-hidden">Yükleniyor...</span>
+                                        </Spinner>
                                     </div>
                                 )}
                             </Card.Body>
@@ -622,8 +731,10 @@ const Home = () => {
                                         </BarChart>
                                     </ResponsiveContainer>
                                 ) : (
-                                    <div className="text-center text-muted py-5">
-                                        <p>Veri bulunamadı</p>
+                                    <div className="d-flex justify-content-center align-items-center py-5" style={{ minHeight: '300px' }}>
+                                        <Spinner animation="border" role="status" size="sm">
+                                            <span className="visually-hidden">Yükleniyor...</span>
+                                        </Spinner>
                                     </div>
                                 )}
                             </Card.Body>
@@ -661,8 +772,10 @@ const Home = () => {
                                         </table>
                                     </div>
                                 ) : (
-                                    <div className="text-center text-muted py-5">
-                                        <p>Veri bulunamadı</p>
+                                    <div className="d-flex justify-content-center align-items-center py-5" style={{ minHeight: '300px' }}>
+                                        <Spinner animation="border" role="status" size="sm">
+                                            <span className="visually-hidden">Yükleniyor...</span>
+                                        </Spinner>
                                     </div>
                                 )}
                             </Card.Body>

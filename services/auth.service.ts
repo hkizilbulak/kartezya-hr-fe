@@ -7,6 +7,22 @@ export interface LoginRequest {
   password: string;
 }
 
+export interface ResetPasswordRequest {
+  token: string;
+  email: string;
+  new_password: string;
+}
+
+export interface ValidateResetTokenRequest {
+  token: string;
+  email: string;
+}
+
+export interface ChangePasswordRequest {
+  current_password: string;
+  new_password: string;
+}
+
 export interface LoginResponse {
   success: boolean;
   data: {
@@ -139,5 +155,44 @@ export const authService = {
 
   getToken: (): string | null => {
     return localStorage.getItem('hr_auth_token') || getCookie('hr_auth_token');
+  },
+
+  validateResetToken: async (request: ValidateResetTokenRequest): Promise<{ success: boolean; message: string; data?: any }> => {
+    try {
+      const response = await axiosInstance.post(HR_ENDPOINTS.AUTH.VALIDATE_RESET_TOKEN, request);
+      return response.data;
+    } catch (error: any) {
+      let errorMessage = 'Token doğrulaması başarısız';
+      if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      }
+      throw new Error(errorMessage);
+    }
+  },
+
+  resetPassword: async (request: ResetPasswordRequest): Promise<{ success: boolean; message: string }> => {
+    try {
+      const response = await axiosInstance.post(HR_ENDPOINTS.AUTH.RESET_PASSWORD, request);
+      return response.data;
+    } catch (error: any) {
+      let errorMessage = 'Şifre sıfırlama başarısız';
+      if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      }
+      throw new Error(errorMessage);
+    }
+  },
+
+  changePassword: async (request: ChangePasswordRequest): Promise<{ success: boolean; message: string }> => {
+    try {
+      const response = await axiosInstance.post(HR_ENDPOINTS.AUTH.CHANGE_PASSWORD, request);
+      return response.data;
+    } catch (error: any) {
+      let errorMessage = 'Şifre değiştirme başarısız';
+      if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      }
+      throw new Error(errorMessage);
+    }
   }
 };
