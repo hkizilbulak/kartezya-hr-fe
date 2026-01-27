@@ -229,6 +229,21 @@ const LeaveRequestsPage = () => {
     return `${firstName} ${lastName}`.trim();
   };
 
+  const getHalfDayInfo = (request: LeaveRequest): string => {
+    const isStartFullDay = request.isStartDateFullDay !== false;
+    const isEndFullDay = request.isFinishDateFullDay !== false;
+    
+    if (isStartFullDay && isEndFullDay) {
+      return 'Tam Gün';
+    } else if (!isStartFullDay && !isEndFullDay) {
+      return 'Yarım Gün (İki Taraf)';
+    } else if (!isStartFullDay) {
+      return 'Yarım Gün (Başlangıç)';
+    } else {
+      return 'Yarım Gün (Bitiş)';
+    }
+  };
+
   const handleEdit = (request: LeaveRequest) => {
     setSelectedRequest(request);
     setIsEdit(true);
@@ -359,6 +374,7 @@ const LeaveRequestsPage = () => {
                             <th>Başlangıç Tarihi</th>
                             <th>Bitiş Tarihi</th>
                             <th>Kullanılan Gün</th>
+                            <th>Yarım/Tam Gün</th>
                             <th>Durum</th>
                             <th>İşlemler</th>
                           </tr>
@@ -382,6 +398,7 @@ const LeaveRequestsPage = () => {
                                   <td>{formatDate(startDate)}</td>
                                   <td>{formatDate(endDate)}</td>
                                   <td>{requestedDays || '-'}</td>
+                                  <td>{getHalfDayInfo(request)}</td>
                                   <td>{getStatusBadge(request.status)}</td>
                                   <td>
                                     <div className="d-flex gap-2">
@@ -435,7 +452,7 @@ const LeaveRequestsPage = () => {
                           ) : (
                             !isLoading && (
                               <tr>
-                                <td colSpan={9} className="text-center py-4">
+                                <td colSpan={10} className="text-center py-4">
                                   Veri bulunamadı
                                 </td>
                               </tr>

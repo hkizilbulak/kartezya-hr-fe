@@ -43,6 +43,8 @@ export interface LeaveRequest {
   leave_type_id: number;
   start_date: string;
   end_date: string;
+  is_start_date_full_day?: boolean;
+  is_finish_date_full_day?: boolean;
   requested_days: number;
   remaining_days?: number; // Leave balance remaining days (only for annual leave)
   reason?: string;
@@ -75,6 +77,8 @@ export interface LeaveRequest {
   cancelledAt?: string;
   createdAt?: string;
   updatedAt?: string;
+  isStartDateFullDay?: boolean;
+  isFinishDateFullDay?: boolean;
 }
 
 export interface LeaveType {
@@ -132,7 +136,7 @@ export interface Employee {
   date_of_birth?: string;
   hire_date: string;
   leave_date?: string;
-  total_experience?: number;
+  total_gap?: number;
   marital_status?: string;
   emergency_contact?: string;
   emergency_contact_name?: string;

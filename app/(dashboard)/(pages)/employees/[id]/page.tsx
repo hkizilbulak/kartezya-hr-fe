@@ -176,8 +176,8 @@ const EmployeeDetailPage = () => {
     }
   };
 
-  const calculateExperienceFromProfessionStartDate = (startDate: string | undefined | null): number => {
-    if (!startDate) return 0;
+  const calculateExperienceFromProfessionStartDate = (startDate: string | undefined | null, totalGap: number = 0): string => {
+    if (!startDate) return '-';
     
     try {
       const start = new Date(startDate);
@@ -196,24 +196,49 @@ const EmployeeDetailPage = () => {
         months += 12;
       }
       
-      // If months >= 6, add 0.5 to years
-      if (months >= 6) {
-        return years + 0.5;
+      // Subtract total_gap (in years) from the calculated experience
+      const gapYears = Math.floor(totalGap);
+      const gapMonths = Math.round((totalGap - gapYears) * 12);
+      
+      years -= gapYears;
+      months -= gapMonths;
+      
+      // Adjust if months is negative
+      if (months < 0) {
+        years--;
+        months += 12;
       }
       
-      return years;
+      // Ensure years is not negative
+      if (years < 0) {
+        return '-';
+      }
+      
+      // Format as "X yıl Y ay"
+      if (years === 0 && months === 0) {
+        return '-';
+      } else if (years === 0) {
+        return `${months} ay`;
+      } else if (months === 0) {
+        return `${years} yıl`;
+      } else {
+        return `${years} yıl ${months} ay`;
+      }
     } catch (error) {
-      return 0;
+      return '-';
     }
   };
 
   const getDisplayExperience = (): string => {
-    // If total_experience is 0 or not set, calculate from profession_start_date
-    if (!employee?.total_experience || employee.total_experience === 0) {
-      const calculated = calculateExperienceFromProfessionStartDate((employee as any)?.profession_start_date);
-      return calculated > 0 ? `${calculated} yıl` : '-';
+    // Calculate from profession_start_date with total_gap subtraction
+    const totalGap = (employee as any)?.total_gap || 0;
+    const professionStartDate = (employee as any)?.profession_start_date;
+    
+    if (professionStartDate) {
+      return calculateExperienceFromProfessionStartDate(professionStartDate, totalGap);
     }
-    return `${employee.total_experience} yıl`;
+    
+    return '-';
   };
 
   return (

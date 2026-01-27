@@ -17,7 +17,7 @@ const validationSchema = Yup.object().shape({
   last_name: Yup.string().required('Soyadı zorunludur'),
   email: Yup.string(),
   company_email: Yup.string(),
-  phone: Yup.string(),
+  phone: Yup.string().required('Telefon No zorunludur'),
   address: Yup.string(),
   state: Yup.string(),
   city: Yup.string(),
@@ -25,7 +25,6 @@ const validationSchema = Yup.object().shape({
   date_of_birth: Yup.string(),
   hire_date: Yup.string(),
   profession_start_date: Yup.string(),
-  total_experience: Yup.number(),
   marital_status: Yup.string(),
   emergency_contact: Yup.string(),
   emergency_contact_name: Yup.string(),
@@ -68,34 +67,6 @@ const Profile = () => {
     return dateStr.split('T')[0];
   };
 
-  const calculateExperienceFromProfessionStartDate = (startDate: string): number => {
-    if (!startDate) return 0;
-    
-    try {
-      const start = new Date(startDate);
-      const today = new Date();
-      
-      let years = today.getFullYear() - start.getFullYear();
-      let months = today.getMonth() - start.getMonth();
-      
-      // Eğer gün açısından ileri gitmediysek ayı azalt
-      if (today.getDate() < start.getDate()) {
-        months--;
-      }
-      
-      // Eğer ay negatifse düzelt
-      if (months < 0) {
-        years--;
-        months += 12;
-      }
-      
-      // Return numeric value (years + months/12 for decimal precision)
-      return months >= 6 ? years + 0.5 : years;
-    } catch (error) {
-      return 0;
-    }
-  };
-
   const handleSubmit = async (values: any, { setSubmitting }: any) => {
     try {
       setError(null);
@@ -114,7 +85,6 @@ const Profile = () => {
         gender: values.gender || '',
         date_of_birth: values.date_of_birth ? new Date(values.date_of_birth).toISOString() : '',
         profession_start_date: values.profession_start_date ? new Date(values.profession_start_date).toISOString() : '',
-        total_experience: values.total_experience || 0,
         marital_status: values.marital_status || '',
         emergency_contact: values.emergency_contact || '',
         emergency_contact_name: values.emergency_contact_name || '',
@@ -178,9 +148,6 @@ const Profile = () => {
     date_of_birth: formatDateForInput(employee.date_of_birth),
     hire_date: formatDateForInput(employee.hire_date),
     profession_start_date: formatDateForInput((employee as any).profession_start_date),
-    total_experience: typeof employee.total_experience === 'string' 
-      ? parseFloat(employee.total_experience) || 0
-      : (employee.total_experience || 0),
     marital_status: employee.marital_status || '',
     emergency_contact: employee.emergency_contact || '',
     emergency_contact_name: employee.emergency_contact_name || '',
@@ -290,18 +257,7 @@ const Profile = () => {
                       validationSchema={validationSchema}
                       onSubmit={handleSubmit}
                     >
-                      {({ isSubmitting: formIsSubmitting, values, setFieldValue }) => {
-                        // Calculate experience whenever profession_start_date changes
-                        useEffect(() => {
-                          if (values.profession_start_date) {
-                            const calculatedExperience = calculateExperienceFromProfessionStartDate(values.profession_start_date);
-                            if (calculatedExperience !== values.total_experience) {
-                              setFieldValue('total_experience', calculatedExperience);
-                            }
-                          }
-                        }, [values.profession_start_date, setFieldValue]);
-
-                        return (
+                      {({ isSubmitting: formIsSubmitting, values }) => (
                         <FormikForm>
                           {/* Name Section */}
                           <Row className="mb-4">
@@ -355,6 +311,8 @@ const Profile = () => {
                               label="Telefon No"
                               name="phone"
                               type="tel"
+                              mask="(999) 999 9999"
+                              maskChar=""
                             />
                             <FormSelectField
                               as={Col}
@@ -433,7 +391,7 @@ const Profile = () => {
                           <Row className="mb-4">
                           <FormTextField
                               as={Col}
-                              md={4}
+                              md={6}
                               controlId="hire_date"
                               label="İşe Giriş Tarihi"
                               name="hire_date"
@@ -442,21 +400,14 @@ const Profile = () => {
                             />
                             <FormTextField
                               as={Col}
-                              md={4}
+                              md={6}
                               controlId="profession_start_date"
                               label="Meslek Başlangıç Tarihi"
                               name="profession_start_date"
                               type="date"
                             />
-                            <FormTextField
-                              as={Col}
-                              md={4}
-                              controlId="total_experience"
-                              label="Toplam Deneyim (Yıl)"
-                              name="total_experience"
-                              type="number"
-                            />
                           </Row>
+
                           <Row className="mb-4">
                             <FormTextField
                               as={Col}
@@ -521,6 +472,8 @@ const Profile = () => {
                               label="Telefon No"
                               name="emergency_contact"
                               type="tel"
+                              mask="(999) 999 9999"
+                              maskChar=""
                             />
                             <FormSelectField
                               as={Col}
@@ -551,7 +504,7 @@ const Profile = () => {
                             </Col>
                           </Row>
                         </FormikForm>
-                      )}}
+                      )}
                     </Formik>
                   </div>
                 </Card.Body>

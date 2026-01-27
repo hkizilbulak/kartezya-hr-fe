@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form, Row, Col } from 'react-bootstrap';
+import InputMask from 'react-input-mask';
 import { Employee } from '@/models/hr/common.types';
 import { UserRole } from '@/models/enums/hr.enum';
 import { employeeService, lookupService } from '@/services';
@@ -30,7 +31,7 @@ interface FormData {
   date_of_birth: string;
   hire_date: string;
   leave_date: string;
-  total_experience: number | string;
+  total_gap: number | string;
   marital_status: string;
   emergency_contact: string;
   emergency_contact_name: string;
@@ -67,7 +68,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
     date_of_birth: '',
     hire_date: '',
     leave_date: '',
-    total_experience: '',
+    total_gap: '',
     marital_status: '',
     emergency_contact: '',
     emergency_contact_name: '',
@@ -109,18 +110,6 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
 
   useEffect(() => {
     if (isEdit && employee) {
-      // Calculate experience if it's 0 or empty
-      let experienceValue = employee.total_experience?.toString() || '';
-      
-      if (!experienceValue || employee.total_experience === 0) {
-        // Calculate from profession_start_date if available
-        const professionStartDate = (employee as any).profession_start_date;
-        if (professionStartDate) {
-          const calculated = calculateExperienceFromProfessionStartDate(professionStartDate);
-          experienceValue = calculated.toString();
-        }
-      }
-
       // Normalize gender value to match options
       const normalizedGender = employee.gender ? employee.gender.trim().toUpperCase() : '';
       
@@ -143,7 +132,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
         date_of_birth: employee.date_of_birth ? employee.date_of_birth.split('T')[0] : '',
         hire_date: employee.hire_date ? employee.hire_date.split('T')[0] : '',
         leave_date: employee.leave_date ? employee.leave_date.split('T')[0] : '',
-        total_experience: experienceValue,
+        total_gap: employee.total_gap || 0,
         marital_status: normalizedMaritalStatus,
         emergency_contact: (employee.emergency_contact || '').trim(),
         emergency_contact_name: (employee.emergency_contact_name || '').trim(),
@@ -173,7 +162,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
         date_of_birth: '',
         hire_date: '',
         leave_date: '',
-        total_experience: '',
+        total_gap: '',
         marital_status: '',
         emergency_contact: '',
         emergency_contact_name: '',
@@ -195,6 +184,23 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+
+    if (fieldErrors[name]) {
+      setFieldErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
+    }
+  };
+
+  const handleProfessionStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    const calculatedExperience = calculateExperienceFromProfessionStartDate(value);
+    
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -232,24 +238,6 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
     return parseFloat((years + months / 12).toFixed(2));
   };
 
-  const handleProfessionStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    const calculatedExperience = calculateExperienceFromProfessionStartDate(value);
-    
-    setFormData(prev => ({
-      ...prev,
-      [name]: value,
-      total_experience: calculatedExperience.toString()
-    }));
-
-    if (fieldErrors[name]) {
-      setFieldErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }));
-    }
-  };
-
   const handleRoleChange = (role: string) => {
     setFormData(prev => {
       const roles = prev.roles.includes(role)
@@ -273,9 +261,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
     } else if (!formData.company_email.includes('@')) {
       errors.company_email = 'Geçerli bir şirket e-posta giriniz';
     }
-    if (!formData.email.trim()) {
-      errors.email = 'E-posta zorunludur';
-    } else if (!formData.email.includes('@')) {
+    if (formData.email.trim() && !formData.email.includes('@')) {
       errors.email = 'Geçerli bir e-posta giriniz';
     }
     if (!formData.phone.trim()) {
@@ -283,6 +269,9 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
     }
     if (!formData.hire_date) {
       errors.hire_date = 'İşe başlama tarihi zorunludur';
+    }
+    if (!formData.profession_start_date) {
+      errors.profession_start_date = 'Meslek başlama tarihi zorunludur';
     }
     if (formData.roles.length === 0) {
       errors.roles = 'En az bir rol seçiniz';
@@ -315,7 +304,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
         date_of_birth: formData.date_of_birth || undefined,
         hire_date: formData.hire_date,
         leave_date: formData.leave_date || undefined,
-        total_experience: parseFloat(formData.total_experience as string),
+        total_gap: parseFloat(formData.total_gap as string),
         marital_status: formData.marital_status || undefined,
         emergency_contact: formData.emergency_contact.trim(),
         emergency_contact_name: formData.emergency_contact_name.trim(),
@@ -463,14 +452,21 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
               <Col md={6}>
                 <Form.Group>
                   <Form.Label>Telefon <span className="text-danger">*</span></Form.Label>
-                  <Form.Control
-                    type="tel"
-                    name="phone"
+                  <InputMask
+                    mask="(999) 999 9999"
                     value={formData.phone}
                     onChange={handleInputChange}
-                    placeholder="0555 000 0000"
-                    isInvalid={!!fieldErrors.phone}
-                  />
+                  >
+                    {(inputProps: any) => (
+                      <Form.Control
+                        {...inputProps}
+                        type="tel"
+                        name="phone"
+                        placeholder="(123) 111 1111"
+                        isInvalid={!!fieldErrors.phone}
+                      />
+                    )}
+                  </InputMask>
                   {fieldErrors.phone && (
                     <div className="text-danger mt-1" style={{ fontSize: '0.875rem' }}>
                       {fieldErrors.phone}
@@ -651,13 +647,48 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
                 </Form.Group>
               </Col>
               <Col md={6}>
+              <Form.Group>
+                  <Form.Label>İşten Ayrılma Tarihi</Form.Label>
+                  <Form.Control
+                    type="date"
+                    name="leave_date"
+                    value={formData.leave_date}
+                    onChange={handleInputChange}
+                  />
+                </Form.Group>
+              </Col>
+            </Row>
+
+            <Row className="mb-3">
+              <Col md={6}>
                 <Form.Group>
-                  <Form.Label>Meslek Başlama Tarihi</Form.Label>
+                  <Form.Label>Meslek Başlama Tarihi <span className="text-danger">*</span></Form.Label>
                   <Form.Control
                     type="date"
                     name="profession_start_date"
                     value={formData.profession_start_date}
                     onChange={handleProfessionStartDateChange}
+                    isInvalid={!!fieldErrors.profession_start_date}
+                  />
+                  {fieldErrors.profession_start_date && (
+                    <div className="text-danger mt-1" style={{ fontSize: '0.875rem' }}>
+                      {fieldErrors.profession_start_date}
+                    </div>
+                  )}
+                </Form.Group>
+              </Col>
+            </Row>
+
+            <Row className="mb-3">
+              <Col md={6}>
+                <Form.Group>
+                  <Form.Label>Toplam Boşluk (Yıl)</Form.Label>
+                  <Form.Control
+                    type="number"
+                    name="total_gap"
+                    value={formData.total_gap}
+                    onChange={handleInputChange}
+                    placeholder="0"
                   />
                 </Form.Group>
               </Col>
@@ -673,32 +704,6 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
                     value={formData.contract_no}
                     onChange={handleInputChange}
                     placeholder="Sözleşme numarasını giriniz"
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group>
-                  <Form.Label>İşten Ayrılma Tarihi</Form.Label>
-                  <Form.Control
-                    type="date"
-                    name="leave_date"
-                    value={formData.leave_date}
-                    onChange={handleInputChange}
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
-
-            <Row className="mb-3">
-              <Col md={6}>
-                <Form.Group>
-                  <Form.Label>Toplam Deneyim (Yıl)</Form.Label>
-                  <Form.Control
-                    type="number"
-                    name="total_experience"
-                    value={formData.total_experience}
-                    onChange={handleInputChange}
-                    placeholder="0"
                   />
                 </Form.Group>
               </Col>
@@ -773,13 +778,20 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
               <Col md={4}>
                 <Form.Group>
                   <Form.Label>Telefon</Form.Label>
-                  <Form.Control
-                    type="tel"
-                    name="emergency_contact"
+                  <InputMask
+                    mask="(999) 999 9999"
                     value={formData.emergency_contact}
                     onChange={handleInputChange}
-                    placeholder="Telefon giriniz"
-                  />
+                  >
+                    {(inputProps: any) => (
+                      <Form.Control
+                        {...inputProps}
+                        type="tel"
+                        name="emergency_contact"
+                        placeholder="(123) 111 1111"
+                      />
+                    )}
+                  </InputMask>
                 </Form.Group>
               </Col>
               <Col md={4}>

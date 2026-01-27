@@ -29,12 +29,15 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
     leaveTypeId: '',
     startDate: '',
     endDate: '',
+    isStartDateFullDay: true,
+    isFinishDateFullDay: true,
     reason: ''
   });
   const [leaveTypes, setLeaveTypes] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<{[key: string]: string}>({});
   const [calculatedDays, setCalculatedDays] = useState(0);
+  const [generalError, setGeneralError] = useState<string>('');
 
   useEffect(() => {
     if (show) {
@@ -44,7 +47,6 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
 
   useEffect(() => {
     if (isEdit && leaveRequest && leaveTypes.length > 0) {
-      // Edit modunda form'u doldur
       const leaveTypeId = (leaveRequest.leave_type_id || leaveRequest.leaveTypeId || leaveRequest.leave_type?.id)?.toString() || '';
       
       const startDate = (leaveRequest.start_date || leaveRequest.startDate)?.split('T')[0] || '';
@@ -54,10 +56,11 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
         leaveTypeId: leaveTypeId,
         startDate: startDate,
         endDate: endDate,
+        isStartDateFullDay: leaveRequest.is_start_date_full_day !== undefined ? leaveRequest.is_start_date_full_day : (leaveRequest.isStartDateFullDay ?? true),
+        isFinishDateFullDay: leaveRequest.is_finish_date_full_day !== undefined ? leaveRequest.is_finish_date_full_day : (leaveRequest.isFinishDateFullDay ?? true),
         reason: leaveRequest.reason || ''
       });
     } else if (!isEdit) {
-      // Create modunda form'u sıfırla ve günün tarihini set et
       const today = new Date();
       const todayString = today.toISOString().split('T')[0];
       
@@ -65,10 +68,11 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
         leaveTypeId: '',
         startDate: todayString,
         endDate: todayString,
+        isStartDateFullDay: true,
+        isFinishDateFullDay: true,
         reason: ''
       });
       
-      // Calculate working days for today dynamically
       const calculateTodayDays = async () => {
         try {
           const response = await leaveRequestService.calculateWorkingDays(
@@ -79,7 +83,6 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
             setCalculatedDays(response.data.working_days);
           }
         } catch (error) {
-          // Fallback to client-side calculation if backend fails
           setCalculatedDays(1);
         }
       };
@@ -89,20 +92,20 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
     setFieldErrors({});
   }, [show, leaveRequest, isEdit, leaveTypes]);
 
-  // Gün sayısını hesapla
   useEffect(() => {
     if (formData.startDate && formData.endDate) {
       const calculateDays = async () => {
         try {
           const response = await leaveRequestService.calculateWorkingDays(
             formData.startDate + 'T00:00:00Z',
-            formData.endDate + 'T00:00:00Z'
+            formData.endDate + 'T00:00:00Z',
+            formData.isStartDateFullDay,
+            formData.isFinishDateFullDay
           );
           if (response.data && response.data.working_days !== undefined) {
             setCalculatedDays(response.data.working_days);
           }
         } catch (error) {
-          // Fallback to client-side calculation if backend fails
           const startDate = new Date(formData.startDate);
           const endDate = new Date(formData.endDate);
           
@@ -116,7 +119,7 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
       
       calculateDays();
     }
-  }, [formData.startDate, formData.endDate]);
+  }, [formData.startDate, formData.endDate, formData.isStartDateFullDay, formData.isFinishDateFullDay]);
 
   const fetchLeaveTypes = async () => {
     try {
@@ -130,14 +133,17 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
+    const { name, value, type } = e.target as HTMLInputElement;
     
-    // Tarih aralığı doğrulaması
-    if (name === 'startDate' && formData.endDate) {
+    if (type === 'checkbox') {
+      setFormData(prev => ({
+        ...prev,
+        [name]: (e.target as HTMLInputElement).checked
+      }));
+    } else if (name === 'startDate' && formData.endDate) {
       const startDate = new Date(value);
       const endDate = new Date(formData.endDate);
       
-      // Eğer başlangıç tarihi bitiş tarihinden sonraysa, bitiş tarihini başlangıç tarihine eşitle
       if (startDate > endDate) {
         setFormData(prev => ({
           ...prev,
@@ -154,12 +160,11 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
       const startDate = new Date(formData.startDate);
       const endDate = new Date(value);
       
-      // Eğer bitiş tarihi başlangıç tarihinden önceyse, başlangıç tarihini bitiş tarihine eşitle
       if (endDate < startDate) {
         setFormData(prev => ({
           ...prev,
           startDate: value,
-          [name]: value
+          endDate: value
         }));
       } else {
         setFormData(prev => ({
@@ -216,10 +221,9 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
     }
 
     setLoading(true);
+    setGeneralError('');
 
     try {
-
-      // Parse dates as UTC to avoid timezone issues
       const [startYear, startMonth, startDay] = formData.startDate.split('-');
       const startDate = new Date(Date.UTC(parseInt(startYear), parseInt(startMonth) - 1, parseInt(startDay)));
       
@@ -230,6 +234,8 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
         leave_type_id: parseInt(formData.leaveTypeId),
         start_date: startDate.toISOString(),
         end_date: endDate.toISOString(),
+        is_start_date_full_day: formData.isStartDateFullDay,
+        is_finish_date_full_day: formData.isFinishDateFullDay,
         reason: formData.reason.trim() || undefined,
       };
 
@@ -258,6 +264,8 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
       }
 
       const translatedError = translateErrorMessage(errorMessage);
+      
+      // Tüm hataları toast olarak göster
       toast.error(translatedError);
     } finally {
       setLoading(false);
@@ -315,6 +323,15 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
                       {fieldErrors.startDate}
                     </div>
                   )}
+                  <Form.Check
+                    type="checkbox"
+                    id="isStartDateFullDay"
+                    name="isStartDateFullDay"
+                    label="Tam gün"
+                    checked={formData.isStartDateFullDay}
+                    onChange={handleInputChange}
+                    className="mt-2"
+                  />
                 </Form.Group>
               </Col>
 
@@ -333,6 +350,15 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
                       {fieldErrors.endDate}
                     </div>
                   )}
+                  <Form.Check
+                    type="checkbox"
+                    id="isFinishDateFullDay"
+                    name="isFinishDateFullDay"
+                    label="Tam gün"
+                    checked={formData.isFinishDateFullDay}
+                    onChange={handleInputChange}
+                    className="mt-2"
+                  />
                 </Form.Group>
               </Col>
             </Row>

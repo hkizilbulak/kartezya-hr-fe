@@ -59,11 +59,18 @@ class LeaveRequestService extends BaseService<LeaveRequest> {
   }
   
   // Calculate working days between two dates
-  async calculateWorkingDays(startDate: string, endDate: string): Promise<APIResponse<{ working_days: number; calendar_days: number; start_date: string; end_date: string }>> {
+  async calculateWorkingDays(
+    startDate: string, 
+    endDate: string, 
+    isStartDateFullDay: boolean = true,
+    isFinishDateFullDay: boolean = true
+  ): Promise<APIResponse<{ working_days: number; calendar_days: number; start_date: string; end_date: string }>> {
     try {
       const response = await axiosInstance.post(`${HR_ENDPOINTS.LEAVE.BASE}/calculate-working-days`, {
         start_date: startDate,
         end_date: endDate,
+        is_start_date_full_day: isStartDateFullDay,
+        is_finish_date_full_day: isFinishDateFullDay,
       });
       return response.data;
     } catch (error) {

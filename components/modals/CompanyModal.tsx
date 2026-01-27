@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form } from 'react-bootstrap';
+import InputMask from 'react-input-mask';
 import { Company } from '@/models/hr/common.types';
 import { companyService } from '@/services';
 import { translateErrorMessage, getFieldErrorMessage } from '@/helpers/ErrorUtils';
@@ -178,14 +179,21 @@ const CompanyModal: React.FC<CompanyModalProps> = ({
 
             <Form.Group className="mb-3">
               <Form.Label>Telefon</Form.Label>
-              <Form.Control
-                type="text"
-                name="phone"
+              <InputMask
+                mask="(999) 999 9999"
                 value={formData.phone}
                 onChange={handleInputChange}
-                placeholder="Telefon numarasını giriniz"
-                isInvalid={!!fieldErrors.phone}
-              />
+              >
+                {(inputProps: any) => (
+                  <Form.Control
+                    {...inputProps}
+                    type="tel"
+                    name="phone"
+                    placeholder="(123) 111 1111"
+                    isInvalid={!!fieldErrors.phone}
+                  />
+                )}
+              </InputMask>
               {fieldErrors.phone && (
                 <div className="text-danger mt-1" style={{ fontSize: '0.875rem' }}>
                   {fieldErrors.phone}

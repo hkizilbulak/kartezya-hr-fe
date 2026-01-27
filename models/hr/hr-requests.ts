@@ -79,6 +79,8 @@ export interface CreateLeaveRequestRequest {
   leaveTypeId: number;
   startDate: string;
   endDate: string;
+  isStartDateFullDay?: boolean;
+  isFinishDateFullDay?: boolean;
   reason?: string;
 }
 

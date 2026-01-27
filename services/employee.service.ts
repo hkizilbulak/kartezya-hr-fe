@@ -16,7 +16,7 @@ interface CreateEmployeeRequest {
   date_of_birth?: string;
   hire_date: string;
   leave_date?: string;
-  total_experience?: number;
+  total_gap?: number;
   marital_status?: string;
   emergency_contact?: string;
   emergency_contact_name?: string;
@@ -46,7 +46,7 @@ interface UpdateEmployeeRequest {
   date_of_birth?: string;
   hire_date?: string;
   leave_date?: string;
-  total_experience?: number;
+  total_gap?: number;
   marital_status?: string;
   emergency_contact?: string;
   emergency_contact_name?: string;
@@ -72,7 +72,6 @@ interface UpdateMyProfileRequest {
   gender?: string;
   date_of_birth?: string;
   profession_start_date?: string;
-  total_experience?: number;
   marital_status?: string;
   emergency_contact?: string;
   emergency_contact_name?: string;

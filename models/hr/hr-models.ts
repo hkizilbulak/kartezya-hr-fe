@@ -94,6 +94,8 @@ export interface LeaveRequest {
   leaveType?: LeaveType;
   startDate: string;
   endDate: string;
+  isStartDateFullDay?: boolean;
+  isFinishDateFullDay?: boolean;
   days: number;
   reason?: string;
   status: string; // PENDING, APPROVED, REJECTED, CANCELLED

@@ -296,7 +296,7 @@ const Home = () => {
                             </Card>
                         </Col>
                     </Row>
-                    
+
                     {/* Statistik Kartları */}
                     <Row className="mb-4">
                         {/* İzin Bakiyesi */}
@@ -323,7 +323,7 @@ const Home = () => {
                                                 <h1 className="fw-bold">{leaveBalance.remaining_days || 0}</h1>
                                                 <p className="mb-0">
                                                     <span className="text-success me-2">
-                                                        <i className="fe fe-check-circle me-1"></i>
+                                                        <i className="fe fe-calendar me-1"></i>
                                                     </span>
                                                     Kalan gün
                                                 </p>
@@ -362,9 +362,9 @@ const Home = () => {
                                                 </h1>
                                                 <p className="mb-0">
                                                     <span className="text-warning me-2">
-                                                        <i className="fe fe-alert-circle me-1"></i>
+                                                        <i className="fe fe-clock me-1"></i>
                                                     </span>
-                                                    Beklemede olan
+                                                    Onay bekleyen talepler
                                                 </p>
                                             </>
                                         )}
@@ -454,7 +454,7 @@ const Home = () => {
                             <div className="d-flex justify-content-between align-items-center mb-3">
                                 <h6 style={{ fontWeight: 700, fontSize: '16px', margin: 0 }}>Bekleyen İzin Taleplerim</h6>
                                 <a href="/my-requests/leave" className="text-decoration-none" style={{ fontSize: '14px', fontWeight: 500 }}>
-                                    Tüm İzin Taleplerim →
+                                    Tümü →
                                 </a>
                             </div>
                             <Card className="border-0 shadow-sm">
