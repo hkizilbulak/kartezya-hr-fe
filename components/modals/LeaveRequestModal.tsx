@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Button, Form, Row, Col, Alert } from 'react-bootstrap';
+import { Modal, Form, Alert, Button, Row, Col } from 'react-bootstrap';
 import { LeaveRequest } from '@/models/hr/common.types';
 import { leaveRequestService } from '@/services/leave-request.service';
 import { lookupService } from '@/services/lookup.service';
@@ -7,6 +7,7 @@ import { translateErrorMessage } from '@/helpers/ErrorUtils';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'react-toastify';
 import LoadingOverlay from '@/components/LoadingOverlay';
+import FormDateField from '@/components/FormDateField';
 
 interface LeaveRequestModalProps {
   show: boolean;
@@ -49,25 +50,25 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
     if (isEdit && leaveRequest && leaveTypes.length > 0) {
       const leaveTypeId = (leaveRequest.leave_type_id || leaveRequest.leaveTypeId || leaveRequest.leave_type?.id)?.toString() || '';
       
-      const startDate = (leaveRequest.start_date || leaveRequest.startDate)?.split('T')[0] || '';
-      const endDate = (leaveRequest.end_date || leaveRequest.endDate)?.split('T')[0] || '';
+      const startDateStr = (leaveRequest.start_date || leaveRequest.startDate)?.split('T')[0] || '';
+      const endDateStr = (leaveRequest.end_date || leaveRequest.endDate)?.split('T')[0] || '';
       
       setFormData({
         leaveTypeId: leaveTypeId,
-        startDate: startDate,
-        endDate: endDate,
+        startDate: startDateStr,
+        endDate: endDateStr,
         isStartDateFullDay: leaveRequest.is_start_date_full_day !== undefined ? leaveRequest.is_start_date_full_day : (leaveRequest.isStartDateFullDay ?? true),
         isFinishDateFullDay: leaveRequest.is_finish_date_full_day !== undefined ? leaveRequest.is_finish_date_full_day : (leaveRequest.isFinishDateFullDay ?? true),
         reason: leaveRequest.reason || ''
       });
     } else if (!isEdit) {
       const today = new Date();
-      const todayString = today.toISOString().split('T')[0];
+      const todayStr = today.toISOString().split('T')[0];
       
       setFormData({
         leaveTypeId: '',
-        startDate: todayString,
-        endDate: todayString,
+        startDate: todayStr,
+        endDate: todayStr,
         isStartDateFullDay: true,
         isFinishDateFullDay: true,
         reason: ''
@@ -76,8 +77,8 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
       const calculateTodayDays = async () => {
         try {
           const response = await leaveRequestService.calculateWorkingDays(
-            todayString + 'T00:00:00Z',
-            todayString + 'T00:00:00Z'
+            today.toISOString(),
+            today.toISOString()
           );
           if (response.data && response.data.working_days !== undefined) {
             setCalculatedDays(response.data.working_days);
@@ -96,9 +97,12 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
     if (formData.startDate && formData.endDate) {
       const calculateDays = async () => {
         try {
+          const startDate = new Date(formData.startDate);
+          const endDate = new Date(formData.endDate);
+          
           const response = await leaveRequestService.calculateWorkingDays(
-            formData.startDate + 'T00:00:00Z',
-            formData.endDate + 'T00:00:00Z',
+            startDate.toISOString(),
+            endDate.toISOString(),
             formData.isStartDateFullDay,
             formData.isFinishDateFullDay
           );
@@ -106,13 +110,15 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
             setCalculatedDays(response.data.working_days);
           }
         } catch (error) {
-          const startDate = new Date(formData.startDate);
-          const endDate = new Date(formData.endDate);
-          
-          if (startDate <= endDate) {
-            const timeDiff = endDate.getTime() - startDate.getTime();
-            const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
-            setCalculatedDays(daysDiff);
+          if (formData.startDate && formData.endDate) {
+            const startDate = new Date(formData.startDate);
+            const endDate = new Date(formData.endDate);
+            
+            if (startDate <= endDate) {
+              const timeDiff = endDate.getTime() - startDate.getTime();
+              const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
+              setCalculatedDays(daysDiff);
+            }
           }
         }
       };
@@ -140,38 +146,6 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
         ...prev,
         [name]: (e.target as HTMLInputElement).checked
       }));
-    } else if (name === 'startDate' && formData.endDate) {
-      const startDate = new Date(value);
-      const endDate = new Date(formData.endDate);
-      
-      if (startDate > endDate) {
-        setFormData(prev => ({
-          ...prev,
-          [name]: value,
-          endDate: value
-        }));
-      } else {
-        setFormData(prev => ({
-          ...prev,
-          [name]: value
-        }));
-      }
-    } else if (name === 'endDate' && formData.startDate) {
-      const startDate = new Date(formData.startDate);
-      const endDate = new Date(value);
-      
-      if (endDate < startDate) {
-        setFormData(prev => ({
-          ...prev,
-          startDate: value,
-          endDate: value
-        }));
-      } else {
-        setFormData(prev => ({
-          ...prev,
-          [name]: value
-        }));
-      }
     } else {
       setFormData(prev => ({
         ...prev,
@@ -193,10 +167,10 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
     if (!formData.leaveTypeId.trim()) {
       errors['leaveTypeId'] = 'İzin türü seçiniz';
     }
-    if (!formData.startDate.trim()) {
+    if (!formData.startDate) {
       errors['startDate'] = 'Başlangıç tarihi seçiniz';
     }
-    if (!formData.endDate.trim()) {
+    if (!formData.endDate) {
       errors['endDate'] = 'Bitiş tarihi seçiniz';
     }
 
@@ -224,11 +198,8 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
     setGeneralError('');
 
     try {
-      const [startYear, startMonth, startDay] = formData.startDate.split('-');
-      const startDate = new Date(Date.UTC(parseInt(startYear), parseInt(startMonth) - 1, parseInt(startDay)));
-      
-      const [endYear, endMonth, endDay] = formData.endDate.split('-');
-      const endDate = new Date(Date.UTC(parseInt(endYear), parseInt(endMonth) - 1, parseInt(endDay)));
+      const startDate = new Date(formData.startDate);
+      const endDate = new Date(formData.endDate);
 
       const submitData = {
         leave_type_id: parseInt(formData.leaveTypeId),
@@ -264,8 +235,6 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
       }
 
       const translatedError = translateErrorMessage(errorMessage);
-      
-      // Tüm hataları toast olarak göster
       toast.error(translatedError);
     } finally {
       setLoading(false);
@@ -273,24 +242,38 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
   };
 
   return (
-    <Modal show={show} onHide={onHide} size="lg">
+    <Modal show={show} onHide={onHide} size="lg" centered>
       <div className="position-relative">
         <LoadingOverlay show={loading} message="Kaydediliyor..." />
 
         <Modal.Header closeButton>
-          <Modal.Title>
+          <Modal.Title className="fw-600">
             {isEdit ? 'İzin Talebini Düzenle' : 'Yeni İzin Talebi'}
           </Modal.Title>
         </Modal.Header>
 
         <Form onSubmit={handleSubmit}>
-          <Modal.Body>
+          <Modal.Body className="pt-3">
+            {/* Leave Type */}
             <Form.Group className="mb-3">
-              <Form.Label>İzin Türü <span className="text-danger">*</span></Form.Label>
+              <Form.Label>
+                İzin Türü <span className="text-danger">*</span>
+              </Form.Label>
               <Form.Select
                 name="leaveTypeId"
                 value={formData.leaveTypeId}
-                onChange={handleInputChange}
+                onChange={(e: any) => {
+                  setFormData(prev => ({
+                    ...prev,
+                    leaveTypeId: e.target.value
+                  }));
+                  if (fieldErrors.leaveTypeId) {
+                    setFieldErrors(prev => ({
+                      ...prev,
+                      leaveTypeId: ''
+                    }));
+                  }
+                }}
                 isInvalid={!!fieldErrors.leaveTypeId}
               >
                 <option value="">İzin türü seçiniz</option>
@@ -310,26 +293,21 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
             <Row>
               <Col md={6}>
                 <Form.Group className="mb-3">
-                  <Form.Label>Başlangıç Tarihi <span className="text-danger">*</span></Form.Label>
-                  <Form.Control
-                    type="date"
+                  <FormDateField
+                    label="Başlangıç Tarihi"
                     name="startDate"
                     value={formData.startDate}
                     onChange={handleInputChange}
                     isInvalid={!!fieldErrors.startDate}
+                    errorMessage={fieldErrors.startDate}
                   />
-                  {fieldErrors.startDate && (
-                    <div className="text-danger mt-1" style={{ fontSize: '0.875rem' }}>
-                      {fieldErrors.startDate}
-                    </div>
-                  )}
                   <Form.Check
                     type="checkbox"
-                    id="isStartDateFullDay"
                     name="isStartDateFullDay"
+                    id="isStartDateFullDay"
                     label="Tam gün"
                     checked={formData.isStartDateFullDay}
-                    onChange={handleInputChange}
+                    onChange={(e) => setFormData(prev => ({ ...prev, isStartDateFullDay: e.target.checked }))}
                     className="mt-2"
                   />
                 </Form.Group>
@@ -337,38 +315,35 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
 
               <Col md={6}>
                 <Form.Group className="mb-3">
-                  <Form.Label>Bitiş Tarihi <span className="text-danger">*</span></Form.Label>
-                  <Form.Control
-                    type="date"
+                  <FormDateField
+                    label="Bitiş Tarihi"
                     name="endDate"
                     value={formData.endDate}
                     onChange={handleInputChange}
                     isInvalid={!!fieldErrors.endDate}
+                    errorMessage={fieldErrors.endDate}
                   />
-                  {fieldErrors.endDate && (
-                    <div className="text-danger mt-1" style={{ fontSize: '0.875rem' }}>
-                      {fieldErrors.endDate}
-                    </div>
-                  )}
                   <Form.Check
                     type="checkbox"
-                    id="isFinishDateFullDay"
                     name="isFinishDateFullDay"
+                    id="isFinishDateFullDay"
                     label="Tam gün"
                     checked={formData.isFinishDateFullDay}
-                    onChange={handleInputChange}
+                    onChange={(e) => setFormData(prev => ({ ...prev, isFinishDateFullDay: e.target.checked }))}
                     className="mt-2"
                   />
                 </Form.Group>
               </Col>
             </Row>
 
+            {/* Calculated Days */}
             {calculatedDays > 0 && (
               <Alert variant="info" className="mb-3">
                 <strong>Toplam Gün:</strong> {calculatedDays} gün
               </Alert>
             )}
 
+            {/* Reason */}
             <Form.Group className="mb-3">
               <Form.Label>Neden (İsteğe Bağlı)</Form.Label>
               <Form.Control
@@ -378,15 +353,20 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
                 value={formData.reason}
                 onChange={handleInputChange}
                 placeholder="İzin talebinizin nedenini yazınız"
+                size="sm"
               />
             </Form.Group>
           </Modal.Body>
 
-          <Modal.Footer>
+          <Modal.Footer className="pt-0">
             <Button variant="secondary" onClick={onHide} disabled={loading}>
               İptal
             </Button>
-            <Button variant="primary" type="submit" disabled={loading}>
+            <Button 
+              variant="primary"
+              type="submit"
+              disabled={loading}
+            >
               {loading ? 'Kaydediliyor...' : isEdit ? 'Güncelle' : 'Talep Oluştur'}
             </Button>
           </Modal.Footer>

@@ -24,27 +24,35 @@ const PageHeading = ({
         <div className="border-bottom pb-4 mt-4 mb-4">
           <div className="d-flex justify-content-between align-items-center">
             <h3 className="mb-0 fw-bold">{heading}</h3>
-            <div className="d-flex justify-content-end align-items-center">
+            <div className="d-flex justify-content-end align-items-center gap-2">
               {showCreateButton && (
                 <Button
-                  className={"d-flex align-items-center me-2"}
+                  className="d-flex align-items-center"
                   variant="primary"
                   onClick={onCreate}
+                  style={{
+                    fontWeight: 500,
+                    textTransform: 'none'
+                  }}
                 >
-                  <i className={`fe fe-plus`}></i>
-                  <span className={"d-none d-lg-flex ms-2"}>
-                    {createButtonText}
+                  <i className="fe fe-plus" style={{ marginRight: '0.5rem' }}></i>
+                  <span className="d-none d-lg-flex">
+                    {createButtonText || 'Yeni'}
                   </span>
                 </Button>
               )}
               {showFilterButton && (
                 <Button
-                  className={"d-flex align-items-center"}
+                  className="d-flex align-items-center"
                   variant="warning"
                   onClick={onToggleFilter}
+                  style={{
+                    fontWeight: 500,
+                    textTransform: 'none'
+                  }}
                 >
-                  <i className={`fe fe-filter`}></i>
-                  <span className={"d-none d-lg-flex ms-2"}>Filtrele</span>
+                  <i className="fe fe-filter" style={{ marginRight: '0.5rem' }}></i>
+                  <span className="d-none d-lg-flex">Filtrele</span>
                 </Button>
               )}
             </div>

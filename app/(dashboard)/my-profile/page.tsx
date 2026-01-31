@@ -8,6 +8,7 @@ import { Container, Row, Col, Button, Spinner, Alert, Card } from 'react-bootstr
 import { PageHeading } from '@/widgets';
 import FormTextField from '@/components/FormTextField';
 import FormSelectField from '@/components/FormSelectField';
+import FormDateField from '@/components/FormDateField';
 import { genderOptions, maritalStatusOptions, emergencyContactRelationOptions } from '@/contants/options';
 import LoadingOverlay from '@/components/LoadingOverlay';
 import { toast } from 'react-toastify';
@@ -168,7 +169,6 @@ const Profile = () => {
       `}</style>
 
       <style jsx>{`
-        /* Container responsive padding */
         .page-container {
           padding-left: 1.5rem;
           padding-right: 1.5rem;
@@ -183,7 +183,6 @@ const Profile = () => {
             padding-bottom: 1rem;
           }
         }
-        /* Page heading wrapper responsive padding */
         .page-heading-wrapper {
           padding-left: 0;
           padding-right: 0;
@@ -194,7 +193,6 @@ const Profile = () => {
             padding-right: 0.75rem;
           }
         }
-        /* Card wrapper responsive padding */
         .card-wrapper {
           padding-left: 0;
           padding-right: 0;
@@ -205,14 +203,12 @@ const Profile = () => {
             padding-right: 0.75rem;
           }
         }
-        /* Profile Card Styles */
         .profile-form-card {
           border: none;
           box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
           border-radius: 8px;
           overflow: hidden;
         }
-        /* Section divider styles */
         .section-divider {
           border-top: 2px solid #e9ecef;
           padding-top: 1.5rem;
@@ -228,7 +224,6 @@ const Profile = () => {
       `}</style>
 
       <Container fluid className="page-container">
-        {/* Page Heading - Sadece başlık, buton yok */}
         <div className="page-heading-wrapper">
           <PageHeading 
             heading="Personel Bilgilerim"
@@ -243,7 +238,6 @@ const Profile = () => {
           </Alert>
         )}
 
-        {/* Profile Form Card */}
         <Row>
           <Col lg={12} md={12} sm={12}>
             <div className="card-wrapper card-wrapper-standard">
@@ -257,7 +251,7 @@ const Profile = () => {
                       validationSchema={validationSchema}
                       onSubmit={handleSubmit}
                     >
-                      {({ isSubmitting: formIsSubmitting, values }) => (
+                      {({ isSubmitting: formIsSubmitting, values, setFieldValue, errors, touched }) => (
                         <FormikForm>
                           {/* Name Section */}
                           <Row className="mb-4">
@@ -344,7 +338,7 @@ const Profile = () => {
 
                           {/* City and State Section */}
                           <Row className="mb-4">
-                          <FormTextField
+                            <FormTextField
                               as={Col}
                               md={6}
                               controlId="city"
@@ -362,16 +356,18 @@ const Profile = () => {
                             />
                           </Row>
 
-                          {/* Date Section */}
+                          {/* Date Section - Using FormDateField */}
                           <Row className="mb-4">
-                            <FormTextField
-                              as={Col}
-                              md={6}
-                              controlId="date_of_birth"
-                              label="Doğum Tarihi"
-                              name="date_of_birth"
-                              type="date"
-                            />
+                            <Col md={6}>
+                              <FormDateField
+                                label="Doğum Tarihi"
+                                name="date_of_birth"
+                                value={values.date_of_birth}
+                                onChange={(e) => setFieldValue('date_of_birth', e.target.value)}
+                                isInvalid={touched.date_of_birth && !!errors.date_of_birth}
+                                errorMessage={touched.date_of_birth ? errors.date_of_birth : undefined}
+                              />
+                            </Col>
                             <FormSelectField
                               as={Col}
                               md={6}
@@ -389,23 +385,27 @@ const Profile = () => {
                           </Row>
 
                           <Row className="mb-4">
-                          <FormTextField
-                              as={Col}
-                              md={6}
-                              controlId="hire_date"
-                              label="İşe Giriş Tarihi"
-                              name="hire_date"
-                              type="date"
-                              disabled
-                            />
-                            <FormTextField
-                              as={Col}
-                              md={6}
-                              controlId="profession_start_date"
-                              label="Meslek Başlangıç Tarihi"
-                              name="profession_start_date"
-                              type="date"
-                            />
+                            <Col md={6}>
+                              <FormDateField
+                                label="İşe Giriş Tarihi"
+                                name="hire_date"
+                                value={values.hire_date}
+                                onChange={(e) => setFieldValue('hire_date', e.target.value)}
+                                disabled
+                                isInvalid={touched.hire_date && !!errors.hire_date}
+                                errorMessage={touched.hire_date ? errors.hire_date : undefined}
+                              />
+                            </Col>
+                            <Col md={6}>
+                              <FormDateField
+                                label="Meslek Başlangıç Tarihi"
+                                name="profession_start_date"
+                                value={values.profession_start_date}
+                                onChange={(e) => setFieldValue('profession_start_date', e.target.value)}
+                                isInvalid={touched.profession_start_date && !!errors.profession_start_date}
+                                errorMessage={touched.profession_start_date ? errors.profession_start_date : undefined}
+                              />
+                            </Col>
                           </Row>
 
                           <Row className="mb-4">
@@ -446,7 +446,6 @@ const Profile = () => {
                             />
                           </Row>
 
-                          {/* Emergency Contact Section Title */}
                           <Row className="mb-4">
                             <Col md={12}>
                               <div className="section-divider">
@@ -455,7 +454,6 @@ const Profile = () => {
                             </Col>
                           </Row>
 
-                          {/* Emergency Contact Fields */}
                           <Row className="mb-4">
                             <FormTextField
                               as={Col}
@@ -491,7 +489,6 @@ const Profile = () => {
                             </FormSelectField>
                           </Row>
 
-                          {/* Submit Buttons */}
                           <Row className="mt-6">
                             <Col md={12}>
                               <Button

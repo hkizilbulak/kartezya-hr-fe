@@ -3,6 +3,7 @@ import "react-toastify/dist/ReactToastify.css";
 
 import type { Metadata } from "next";
 import { ToastContainer } from "react-toastify";
+import { NextAuthProvider } from "@/app/providers";
 
 export const metadata: Metadata = {
   title: "Kartezya HR Sistemi",
@@ -15,21 +16,23 @@ export default async function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="tr">
       <body className="bg-light">
-        {children}
-        <ToastContainer
-          position="top-right"
-          autoClose={5000}
-          hideProgressBar={false}
-          newestOnTop={false}
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-          theme="light"
-        />
+        <NextAuthProvider>
+          {children}
+          <ToastContainer
+            position="top-right"
+            autoClose={5000}
+            hideProgressBar={false}
+            newestOnTop={false}
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+            theme="light"
+          />
+        </NextAuthProvider>
       </body>
     </html>
   );

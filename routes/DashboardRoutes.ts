@@ -88,6 +88,20 @@ export const DashboardMenu: IMenuProps[] = [
 			}
 		]
 	},
+	{
+		id: 'reports',
+		title: 'Raporlar',
+		icon: 'bar-chart-2',
+		requiredRoles: ['ADMIN'],
+		children: [
+			{
+				id: 'work-day-report',
+				link: '/reports/work-day',
+				name: 'Çalışma Günü Raporu',
+				requiredRoles: ['ADMIN']
+			}
+		]
+	},
 ];
 
 export default DashboardMenu;

@@ -190,7 +190,7 @@ const NavbarVertical = (props: IProps) => {
 
 	return (
 		<Fragment>
-			<SimpleBar style={{ maxHeight: '100vh' }}>
+			<SimpleBar style={{ maxHeight: '100vh', width: '100%', overflowX: 'hidden' }}>
 				<div className="nav-scroller">
 					<Link href="/" className="navbar-brand text-white fw-bold">
 						Kartezya HR
@@ -201,6 +201,7 @@ const NavbarVertical = (props: IProps) => {
 					defaultActiveKey={getActiveAccordionKeys}
 					as="ul" 
 					className="navbar-nav flex-column"
+					style={{ overflow: 'visible' }}
 				>
 					{DashboardMenu.map(function (menu, index) {
 						// Check role access for this menu item
@@ -353,6 +354,27 @@ const NavbarVertical = (props: IProps) => {
 				{/* end of Dashboard Menu */}
 
 			</SimpleBar>
+			<style jsx>{`
+				:global(.simplebar-wrapper) {
+					overflow-x: hidden !important;
+				}
+				:global(.simplebar-content) {
+					overflow-x: hidden !important;
+				}
+				:global(.navbar-nav) {
+					overflow: visible !important;
+				}
+				:global(.nav-scroller) {
+					overflow: visible !important;
+				}
+				:global(.nav-item) {
+					overflow: visible !important;
+				}
+				:global(.navbar-nav .nav-link) {
+					white-space: nowrap;
+					overflow: visible !important;
+				}
+			`}</style>
 		</Fragment>
 	);
 };

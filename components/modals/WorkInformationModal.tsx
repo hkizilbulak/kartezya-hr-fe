@@ -5,6 +5,7 @@ import { CompanyLookup, DepartmentLookup, JobPositionLookup } from '@/services/l
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
 import { toast } from 'react-toastify';
 import LoadingOverlay from '@/components/LoadingOverlay';
+import FormDateField from '@/components/FormDateField';
 
 interface WorkInformationModalProps {
   show: boolean;
@@ -284,6 +285,7 @@ const WorkInformationModal: React.FC<WorkInformationModalProps> = ({
                     onChange={handleInputChange}
                     isInvalid={!!fieldErrors.company_id}
                     disabled={loadingLookups}
+                    size="sm"
                   >
                     <option value="">Şirket seçiniz</option>
                     {companies.map((company) => (
@@ -308,6 +310,7 @@ const WorkInformationModal: React.FC<WorkInformationModalProps> = ({
                     onChange={handleInputChange}
                     isInvalid={!!fieldErrors.department_id}
                     disabled={loadingLookups}
+                    size="sm"
                   >
                     <option value="">Departman seçiniz</option>
                     {departments.map((dept) => (
@@ -335,6 +338,7 @@ const WorkInformationModal: React.FC<WorkInformationModalProps> = ({
                     onChange={handleInputChange}
                     isInvalid={!!fieldErrors.job_position_id}
                     disabled={loadingLookups}
+                    size="sm"
                   >
                     <option value="">Pozisyon seçiniz</option>
                     {jobPositions.map((position) => (
@@ -354,32 +358,23 @@ const WorkInformationModal: React.FC<WorkInformationModalProps> = ({
 
             <Row className="mb-3">
               <Col md={6}>
-                <Form.Group>
-                  <Form.Label>Başlama Tarihi <span className="text-danger">*</span></Form.Label>
-                  <Form.Control
-                    type="date"
-                    name="start_date"
-                    value={formData.start_date}
-                    onChange={handleInputChange}
-                    isInvalid={!!fieldErrors.start_date}
-                  />
-                  {fieldErrors.start_date && (
-                    <div className="text-danger mt-1" style={{ fontSize: '0.875rem' }}>
-                      {fieldErrors.start_date}
-                    </div>
-                  )}
-                </Form.Group>
+                <FormDateField
+                  label="Başlama Tarihi"
+                  name="start_date"
+                  value={formData.start_date}
+                  onChange={handleInputChange}
+                  required
+                  isInvalid={!!fieldErrors.start_date}
+                  errorMessage={fieldErrors.start_date}
+                />
               </Col>
               <Col md={6}>
-                <Form.Group>
-                  <Form.Label>Bitiş Tarihi</Form.Label>
-                  <Form.Control
-                    type="date"
-                    name="end_date"
-                    value={formData.end_date}
-                    onChange={handleInputChange}
-                  />
-                </Form.Group>
+                <FormDateField
+                  label="Bitiş Tarihi"
+                  name="end_date"
+                  value={formData.end_date}
+                  onChange={handleInputChange}
+                />
               </Col>
             </Row>
 

@@ -9,6 +9,7 @@ import { translateErrorMessage } from '@/helpers/ErrorUtils';
 import { genderOptions, maritalStatusOptions, emergencyContactRelationOptions } from '@/contants/options';
 import { toast } from 'react-toastify';
 import LoadingOverlay from '@/components/LoadingOverlay';
+import FormDateField from '@/components/FormDateField';
 
 interface EmployeeModalProps {
   show: boolean;
@@ -477,8 +478,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
               <Col md={6}>
                 <Form.Group>
                   <Form.Label>Doğum Tarihi</Form.Label>
-                  <Form.Control
-                    type="date"
+                  <FormDateField
                     name="date_of_birth"
                     value={formData.date_of_birth}
                     onChange={handleInputChange}
@@ -632,8 +632,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
               <Col md={6}>
                 <Form.Group>
                   <Form.Label>İşe Başlama Tarihi <span className="text-danger">*</span></Form.Label>
-                  <Form.Control
-                    type="date"
+                  <FormDateField
                     name="hire_date"
                     value={formData.hire_date}
                     onChange={handleInputChange}
@@ -647,10 +646,9 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
                 </Form.Group>
               </Col>
               <Col md={6}>
-              <Form.Group>
+                <Form.Group>
                   <Form.Label>İşten Ayrılma Tarihi</Form.Label>
-                  <Form.Control
-                    type="date"
+                  <FormDateField
                     name="leave_date"
                     value={formData.leave_date}
                     onChange={handleInputChange}
@@ -663,8 +661,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
               <Col md={6}>
                 <Form.Group>
                   <Form.Label>Meslek Başlama Tarihi <span className="text-danger">*</span></Form.Label>
-                  <Form.Control
-                    type="date"
+                  <FormDateField
                     name="profession_start_date"
                     value={formData.profession_start_date}
                     onChange={handleProfessionStartDateChange}

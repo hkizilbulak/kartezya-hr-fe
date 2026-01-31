@@ -3,6 +3,22 @@
 // Use this to write your custom SCSS
 //
 
+// Genel Content Padding Class - Tüm sayfalar için
+.page-container {
+  max-width: 100%;
+  padding-right: calc(var(--bs-gutter-x) * 0.5);
+  padding-left: calc(var(--bs-gutter-x) * 0.5);
+  margin-top: 1.25rem !important;
+  margin-bottom: 1.25rem !important;
+}
+
+// MUI Container max-width: 100% yapılandırması
+@media (min-width: 1200px) {
+  .css-5c1adp-MuiContainer-root {
+    max-width: 100% !important;
+  }
+}
+
 // Tablo hücrelerinin mobilde tek satırda kalmasını sağlayan global stil
 table {
   th,

@@ -122,7 +122,6 @@ const CompanyModal: React.FC<CompanyModalProps> = ({
         errorMessage = 'Bir hata oluştu';
       }
       
-      // Türkçe çeviriye gönder ve toast olarak göster
       const translatedError = translateErrorMessage(errorMessage);
       toast.error(translatedError);
     } finally {

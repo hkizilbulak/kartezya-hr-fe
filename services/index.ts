@@ -9,4 +9,5 @@ export * from './leave-type.service';
 export * from './leave-request.service';
 export * from './leave-balance.service';
 export * from './lookup.service';
+export * from './report.service';
 export * from './base.service';
