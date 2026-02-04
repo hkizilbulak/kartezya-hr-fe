@@ -5,11 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "build:analyze": "ANALYZE=true next build",
-    "start": "npx serve@latest out",
-    "start:prod": "npx serve@latest out -p 3000",
-    "lint": "next lint",
-    "type-check": "tsc --noEmit"
+    "start": "next start",
+    "lint": "next lint"
   },
   "dependencies": {
     "@types/node": "20.4.10",
@@ -37,7 +34,5 @@
     "typescript": "5.1.6"
   },
   "devDependencies": {
-    "@types/react-input-mask": "^3.0.6",
-    "@next/bundle-analyzer": "^13.4.13"
-  }
+    "@types/react-input-mask": "^3.0.6"  }
 }

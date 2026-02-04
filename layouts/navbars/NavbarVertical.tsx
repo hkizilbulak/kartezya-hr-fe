@@ -48,36 +48,25 @@ const NavbarVertical = (props: IProps) => {
 	const location = usePathname()
 	const { user, isLoading } = useAuth();
 	
-	// Debug logging
-	if (typeof window !== 'undefined') {
-		console.log('NavbarVertical RENDER - isLoading:', isLoading, 'user:', user);
-	}
-	
 	// Check if user has required role for a menu item - memoized with useCallback
-	const hasRequiredRole = useCallback((requiredRoles?: string[]): boolean => {
-		console.log('hasRequiredRole called with:', requiredRoles, 'user:', user, 'isLoading:', isLoading);
-		
+	const hasRequiredRole = useCallback((requiredRoles?: string[]): boolean => {		
 		// If still loading, don't render restricted items
 		if (isLoading) {
-			console.log('Still loading, returning:', !requiredRoles || requiredRoles.length === 0);
 			return !requiredRoles || requiredRoles.length === 0;
 		}
 
 		// Eğer role requirement yoksa (undefined veya boş array), tüm kullanıcılar görebilir
 		if (!requiredRoles || requiredRoles.length === 0) {
-			console.log('No role requirement, allowing access');
 			return true; // No role restriction - everyone can see
 		}
 		
 		// Role requirement var
 		if (!user) {
-			console.log('⛔ No user, denying access to:', requiredRoles);
 			return false;
 		}
 
 		// Kritik: roles yoksa veya boş array ise, EMPLOYEE gibi davran = erişim yok
 		if (!user.roles || !Array.isArray(user.roles) || user.roles.length === 0) {
-			console.log('⛔ User has EMPTY ROLES [], denying access to required:', requiredRoles);
 			return false;
 		}
 
@@ -85,7 +74,6 @@ const NavbarVertical = (props: IProps) => {
 		const hasRole = requiredRoles.some(requiredRole => 
 			user.roles?.includes(requiredRole)
 		);
-		console.log('✅ User has roles:', user.roles, 'Required:', requiredRoles, 'Allowed:', hasRole);
 		return hasRole;
 	}, [user, isLoading]);
 	

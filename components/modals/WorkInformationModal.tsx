@@ -122,16 +122,12 @@ const WorkInformationModal: React.FC<WorkInformationModalProps> = ({
 
   // Form verilerini set et ve edit modda departmanları yükle
   useEffect(() => {
-    if (isEdit && workInformation) {
-      console.log('Setting form data from workInformation:', workInformation);
-      
+    if (isEdit && workInformation) {      
       // workInformation nested object'ten ya da direkt ID'den gelebilir
       const companyId = workInformation.company_id || workInformation.company?.id;
       const departmentId = workInformation.department_id || workInformation.department?.id;
       const jobPositionId = workInformation.job_position_id || workInformation.job_position?.id;
-      
-      console.log('Extracted IDs - Company:', companyId, 'Department:', departmentId, 'JobPosition:', jobPositionId);
-      
+            
       setFormData({
         employee_id: workInformation.employee_id || employeeId,
         company_id: companyId ? String(companyId) : '',
@@ -152,7 +148,6 @@ const WorkInformationModal: React.FC<WorkInformationModalProps> = ({
               setDepartments(response.data);
             }
           } catch (error) {
-            console.error('Departmanlar yüklenirken hata:', error);
             setDepartments(allDepartments.filter((dept: any) => 
               dept.company_id && String(dept.company_id) === String(companyId)
             ));

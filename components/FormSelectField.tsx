@@ -29,9 +29,6 @@ const FormSelectField = ({
     isInvalid = false,
     errorMessage
 }: IProps) => {
-    // Debug için log ekleyelim
-    console.log(`FormSelectField [${name}]:`, { value, label });
-
     const [isOpen, setIsOpen] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
     const [dropdownPosition, setDropdownPosition] = useState({ 

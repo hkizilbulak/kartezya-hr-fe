@@ -23,13 +23,6 @@ axiosInstance.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
     
-    // Debug log for CORS troubleshooting
-    console.log('API Request:', {
-      url: `${config.baseURL || ''}${config.url || ''}`,
-      method: config.method,
-      headers: config.headers
-    });
-    
     return config;
   },
   (error) => {
@@ -40,7 +33,6 @@ axiosInstance.interceptors.request.use(
 // Response interceptor
 axiosInstance.interceptors.response.use(
   (response) => {
-    console.log('API Response:', response.status, response.data);
     return response;
   },
   (error) => {
