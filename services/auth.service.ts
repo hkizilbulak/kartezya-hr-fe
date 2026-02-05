@@ -23,6 +23,11 @@ export interface ChangePasswordRequest {
   new_password: string;
 }
 
+export interface YandexLoginRequest {
+  code: string;
+  cid?: string;
+}
+
 export interface LoginResponse {
   success: boolean;
   data: {
@@ -193,6 +198,57 @@ export const authService = {
         errorMessage = error.response.data.error;
       }
       throw new Error(errorMessage);
+    }
+  },
+
+  yandexLogin: async (request: YandexLoginRequest): Promise<LoginResponse> => {
+    try {
+      // Backend'e GET isteği ile code ve cid parametrelerini gönder
+      const params = new URLSearchParams();
+      params.append('code', request.code);
+      if (request.cid) {
+        params.append('cid', request.cid);
+      }
+      
+      const response = await axiosInstance.get(
+        `${HR_ENDPOINTS.AUTH.YANDEX_CALLBACK}?${params.toString()}`
+      );
+      
+      const data = response.data;
+      
+      // Backend response yapısı: { success, data: { token, user: { id, email, roles, firstName, lastName } } }
+      if (data.success && data.data?.token && data.data?.user) {
+        let user = data.data.user;
+        
+        // Assign avatar based on user ID
+        user.avatar = getAvatarByUserId(user.id);
+        
+        // Store token and user info
+        localStorage.setItem('hr_auth_token', data.data.token);
+        localStorage.setItem('hr_user_profile', JSON.stringify(user));
+        setCookie('hr_auth_token', data.data.token, 7);
+                
+        return {
+          success: true,
+          data: {
+            token: data.data.token,
+            user: user
+          }
+        };
+      }
+      
+      throw new Error('Invalid Yandex login response format');
+    } catch (error: any) {
+      let errorMessage = "Yandex ile giriş yapılırken hata oluştu";
+      if (error.response && error.response.status === 401) {
+        errorMessage = 'Yandex yetkilendirmesi başarısız';
+      } else if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      }
+      
+      const customError = new Error(String(errorMessage));
+      (customError as any).originalError = error;
+      throw customError;
     }
   }
 };

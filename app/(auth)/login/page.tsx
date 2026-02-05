@@ -94,6 +94,13 @@ const Login = () => {
 
   const isFormValid = !errors.email && !errors.password && formData.email && formData.password;
 
+  const handleYandexLogin = () => {
+    const clientId = 'eff28f055726491d86b6d64bbbbdc484';
+    const redirectUri = window.location.origin + '/authorized';
+    const yandexAuthUrl = `https://oauth.yandex.com/authorize?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}`;
+    window.location.href = yandexAuthUrl;
+  };
+
   return (
     <Row className="align-items-center justify-content-center g-0 min-vh-100">
       <Col xxl={4} lg={6} md={8} xs={12} className="py-8 py-xl-0">
@@ -142,6 +149,32 @@ const Login = () => {
                     type="submit"
                   >
                     {isLoading ? "Giriş yapılıyor..." : "Giriş Yap"}
+                  </Button>
+                </div>
+
+                <div className="d-flex align-items-center my-3">
+                  <hr className="flex-grow-1" />
+                  <span className="px-2 text-muted">veya</span>
+                  <hr className="flex-grow-1" />
+                </div>
+
+                <div className="d-grid">
+                  <Button
+                    variant="outline-danger"
+                    type="button"
+                    onClick={handleYandexLogin}
+                  >
+                    <svg 
+                      width="20" 
+                      height="20" 
+                      viewBox="0 0 24 24" 
+                      fill="currentColor"
+                      className="me-2"
+                      style={{ verticalAlign: 'middle' }}
+                    >
+                      <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.6 0 12 0zm4.8 18.5h-2.4l-2.4-6.9v6.9H9.6V5.5h3.6c2.4 0 4.2 1.2 4.2 3.6 0 1.8-.9 2.7-2.1 3.3l2.5 6.1z"/>
+                    </svg>
+                    Yandex ile Giriş Yap
                   </Button>
                 </div>
               </Form>

@@ -10,7 +10,8 @@ export const HR_ENDPOINTS = {
     LOGOUT: '/auth/logout',
     VALIDATE_RESET_TOKEN: '/auth/validate-reset-token',
     RESET_PASSWORD: '/auth/reset-password',
-    CHANGE_PASSWORD: '/auth/change-password'
+    CHANGE_PASSWORD: '/auth/change-password',
+    YANDEX_CALLBACK: '/auth/yandex/callback'
   },
   // Companies
   COMPANIES: '/companies',
