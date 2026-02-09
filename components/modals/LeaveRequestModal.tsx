@@ -33,7 +33,8 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
     endDate: '',
     isStartDateFullDay: true,
     isFinishDateFullDay: true,
-    reason: ''
+    reason: '',
+    teamApprovalReceived: false
   });
   const [leaveTypes, setLeaveTypes] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -60,7 +61,8 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
         endDate: endDateStr,
         isStartDateFullDay: leaveRequest.is_start_date_full_day !== undefined ? leaveRequest.is_start_date_full_day : (leaveRequest.isStartDateFullDay ?? true),
         isFinishDateFullDay: leaveRequest.is_finish_date_full_day !== undefined ? leaveRequest.is_finish_date_full_day : (leaveRequest.isFinishDateFullDay ?? true),
-        reason: leaveRequest.reason || ''
+        reason: leaveRequest.reason || '',
+        teamApprovalReceived: false
       });
     } else if (!isEdit) {
       const today = new Date();
@@ -72,7 +74,8 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
         endDate: todayStr,
         isStartDateFullDay: true,
         isFinishDateFullDay: true,
-        reason: ''
+        reason: '',
+        teamApprovalReceived: false
       });
       
       const calculateTodayDays = async () => {
@@ -344,6 +347,18 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
               </Alert>
             )}
 
+            {/* Team Approval Checkbox */}
+            <Form.Group className="mb-3">
+              <Form.Check
+                type="checkbox"
+                name="teamApprovalReceived"
+                id="teamApprovalReceived"
+                label={<span>Ekip onayı alındı <span className="text-danger">*</span></span>}
+                checked={formData.teamApprovalReceived}
+                onChange={(e) => setFormData(prev => ({ ...prev, teamApprovalReceived: e.target.checked }))}
+              />
+            </Form.Group>
+
             {/* Reason */}
             <Form.Group className="mb-3">
               <Form.Label>Neden (İsteğe Bağlı)</Form.Label>
@@ -366,7 +381,7 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
             <Button 
               variant="primary"
               type="submit"
-              disabled={loading}
+              disabled={loading || !formData.teamApprovalReceived}
             >
               {loading ? 'Kaydediliyor...' : isEdit ? 'Güncelle' : 'Talep Oluştur'}
             </Button>
