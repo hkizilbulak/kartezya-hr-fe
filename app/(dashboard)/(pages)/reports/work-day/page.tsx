@@ -358,20 +358,17 @@ const WorkDayReportPage = () => {
                                   onClick={() => handleSort('first_name')}
                                   className="sortable-header"
                                 >
-                                  AD {getSortIcon('first_name')}
+                                  AD SOYAD {getSortIcon('first_name')}
                                 </th>
                                 <th
-                                  onClick={() => handleSort('last_name')}
-                                  className="sortable-header"
+                                  onClick={() => handleSort('work_days')}
+                                  className="sortable-header text-end"
                                 >
-                                  SOYAD {getSortIcon('last_name')}
+                                  İŞ GÜNÜ {getSortIcon('work_days')}
                                 </th>
-                                <th
-                                  onClick={() => handleSort('identity_no')}
-                                  className="sortable-header"
-                                >
-                                  KİMLİK NO {getSortIcon('identity_no')}
-                                </th>
+                                <th className="text-end">RESMİ TATİL</th>
+                                <th className="text-end">KULLANILAN İZİN</th>
+                                <th className="text-end">ÇALIŞILAN GÜN</th>
                                 <th
                                   onClick={() => handleSort('company_name')}
                                   className="sortable-header"
@@ -385,15 +382,6 @@ const WorkDayReportPage = () => {
                                   DEPARTMAN {getSortIcon('department_name')}
                                 </th>
                                 <th>YÖNETİCİ</th>
-                                <th
-                                  onClick={() => handleSort('work_days')}
-                                  className="sortable-header text-end"
-                                >
-                                  İŞ GÜNÜ {getSortIcon('work_days')}
-                                </th>
-                                <th className="text-end">RESMİ TATİL</th>
-                                <th className="text-end">KULLANILAN İZİN</th>
-                                <th className="text-end">ÇALIŞILAN GÜN</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -401,21 +389,19 @@ const WorkDayReportPage = () => {
                                 getSortedAndPaginatedData().map((row: WorkDayReportRow) => (
                                   <tr key={row.id}>
                                     <td>{row.id}</td>
-                                    <td>{row.first_name}</td>
-                                    <td>{row.last_name}</td>
-                                    <td>{row.identity_no}</td>
-                                    <td>{row.company_name}</td>
-                                    <td>{row.department_name}</td>
-                                    <td>{row.manager || '-'}</td>
+                                    <td>{row.first_name} {row.last_name}</td>
                                     <td className="text-end">{Math.round(row.work_days)}</td>
                                     <td className="text-end">{Math.round(row.holiday_days)}</td>
                                     <td className="text-end">{row.used_leave_days.toFixed(1)}</td>
                                     <td className="text-end">{Math.round(row.worked_days)}</td>
+                                    <td>{row.company_name}</td>
+                                    <td>{row.department_name}</td>
+                                    <td>{row.manager || '-'}</td>
                                   </tr>
                                 ))
                               ) : (
                                 <tr>
-                                  <td colSpan={11} className="text-center py-4">
+                                  <td colSpan={9} className="text-center py-4">
                                     Veri bulunamadı
                                   </td>
                                 </tr>
