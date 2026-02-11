@@ -191,6 +191,15 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
     return Object.keys(errors).length === 0;
   };
 
+  const checkDateOverlap = (
+    start1: Date, 
+    end1: Date, 
+    start2: Date, 
+    end2: Date
+  ): boolean => {
+    return start1 <= end2 && start2 <= end1;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -204,6 +213,35 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
     try {
       const startDate = new Date(formData.startDate);
       const endDate = new Date(formData.endDate);
+
+      // Check for date overlap with existing pending or approved leave requests
+      // Skip this check if we're editing an existing request
+      if (!isEdit) {
+        try {
+          const myRequestsResponse = await leaveRequestService.getMyRequests();
+          const myRequests = myRequestsResponse.data || [];
+          
+          // Filter for pending or approved requests
+          const activeRequests = myRequests.filter(req => 
+            req.status === 'PENDING' || req.status === 'APPROVED'
+          );
+          
+          // Check for date overlap
+          for (const req of activeRequests) {
+            const reqStartDate = new Date(req.startDate || req.start_date);
+            const reqEndDate = new Date(req.endDate || req.end_date);
+            
+            if (checkDateOverlap(startDate, endDate, reqStartDate, reqEndDate)) {
+              toast.error('Seçtiğiniz tarihlerde mevcut veya bekleyen izin var.');
+              setLoading(false);
+              return;
+            }
+          }
+        } catch (error) {
+          console.error('Error checking date overlap:', error);
+          // Continue with submission if we can't check for overlap
+        }
+      }
 
       const submitData = {
         leave_type_id: parseInt(formData.leaveTypeId),
