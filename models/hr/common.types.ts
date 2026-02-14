@@ -157,6 +157,7 @@ export interface Employee {
     manager: string;
     job_title: string;
   };
+  status?: 'ACTIVE' | 'PASSIVE';
 }
 
 // Company Types

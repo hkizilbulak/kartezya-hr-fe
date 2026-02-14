@@ -5,7 +5,6 @@ import { useState } from "react";
 import useMounted from "@/hooks/useMounted";
 import { authService, LoginRequest } from "@/services/auth.service";
 import FormTextField from "@/components/FormTextField";
-import { Eye, EyeOff } from "react-feather";
 import { toast } from "react-toastify";
 
 interface FormData {
@@ -25,8 +24,8 @@ const Login = () => {
   
   // Email/password login'i aktif/pasif yapmak için flag
   // true yaparsanız email/password formu görünür olur
-  const ENABLE_EMAIL_PASSWORD_LOGIN = false;
-  
+  const ENABLE_EMAIL_PASSWORD_LOGIN =  process.env.NEXT_PUBLIC_ENABLE_EMAIL_PASSWORD_LOGIN === "true";
+
   const [formData, setFormData] = useState<FormData>({
     email: "",
     password: "",

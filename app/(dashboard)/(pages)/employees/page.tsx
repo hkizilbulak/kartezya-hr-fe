@@ -16,9 +16,15 @@ import { Edit, Trash2, Eye, ChevronUp, ChevronDown, Filter } from 'react-feather
 import { toast } from 'react-toastify';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
 import { CompanyLookup, DepartmentLookup, GradeLookup } from '@/services/lookup.service';
-import { genderOptions, maritalStatusOptions } from '@/contants/options';
+import { genderOptions, maritalStatusOptions, statusOptions } from '@/contants/options';
 import '@/styles/table-list.scss';
 import '@/styles/components/table-common.scss';
+
+const EmployeeStatusBadge = ({ status }: { status: string }) => {
+  const badgeClass = status === "ACTIVE" ? "bg-success" : "bg-danger";
+  const statusText = status === "ACTIVE" ? "Çalışıyor" : "Ayrıldı";
+  return <span className={`badge ${badgeClass}`}>{statusText}</span>;
+};
 
 const EmployeesPage = () => {
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -64,6 +70,9 @@ const EmployeesPage = () => {
     marital_status: '',
     grade_id: ''
   });
+
+  // Add STATUS filter state
+  const [statusFilter, setStatusFilter] = useState('');
 
   const router = useRouter();
 
@@ -198,6 +207,10 @@ const EmployeesPage = () => {
       return acc;
     }, {} as any);
 
+    if (statusFilter) {
+      activeFilters['status'] = statusFilter;
+    }
+
     fetchEmployees(1, sortConfig.key || undefined, sortConfig.direction, activeFilters, itemsPerPage);
   };
 
@@ -214,6 +227,7 @@ const EmployeesPage = () => {
       marital_status: '',
       grade_id: ''
     });
+    setStatusFilter('');
     fetchEmployees(1, sortConfig.key || undefined, sortConfig.direction, {}, itemsPerPage);
   };
 
@@ -235,6 +249,10 @@ const EmployeesPage = () => {
       }
       return acc;
     }, {} as any);
+
+    if (statusFilter) {
+      activeFilters['status'] = statusFilter;
+    }
 
     fetchEmployees(1, key, direction, activeFilters, itemsPerPage);
   };
@@ -275,7 +293,7 @@ const EmployeesPage = () => {
       try {
         await employeeService.delete(selectedEmployee.id);
         toast.success('Çalışan başarıyla silindi');
-        fetchEmployees(currentPage, sortConfig.key || undefined, sortConfig.direction, filterParams, itemsPerPageValue);
+        fetchEmployees(currentPage, sortConfig.key || undefined, sortConfig.direction, filterParams, itemsPerPage);
         setShowDeleteModal(false);
         setSelectedEmployee(null);
       } catch (error: any) {
@@ -314,7 +332,11 @@ const EmployeesPage = () => {
       return acc;
     }, {} as any);
 
-    fetchEmployees(currentPage, sortConfig.key || undefined, sortConfig.direction, activeFilters, itemsPerPageValue);
+    if (statusFilter) {
+      activeFilters['status'] = statusFilter;
+    }
+
+    fetchEmployees(currentPage, sortConfig.key || undefined, sortConfig.direction, activeFilters, itemsPerPage);
   };
 
   const handleCloseModal = () => {
@@ -342,6 +364,10 @@ const EmployeesPage = () => {
       return acc;
     }, {} as any);
 
+    if (statusFilter) {
+      activeFilters['status'] = statusFilter;
+    }
+
     fetchEmployees(newPage, sortConfig.key || undefined, sortConfig.direction, activeFilters, itemsPerPage);
   };
 
@@ -360,6 +386,10 @@ const EmployeesPage = () => {
       }
       return acc;
     }, {} as any);
+
+    if (statusFilter) {
+      activeFilters['status'] = statusFilter;
+    }
 
     fetchEmployees(1, sortConfig.key || undefined, sortConfig.direction, activeFilters, newPageSize);
   };
@@ -516,6 +546,23 @@ const EmployeesPage = () => {
                         ))}
                       </FormSelectField>
                     </Col>
+                    <Col lg={3} md={6} sm={12}>
+                      <Form.Group>
+                        <Form.Label>Statü</Form.Label>
+                        <FormSelectField
+                          name="statusFilter"
+                          value={statusFilter}
+                          onChange={(e) => setStatusFilter(e.target.value)}
+                        >
+                          <option value="">Statü Seçiniz</option>
+                          {statusOptions.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </FormSelectField>
+                      </Form.Group>
+                    </Col>
                   </Row>
                   <Row className="mt-3">
                     <Col lg={12} md={12} sm={12} className="text-end">
@@ -568,7 +615,7 @@ const EmployeesPage = () => {
                                 <td>{employee.work_information?.department_name || '-'}</td>
                                 <td>{employee.work_information?.manager || '-'}</td>
                                 <td>
-                                  <Badge bg="success">Aktif</Badge>
+                                  <EmployeeStatusBadge status={employee.status || "UNKNOWN"} />
                                 </td>
                                 <td>
                                   <Button

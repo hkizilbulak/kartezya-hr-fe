@@ -12,7 +12,8 @@ import EmployeeModal from '@/components/modals/EmployeeModal';
 import WorkInformationModal from '@/components/modals/WorkInformationModal';
 import DeleteModal from '@/components/DeleteModal';
 import styles from './page.module.scss';
-import { genderOptions, maritalStatusOptions, emergencyContactRelationOptions } from '@/contants/options';
+import { genderOptions, maritalStatusOptions, emergencyContactRelationOptions, statusOptions } from '@/contants/options';
+import EmployeeStatusBadge from '@/components/StatusBadge';
 
 const EmployeeDetailPage = () => {
   const router = useRouter();
@@ -241,6 +242,18 @@ const EmployeeDetailPage = () => {
     return '-';
   };
 
+  // Map the status to match the expected values for EmployeeStatusBadge
+  const mapStatusToBadge = (status: string) => {
+    switch (status) {
+      case "ACTIVE":
+        return "active";
+      case "PASSIVE":
+        return "inactive";
+      default:
+        return "warning"; // Default to warning for unknown statuses
+    }
+  };
+
   return (
     <div className={styles.pageContainer}>
       <div style={{ display: 'none' }} className="d-none d-lg-block">
@@ -340,6 +353,7 @@ const EmployeeDetailPage = () => {
                         </div>
                       </Col>
                     </Row>
+                
                   </div>
 
                   <hr style={{ margin: '1.5rem 0', borderColor: '#e9ecef' }} />
@@ -426,6 +440,11 @@ const EmployeeDetailPage = () => {
                             </span>
                           </p>
                         </div>
+                        <div className="mb-3">
+                          <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>STATÜ</label>
+                          <EmployeeStatusBadge status={mapStatusToBadge(employee.status || "UNKNOWN")} />
+                        </div>
+                       
                         {(employee as any).note && (
                           <div className="mb-3">
                             <label className="d-block" style={{ fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>NOT</label>

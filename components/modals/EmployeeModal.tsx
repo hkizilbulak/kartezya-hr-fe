@@ -6,7 +6,7 @@ import { UserRole } from '@/models/enums/hr.enum';
 import { employeeService, lookupService } from '@/services';
 import { GradeLookup } from '@/services/lookup.service';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
-import { genderOptions, maritalStatusOptions, emergencyContactRelationOptions } from '@/contants/options';
+import { genderOptions, maritalStatusOptions, emergencyContactRelationOptions, statusOptions } from '@/contants/options';
 import { toast } from 'react-toastify';
 import LoadingOverlay from '@/components/LoadingOverlay';
 import FormDateField from '@/components/FormDateField';
@@ -48,6 +48,7 @@ interface FormData {
   nationality: string;
   identity_no: string;
   roles: string[];
+  status: string;
 }
 
 const EmployeeModal: React.FC<EmployeeModalProps> = ({
@@ -84,7 +85,8 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
     father_name: '',
     nationality: '',
     identity_no: '',
-    roles: ['EMPLOYEE']
+    roles: ['EMPLOYEE'],
+    status: ''
   });
 
   const [loading, setLoading] = useState(false);
@@ -121,6 +123,10 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
       // Normalize emergency contact relation value to match options
       const normalizedRelation = employee.emergency_contact_relation ? employee.emergency_contact_relation.trim().toUpperCase() : 'OTHER';
 
+      // Ensure status is set to PASSIVE if leave_date is pre-filled and valid
+      const isLeaveDateValid = employee.leave_date && new Date(employee.leave_date) <= new Date();
+      const status = isLeaveDateValid ? 'PASSIVE' : employee.status || '';
+
       setFormData({
         email: (employee.email || '').trim(),
         company_email: ((employee as any).company_email || '').trim(),
@@ -148,7 +154,8 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
         father_name: ((employee as any).father_name || '').trim(),
         nationality: ((employee as any).nationality || '').trim(),
         identity_no: ((employee as any).identity_no || '').trim(),
-        roles: (employee as any).roles || ['EMPLOYEE']
+        roles: (employee as any).roles || ['EMPLOYEE'],
+        status
       });
     } else {
       setFormData({
@@ -178,7 +185,8 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
         father_name: '',
         nationality: '',
         identity_no: '',
-        roles: ['EMPLOYEE']
+        roles: ['EMPLOYEE'],
+        status: ''
       });
     }
     setFieldErrors({});
@@ -214,6 +222,15 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
         [name]: ''
       }));
     }
+  };
+
+  const handleLeaveDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value,
+      status: value ? 'PASSIVE' : prev.status // Set status to PASSIVE if leave_date is filled
+    }));
   };
 
   const calculateExperienceFromProfessionStartDate = (startDate: string): number => {
@@ -320,7 +337,8 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
         father_name: formData.father_name.trim(),
         nationality: formData.nationality.trim(),
         identity_no: formData.identity_no.trim(),
-        roles: formData.roles
+        roles: formData.roles,
+        status: formData.status
       };
 
       if (isEdit && employee) {
@@ -652,7 +670,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
                   <FormDateField
                     name="leave_date"
                     value={formData.leave_date}
-                    onChange={handleInputChange}
+                    onChange={handleLeaveDateChange}
                   />
                 </Form.Group>
               </Col>
@@ -673,6 +691,23 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
                       {fieldErrors.profession_start_date}
                     </div>
                   )}
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group>
+                  <Form.Label>Statü</Form.Label>
+                  <FormSelectField
+                    name="status"
+                    value={formData.status}
+                    onChange={handleInputChange}
+                  >
+                    <option value="">Statü Seçiniz</option>
+                    {statusOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </FormSelectField>
                 </Form.Group>
               </Col>
             </Row>

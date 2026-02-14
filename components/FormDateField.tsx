@@ -391,6 +391,31 @@ const FormDateField = ({
                                 ))}
                             </div>
                             {renderCalendar()}
+                            <div
+                                style={{
+                                    marginTop: "0.5rem",
+                                    textAlign: "center",
+                                }}
+                            >
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        onChange({ target: { name, value: '' } });
+                                        setIsOpen(false); // Close the popover
+                                    }}
+                                    style={{
+                                        background: "none",
+                                        border: "1px solid #ced4da",
+                                        borderRadius: "4px",
+                                        padding: "0.25rem 0.5rem",
+                                        cursor: "pointer",
+                                        fontSize: "0.875rem",
+                                        color: "#212529",
+                                    }}
+                                >
+                                    Seçimi Kaldır
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -514,6 +539,31 @@ const FormDateField = ({
                                 ))}
                             </div>
                             {renderCalendar()}
+                            <div
+                                style={{
+                                    marginTop: "0.5rem",
+                                    textAlign: "center",
+                                }}
+                            >
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        onChange({ target: { name, value: '' } });
+                                        setIsOpen(false); // Close the popover
+                                    }}
+                                    style={{
+                                        background: "none",
+                                        border: "1px solid #ced4da",
+                                        borderRadius: "4px",
+                                        padding: "0.25rem 0.5rem",
+                                        cursor: "pointer",
+                                        fontSize: "0.875rem",
+                                        color: "#212529",
+                                    }}
+                                >
+                                    Seçimi Kaldır
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </>
