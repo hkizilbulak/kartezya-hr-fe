@@ -71,8 +71,8 @@ const EmployeesPage = () => {
     grade_id: ''
   });
 
-  // Add STATUS filter state
-  const [statusFilter, setStatusFilter] = useState('');
+  // Add STATUS filter state - default to ACTIVE
+  const [statusFilter, setStatusFilter] = useState('ACTIVE');
 
   const router = useRouter();
 
@@ -168,7 +168,8 @@ const EmployeesPage = () => {
   };
 
   useEffect(() => {
-    fetchEmployees(1);
+    // Fetch employees with ACTIVE status on initial load
+    fetchEmployees(1, undefined, undefined, { status: 'ACTIVE' });
   }, []);
 
   const handleFilterChange = (name: string, value: string | string[]) => {
@@ -227,8 +228,8 @@ const EmployeesPage = () => {
       marital_status: '',
       grade_id: ''
     });
-    setStatusFilter('');
-    fetchEmployees(1, sortConfig.key || undefined, sortConfig.direction, {}, itemsPerPage);
+    setStatusFilter('ACTIVE'); // Reset to ACTIVE
+    fetchEmployees(1, sortConfig.key || undefined, sortConfig.direction, { status: 'ACTIVE' }, itemsPerPage);
   };
 
   const handleSort = (key: 'first_name' | 'last_name') => {
