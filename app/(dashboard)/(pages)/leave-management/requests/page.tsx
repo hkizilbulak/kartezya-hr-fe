@@ -31,6 +31,8 @@ const LeaveRequestsPage = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [pendingPage, setPendingPage] = useState(1);
+  const [completedPage, setCompletedPage] = useState(1);
 
   const [sortConfig, setSortConfig] = useState<{
     key: string;
@@ -46,7 +48,7 @@ const LeaveRequestsPage = () => {
 
       const response = await leaveRequestService.getAll({ 
         page, 
-        limit: perPage || itemsPerPage,
+        limit: 100, // Tüm verileri çek (frontend'de pagination yapacağız)
         sort: sortKey,
         direction: sortDir
       });
@@ -68,6 +70,47 @@ const LeaveRequestsPage = () => {
   useEffect(() => {
     fetchLeaveRequests(1, sortConfig.key, sortConfig.direction);
   }, []);
+
+  // İptal butonunun gösterilip gösterilmeyeceğini kontrol et
+  const canCancelRequest = (request: LeaveRequest): boolean => {
+    // Status APPROVED olmalı
+    if (request.status !== 'APPROVED') return false;
+    
+    // Başlangıç tarihi bugünden sonra olmalı
+    const startDateStr = request.start_date || request.startDate;
+    if (!startDateStr) return false;
+    
+    const startDate = new Date(startDateStr);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Bugünün başlangıcı
+    startDate.setHours(0, 0, 0, 0);
+    
+    return startDate > today;
+  };
+
+  // Bekleyen ve tamamlanmış talepleri ayır
+  const pendingRequests = leaveRequests.filter(request => 
+    request.status === 'PENDING' || (request.status === 'APPROVED' && canCancelRequest(request))
+  );
+  const completedRequests = leaveRequests.filter(request => 
+    (request.status === 'APPROVED' && !canCancelRequest(request)) || 
+    request.status === 'REJECTED' || 
+    request.status === 'CANCELLED'
+  );
+
+  // Pagination için sayılar
+  const pendingTotalPages = Math.ceil(pendingRequests.length / itemsPerPage);
+  const completedTotalPages = Math.ceil(completedRequests.length / itemsPerPage);
+
+  // Sayfalanmış veriler
+  const paginatedPendingRequests = pendingRequests.slice(
+    (pendingPage - 1) * itemsPerPage,
+    pendingPage * itemsPerPage
+  );
+  const paginatedCompletedRequests = completedRequests.slice(
+    (completedPage - 1) * itemsPerPage,
+    completedPage * itemsPerPage
+  );
 
   const handleSort = (key: 'name') => {
     let direction: 'ASC' | 'DESC' = 'ASC';
@@ -282,132 +325,197 @@ const LeaveRequestsPage = () => {
 
         <Row>
           <Col lg={12} md={12} sm={12}>
-            <div className="table-wrapper">
-              <Card className="border-0 shadow-sm position-relative">
+            {/* Bekleyen Talepler */}
+            <div className="mb-4">
+              <h6 className="mb-3" style={{ fontWeight: 700, fontSize: '16px' }}>Bekleyen Talepler</h6>
+              <div className="table-wrapper">
+                <Card className="border-0 shadow-sm position-relative">
+                  <Card.Body className="p-0">
+                    <div className="table-box">
+                      <div className="table-responsive">
+                        <Table hover className="mb-0">
+                          <thead>
+                            <tr>
+                              <th>Talep Tarihi</th>
+                              <th>Çalışan ID</th>
+                              <th>Çalışan Adı</th>
+                              <th>İzin Türü</th>
+                              <th>Başlangıç Tarihi</th>
+                              <th>Bitiş Tarihi</th>
+                              <th>Kullanılan Gün</th>
+                              <th>Yarım/Tam Gün</th>
+                              <th>Durum</th>
+                              <th>İşlemler</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {paginatedPendingRequests.length ? (
+                              paginatedPendingRequests.map((request: LeaveRequest) => {
+                                const leaveTypeName = request.leave_type?.name || request.leaveType?.name;
+                                const startDate = request.start_date || request.startDate;
+                                const endDate = request.end_date || request.endDate;
+                                const requestedDays = request.requested_days || request.requestedDays;
+                                const createdAt = request.created_at || request.createdAt;
+                                const employeeId = request.employee?.id || '-';
 
-                <Card.Body className="p-0">
-                  <div className="table-box">
-                    <div className="table-responsive">
-                      <Table hover className="mb-0">
-                        <thead>
-                          <tr>
-                            <th>Talep Tarihi</th>
-                            <th>Çalışan ID</th>
-                            <th>Çalışan Adı</th>
-                            <th>İzin Türü</th>
-                            <th>Başlangıç Tarihi</th>
-                            <th>Bitiş Tarihi</th>
-                            <th>Kullanılan Gün</th>
-                            <th>Yarım/Tam Gün</th>
-                            <th>Durum</th>
-                            <th>İşlemler</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {leaveRequests.length ? (
-                            leaveRequests.map((request: LeaveRequest) => {
-                              const leaveTypeName = request.leave_type?.name || request.leaveType?.name;
-                              const startDate = request.start_date || request.startDate;
-                              const endDate = request.end_date || request.endDate;
-                              const requestedDays = request.requested_days || request.requestedDays;
-                              const createdAt = request.created_at || request.createdAt;
-                              const employeeId = request.employee?.id || '-';
-
-                              return (
-                                <tr key={request.id}>
-                                  <td>{formatDate(createdAt)}</td>
-                                  <td>{employeeId}</td>
-                                  <td>{getEmployeeName(request.employee)}</td>
-                                  <td>{leaveTypeName}</td>
-                                  <td>{formatDate(startDate)}</td>
-                                  <td>{formatDate(endDate)}</td>
-                                  <td>{requestedDays || '-'}</td>
-                                  <td>{getHalfDayInfo(request)}</td>
-                                  <td>{getStatusBadge(request.status)}</td>
-                                  <td>
-                                    <div className="d-flex gap-2">
-                                      {request.status === 'PENDING' && (
-                                        <>
+                                return (
+                                  <tr key={request.id}>
+                                    <td>{formatDate(createdAt)}</td>
+                                    <td>{employeeId}</td>
+                                    <td>{getEmployeeName(request.employee)}</td>
+                                    <td>{leaveTypeName}</td>
+                                    <td>{formatDate(startDate)}</td>
+                                    <td>{formatDate(endDate)}</td>
+                                    <td>{requestedDays || '-'}</td>
+                                    <td>{getHalfDayInfo(request)}</td>
+                                    <td>{getStatusBadge(request.status)}</td>
+                                    <td>
+                                      <div className="d-flex gap-2">
+                                        {request.status === 'PENDING' ? (
+                                          <>
+                                            <Button
+                                              variant="outline-success"
+                                              size="sm"
+                                              title="Onayla"
+                                              onClick={() => handleApprove(request)}
+                                              disabled={isLoading || actionLoading}
+                                            >
+                                              <Check size={14} />
+                                            </Button>
+                                            <Button
+                                              variant="outline-danger"
+                                              size="sm"
+                                              title="Reddet"
+                                              onClick={() => handleRejectClick(request)}
+                                              disabled={isLoading || actionLoading}
+                                            >
+                                              <X size={14} />
+                                            </Button>
+                                          </>
+                                        ) : canCancelRequest(request) ? (
                                           <Button
-                                            variant="outline-success"
+                                            variant="outline-warning"
                                             size="sm"
-                                            title="Onayla"
-                                            onClick={() => handleApprove(request)}
-                                            disabled={isLoading || actionLoading}
-                                          >
-                                            <Check size={14} />
-                                          </Button>
-                                          <Button
-                                            variant="outline-danger"
-                                            size="sm"
-                                            title="Reddet"
-                                            onClick={() => handleRejectClick(request)}
+                                            title="İptal Et"
+                                            onClick={() => handleCancelClick(request)}
                                             disabled={isLoading || actionLoading}
                                           >
                                             <X size={14} />
                                           </Button>
-                                          <Button
-                                            variant="outline-primary"
-                                            size="sm"
-                                            title="Düzenle"
-                                            onClick={() => handleEdit(request)}
-                                            disabled={isLoading || actionLoading}
-                                          >
-                                            <Edit size={14} />
-                                          </Button>
-                                        </>
-                                      )}
-                                      {request.status !== 'REJECTED' && request.status !== 'CANCELLED' && (
-                                        <Button
-                                          variant="outline-secondary"
-                                          size="sm"
-                                          title="İptal Et"
-                                          onClick={() => handleCancel(request)}
-                                          disabled={isLoading || actionLoading}
-                                        >
-                                          İptal Et
-                                        </Button>
-                                      )}
-                                    </div>
-                                  </td>
-                                </tr>
-                              );
-                            })
-                          ) : (
-                            !isLoading && (
+                                        ) : null}
+                                      </div>
+                                    </td>
+                                  </tr>
+                                );
+                              })
+                            ) : (
                               <tr>
                                 <td colSpan={10} className="text-center py-4">
-                                  Veri bulunamadı
+                                  Bekleyen talep bulunamadı
                                 </td>
                               </tr>
-                            )
-                          )}
-                        </tbody>
-                      </Table>
+                            )}
+                          </tbody>
+                        </Table>
+                      </div>
                     </div>
-                  </div>
-                </Card.Body>
-              </Card>
+                  </Card.Body>
+                </Card>
+              </div>
+
+              {/* Bekleyen Talepler Pagination */}
+              {pendingRequests.length > 0 && (
+                <div className="px-3 mt-3">
+                  <Pagination
+                    currentPage={pendingPage}
+                    totalPages={pendingTotalPages}
+                    totalItems={pendingRequests.length}
+                    itemsPerPage={itemsPerPage}
+                    onPageChange={(page) => setPendingPage(page)}
+                    onPageSizeChange={handlePageSizeChange}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Tamamlanmış Talepler */}
+            <div className="mb-4">
+              <h6 className="mb-3" style={{ fontWeight: 700, fontSize: '16px' }}>Tamamlanmış Talepler</h6>
+              <div className="table-wrapper">
+                <Card className="border-0 shadow-sm position-relative">
+                  <Card.Body className="p-0">
+                    <div className="table-box">
+                      <div className="table-responsive">
+                        <Table hover className="mb-0">
+                          <thead>
+                            <tr>
+                              <th>Talep Tarihi</th>
+                              <th>Çalışan ID</th>
+                              <th>Çalışan Adı</th>
+                              <th>İzin Türü</th>
+                              <th>Başlangıç Tarihi</th>
+                              <th>Bitiş Tarihi</th>
+                              <th>Kullanılan Gün</th>
+                              <th>Yarım/Tam Gün</th>
+                              <th>Durum</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {paginatedCompletedRequests.length ? (
+                              paginatedCompletedRequests.map((request: LeaveRequest) => {
+                                const leaveTypeName = request.leave_type?.name || request.leaveType?.name;
+                                const startDate = request.start_date || request.startDate;
+                                const endDate = request.end_date || request.endDate;
+                                const requestedDays = request.requested_days || request.requestedDays;
+                                const createdAt = request.created_at || request.createdAt;
+                                const employeeId = request.employee?.id || '-';
+
+                                return (
+                                  <tr key={request.id}>
+                                    <td>{formatDate(createdAt)}</td>
+                                    <td>{employeeId}</td>
+                                    <td>{getEmployeeName(request.employee)}</td>
+                                    <td>{leaveTypeName}</td>
+                                    <td>{formatDate(startDate)}</td>
+                                    <td>{formatDate(endDate)}</td>
+                                    <td>{requestedDays || '-'}</td>
+                                    <td>{getHalfDayInfo(request)}</td>
+                                    <td>{getStatusBadge(request.status)}</td>
+                                  </tr>
+                                );
+                              })
+                            ) : (
+                              <tr>
+                                <td colSpan={9} className="text-center py-4">
+                                  Tamamlanmış talep bulunamadı
+                                </td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </Table>
+                      </div>
+                    </div>
+                  </Card.Body>
+                </Card>
+              </div>
+
+              {/* Tamamlanmış Talepler Pagination */}
+              {completedRequests.length > 0 && (
+                <div className="px-3 mt-3">
+                  <Pagination
+                    currentPage={completedPage}
+                    totalPages={completedTotalPages}
+                    totalItems={completedRequests.length}
+                    itemsPerPage={itemsPerPage}
+                    onPageChange={(page) => setCompletedPage(page)}
+                    onPageSizeChange={handlePageSizeChange}
+                  />
+                </div>
+              )}
             </div>
           </Col>
         </Row>
-
-        {!isLoading && totalItems > 0 && (
-          <Row className="mt-4">
-            <Col lg={12} md={12} sm={12}>
-              <div className="px-3">
-                <Pagination
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  totalItems={totalItems}
-                  itemsPerPage={itemsPerPage}
-                  onPageChange={handlePageChange}
-                  onPageSizeChange={handlePageSizeChange}
-                />
-              </div>
-            </Col>
-          </Row>
-        )}
+      </Container>
 
         <Modal show={showRejectModal} onHide={() => setShowRejectModal(false)} centered>
           <Modal.Header closeButton>
@@ -508,7 +616,6 @@ const LeaveRequestsPage = () => {
           leaveRequest={selectedRequest}
           isEdit={isEdit}
         />
-      </Container>
     </>
   );
 };
