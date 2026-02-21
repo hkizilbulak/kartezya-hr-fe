@@ -2,11 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form, Row, Col } from 'react-bootstrap';
 import InputMask from 'react-input-mask';
 import { Employee } from '@/models/hr/common.types';
-import { UserRole } from '@/models/enums/hr.enum';
 import { employeeService, lookupService } from '@/services';
 import { GradeLookup } from '@/services/lookup.service';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
-import { genderOptions, maritalStatusOptions, emergencyContactRelationOptions, statusOptions } from '@/contants/options';
+import { genderOptions } from '@/contants/options';
 import { toast } from 'react-toastify';
 import LoadingOverlay from '@/components/LoadingOverlay';
 import FormDateField from '@/components/FormDateField';
@@ -117,65 +116,6 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
     }
   };
 
-  const handleProfessionStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    const calculatedExperience = calculateExperienceFromProfessionStartDate(value);
-
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-
-    if (fieldErrors[name]) {
-      setFieldErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }));
-    }
-  };
-
-  const handleLeaveDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value,
-      status: value ? 'PASSIVE' : prev.status // Set status to PASSIVE if leave_date is filled
-    }));
-  };
-
-  const calculateExperienceFromProfessionStartDate = (startDate: string): number => {
-    if (!startDate) return 0;
-
-    const start = new Date(startDate);
-    const today = new Date();
-
-    let years = today.getFullYear() - start.getFullYear();
-    let months = today.getMonth() - start.getMonth();
-
-    // Adjust if day hasn't occurred yet this month
-    if (today.getDate() < start.getDate()) {
-      months--;
-    }
-
-    // Adjust if months are negative
-    if (months < 0) {
-      years--;
-      months += 12;
-    }
-
-    // Return total years as a decimal number (e.g., 2.25 for 2 years 3 months)
-    return parseFloat((years + months / 12).toFixed(2));
-  };
-
-  const handleRoleChange = (role: string) => {
-    setFormData(prev => {
-      const roles = prev.roles.includes(role)
-        ? prev.roles.filter(r => r !== role)
-        : [...prev.roles, role];
-      return { ...prev, roles };
-    });
-  };
-
   const validateForm = (): boolean => {
     const errors: { [key: string]: string } = {};
 
@@ -201,9 +141,6 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
     }
     if (!formData.profession_start_date) {
       errors.profession_start_date = 'Meslek başlama tarihi zorunludur';
-    }
-    if (formData.roles.length === 0) {
-      errors.roles = 'En az bir rol seçiniz';
     }
 
     setFieldErrors(errors);
@@ -435,7 +372,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
                   <FormDateField
                     name="profession_start_date"
                     value={formData.profession_start_date}
-                    onChange={handleProfessionStartDateChange}
+                    onChange={handleInputChange}
                     isInvalid={!!fieldErrors.profession_start_date}
                   />
                   {fieldErrors.profession_start_date && (

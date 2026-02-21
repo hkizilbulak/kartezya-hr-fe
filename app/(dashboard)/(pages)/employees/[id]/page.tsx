@@ -67,6 +67,7 @@ const EmployeeDetailPage = () => {
     leave_date: '',
     profession_start_date: '',
     is_grade_up: false,
+    total_gap: 0,
     status: '',
     note: '',
     emergency_contact_name: '',
@@ -271,7 +272,9 @@ const EmployeeDetailPage = () => {
         nationality: ((employee as any).nationality || '').trim(),
         identity_no: ((employee as any).identity_no || '').trim(),
         roles: roles,
-        status: employee.status
+        status: employee.status,
+        total_gap: parseFloat(String(employee.total_gap || 0)),
+        is_grade_up: employee.is_grade_up || false,
       };
 
       await employeeService.update(employee.id, submitData);
@@ -279,7 +282,7 @@ const EmployeeDetailPage = () => {
       fetchEmployeeDetails();
     } catch (error: any) {
       let errorMessage = '';
-      
+
       if (error.response?.data?.details) {
         errorMessage = error.response.data.details;
       } else if (error.response?.data?.message) {
@@ -293,7 +296,7 @@ const EmployeeDetailPage = () => {
       } else {
         errorMessage = 'Bir hata oluştu';
       }
-      
+
       const translatedError = translateErrorMessage(errorMessage);
       toast.error(translatedError);
     } finally {
@@ -450,8 +453,8 @@ const EmployeeDetailPage = () => {
           <Tab.Container id="employee-tabs" defaultActiveKey="employee-info">
             <Card className="border-0 shadow-sm">
               <Card.Header className="border-bottom-0 bg-transparent">
-                <Nav 
-                  variant="tabs" 
+                <Nav
+                  variant="tabs"
                   className="custom-nav-tabs"
                   style={{
                     display: 'flex',
@@ -465,35 +468,35 @@ const EmployeeDetailPage = () => {
                   }}
                 >
                   <Nav.Item style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>
-                    <Nav.Link 
+                    <Nav.Link
                       eventKey="employee-info"
                     >
                       Çalışan Bilgileri
                     </Nav.Link>
                   </Nav.Item>
                   <Nav.Item style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>
-                    <Nav.Link 
+                    <Nav.Link
                       eventKey="work-info"
                     >
                       İş Bilgileri
                     </Nav.Link>
                   </Nav.Item>
                   <Nav.Item style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>
-                    <Nav.Link 
+                    <Nav.Link
                       eventKey="document-info"
                     >
                       Doküman Bilgileri
                     </Nav.Link>
                   </Nav.Item>
                   <Nav.Item style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>
-                    <Nav.Link 
+                    <Nav.Link
                       eventKey="grade-info"
                     >
                       Grade Bilgileri
                     </Nav.Link>
                   </Nav.Item>
                   <Nav.Item style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>
-                    <Nav.Link 
+                    <Nav.Link
                       eventKey="contract-info"
                     >
                       Sözleşme Bilgileri
@@ -706,7 +709,20 @@ const EmployeeDetailPage = () => {
                         </Col>
                       </Row>
                       <Row>
-                      <Col md={4}>
+                        <Col md={4}>
+                          <Form.Group>
+                            <Form.Label>Toplam Boşluk (Yıl)</Form.Label>
+                            <Form.Control
+                              min={0}
+                              type="number"
+                              name="total_gap"
+                              value={employee.total_gap}
+                              onChange={(e) => setEmployee({ ...employee, total_gap: e.target.value || 0 } as any)}
+                              placeholder="0"
+                            />
+                          </Form.Group>
+                        </Col>
+                        <Col md={4}>
                           <FormSelectField
                             name="status"
                             label="Statü"
@@ -727,7 +743,7 @@ const EmployeeDetailPage = () => {
                               <Form.Label>Grade Yükseltildi</Form.Label>
                               <Form.Check
                                 type="switch"
-                                id="isGradeUp"
+                                id="is_grade_up"
                                 label={(employee as any).is_grade_up ? 'Evet' : 'Hayır'}
                                 checked={(employee as any).is_grade_up}
                                 onChange={(e) => setEmployee({ ...employee, is_grade_up: e.target.checked } as any)}
@@ -792,12 +808,12 @@ const EmployeeDetailPage = () => {
                         </Col>
                       </Row>
                     </div>
-                    
+
                     <hr style={{ margin: '1rem 0', borderColor: '#e9ecef' }} />
 
                     {/* Roles */}
                     <h6 style={{ color: '#495057', fontWeight: 700, fontSize: '14px', marginBottom: '1rem' }}>Rol Bilgileri</h6>
-                                
+
                     <div className="mb-3 p-3" style={{ backgroundColor: '#f8f9fa', borderRadius: '4px' }}>
                       {Object.values(UserRole).map(role => (
                         <Form.Check
@@ -816,8 +832,8 @@ const EmployeeDetailPage = () => {
 
                     {/* Action Buttons */}
                     <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
-                      <Button 
-                        variant="primary" 
+                      <Button
+                        variant="primary"
                         onClick={handleSaveEmployee}
                         disabled={isSaving}
                         className="d-flex align-items-center"

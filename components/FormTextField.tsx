@@ -17,10 +17,7 @@ interface FormTextFieldProps {
   disabled?: boolean;
   className?: string;
   labelStyle?: React.CSSProperties;
-<<<<<<< HEAD
   rows?: number;
-=======
->>>>>>> 0e69d0fa08018cd00e91728121747d100294b212
 }
 
 const FormTextField: React.FC<FormTextFieldProps> = ({
@@ -39,10 +36,7 @@ const FormTextField: React.FC<FormTextFieldProps> = ({
   disabled = false,
   className,
   labelStyle,
-<<<<<<< HEAD
   rows = 3,
-=======
->>>>>>> 0e69d0fa08018cd00e91728121747d100294b212
   ...props
 }) => {
   const Component = as;
