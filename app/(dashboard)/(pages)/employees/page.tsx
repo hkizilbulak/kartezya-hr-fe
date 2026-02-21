@@ -32,7 +32,6 @@ const EmployeesPage = () => {
   const [showModal, setShowModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
-  const [isEdit, setIsEdit] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -273,7 +272,6 @@ const EmployeesPage = () => {
 
   const handleAddNew = () => {
     setSelectedEmployee(null);
-    setIsEdit(false);
     setShowModal(true);
   };
 
@@ -337,7 +335,6 @@ const EmployeesPage = () => {
   const handleCloseModal = () => {
     setShowModal(false);
     setSelectedEmployee(null);
-    setIsEdit(false);
   };
 
   const handleCloseDeleteModal = () => {
@@ -671,7 +668,6 @@ const EmployeesPage = () => {
           onHide={handleCloseModal}
           onSave={handleModalSave}
           employee={selectedEmployee}
-          isEdit={isEdit}
         />
 
         {showDeleteModal && (
