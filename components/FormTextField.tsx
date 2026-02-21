@@ -16,6 +16,7 @@ interface FormTextFieldProps {
   required?: boolean;
   disabled?: boolean;
   className?: string;
+  labelStyle?: React.CSSProperties;
 }
 
 const FormTextField: React.FC<FormTextFieldProps> = ({
@@ -33,6 +34,7 @@ const FormTextField: React.FC<FormTextFieldProps> = ({
   required = false,
   disabled = false,
   className,
+  labelStyle,
   ...props
 }) => {
   const Component = as;
@@ -50,7 +52,7 @@ const FormTextField: React.FC<FormTextFieldProps> = ({
   return (
     <Component md={md} className={className} {...props}>
       <Form.Group className="mb-3" controlId={controlId}>
-        <Form.Label>
+        <Form.Label style={labelStyle}>
           {label}
           {required && <span className="text-danger ms-1">*</span>}
         </Form.Label>

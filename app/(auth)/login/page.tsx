@@ -143,6 +143,7 @@ const Login = () => {
                       onBlur={(name) => handleInputBlur(name)}
                       error={touched.email ? errors.email : undefined}
                       required
+                      labelStyle={{ color: '#fff' }}
                     />
                     
                     <FormTextField
@@ -158,6 +159,7 @@ const Login = () => {
                       onBlur={(name) => handleInputBlur(name)}
                       error={touched.password ? errors.password : undefined}
                       required
+                      labelStyle={{ color: '#fff' }}
                     />
 
                     <div className="d-grid mt-4">
