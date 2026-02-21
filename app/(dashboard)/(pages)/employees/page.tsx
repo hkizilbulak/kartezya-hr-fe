@@ -277,12 +277,6 @@ const EmployeesPage = () => {
     setShowModal(true);
   };
 
-  const handleEdit = (employee: Employee) => {
-    setSelectedEmployee(employee);
-    setIsEdit(true);
-    setShowModal(true);
-  };
-
   const handleDeleteClick = (employee: Employee) => {
     setSelectedEmployee(employee);
     setShowDeleteModal(true);
@@ -626,14 +620,6 @@ const EmployeesPage = () => {
                                     onClick={() => handleView(employee)}
                                   >
                                     <Eye size={14} />
-                                  </Button>
-                                  <Button
-                                    variant="outline-primary"
-                                    size="sm"
-                                    className="me-2"
-                                    onClick={() => handleEdit(employee)}
-                                  >
-                                    <Edit size={14} />
                                   </Button>
                                   <Button
                                     variant="outline-danger"

@@ -127,6 +127,32 @@ export interface LeaveBalance {
   modifiedBy: string;
 }
 
+export interface Grade {
+  id: number;
+  name: string;
+  description?: string;
+  deleted: boolean;
+  createdAt: string;
+  updatedAt: string;
+  createdBy: string;
+  modifiedBy: string;
+}
+
+export interface EmployeeGrade {
+  id: number;
+  employeeId: number;
+  employee?: Employee;
+  gradeId: number;
+  grade?: Grade;
+  startDate: string;
+  endDate?: string;
+  deleted: boolean;
+  createdAt: string;
+  updatedAt: string;
+  createdBy: string;
+  modifiedBy: string;
+}
+
 export interface User {
   id: number;
   username: string;

@@ -128,3 +128,144 @@
     color: #6b7280;
   }
 }
+
+/* Custom Nav Tabs - prevent resizing on active state */
+.custom-nav-tabs {
+  border-bottom: none !important;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  margin: 0 -1rem;
+}
+
+.custom-nav-tabs .nav-item {
+  border-bottom: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.custom-nav-tabs .nav-link {
+  font-size: 1.1rem !important;
+  font-weight: 600 !important;
+  padding: 1rem 1.5rem !important;
+  border: none !important;
+  line-height: 1.5 !important;
+  color: #495057 !important;
+  background-color: transparent !important;
+  transition: color 0.3s ease !important;
+  margin: 0 !important;
+
+  &:hover {
+    border: none !important;
+    background-color: transparent !important;
+    color: #495057 !important;
+  }
+}
+
+.custom-nav-tabs .nav-link.active {
+  font-size: 1.1rem !important;
+  font-weight: 600 !important;
+  padding: 1rem 1.5rem !important;
+  border: none !important;
+  border-bottom: none !important;
+  line-height: 1.5 !important;
+  background-color: transparent !important;
+  color: #624bff !important;
+  box-shadow: none !important;
+}
+
+/* Mobile view - horizontal scroll for tabs */
+@media (max-width: 768px) {
+  .nav-tabs {
+    display: flex !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap !important;
+    width: 100% !important;
+    
+    /* Hide scrollbar but allow scrolling */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  .nav-tabs .nav-item {
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+  }
+
+  .nav-tabs .nav-link {
+    font-size: 0.95rem !important;
+    padding: 0.75rem 1rem !important;
+  }
+
+  .custom-nav-tabs {
+    display: flex !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+    margin: 0 -1rem !important;
+    scroll-behavior: smooth;
+    gap: 0;
+    flex-wrap: nowrap !important;
+    width: 100% !important;
+    
+    /* Hide scrollbar but allow scrolling */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  .custom-nav-tabs .nav-item {
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+    min-width: auto !important;
+  }
+
+  .custom-nav-tabs .nav-link {
+    font-size: 0.95rem !important;
+    padding: 0.75rem 1rem !important;
+  }
+}
+
+.nav-tabs .nav-link:focus,
+.nav-tabs .nav-link:active {
+    transform: none !important;
+}
+
+/* Override Bootstrap nav-link active state to prevent resizing */
+.nav-link {
+  color: #495057 !important;
+}
+
+.nav-tabs .nav-link {
+  font-size: 1.1rem !important;
+  font-weight: 600 !important;
+  padding: 1rem 1.5rem !important;
+  border: none !important;
+  line-height: 1.5 !important;
+  color: #495057 !important;
+
+  &:hover {
+    border: none !important;
+  }
+}
+
+.nav-tabs .nav-link.active {
+  font-size: 1.1rem !important;
+  font-weight: 600 !important;
+  padding: 1rem 1.5rem !important;
+  border: none !important;
+  border-bottom: none !important;
+  line-height: 1.5 !important;
+  background-color: transparent !important;
+  color: #624bff !important;
+}

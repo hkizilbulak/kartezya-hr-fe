@@ -1,59 +1,14 @@
 import { HR_ENDPOINTS } from '@/contants/urls';
 import { BaseService, APIResponse } from './base.service';
 import axiosInstance from '@/helpers/api/axiosInstance';
+import { EmployeeWorkInformation } from '@/models/hr/common.types';
 
-export interface WorkInformation {
-  id: number;
-  employee_id: number;
-  company_id: number;
-  department_id: number;
-  job_position_id: number;
-  start_date: string;
-  end_date?: string;
-  personnel_no?: string;
-  work_email?: string;
-  created_at: string;
-  updated_at: string;
-  employee?: {
-    id: number;
-    first_name: string;
-    last_name: string;
-    email: string;
-  };
-  company?: {
-    id: number;
-    name: string;
-  };
-  department?: {
-    id: number;
-    name: string;
-    manager?: string;
-  };
-  job_position?: {
-    id: number;
-    title: string;
-  };
-}
-
-export interface CreateWorkInformationRequest {
-  employee_id: number;
-  company_id: number;
-  department_id: number;
-  job_position_id: number;
-  start_date: string;
-  end_date?: string;
-  personnel_no?: string;
-  work_email?: string;
-}
-
-export interface UpdateWorkInformationRequest extends CreateWorkInformationRequest {}
-
-class WorkInformationService extends BaseService<WorkInformation> {
+class WorkInformationService extends BaseService<EmployeeWorkInformation> {
   constructor() {
     super(HR_ENDPOINTS.WORK_INFORMATION);
   }
 
-  async getMyWorkInformation(): Promise<APIResponse<WorkInformation>> {
+  async getMyWorkInformation(): Promise<APIResponse<EmployeeWorkInformation>> {
     try {
       const response = await axiosInstance.get(HR_ENDPOINTS.WORK_INFORMATION_ME);
       return response.data;
@@ -62,7 +17,7 @@ class WorkInformationService extends BaseService<WorkInformation> {
     }
   }
 
-  async getByEmployeeId(employeeId: number): Promise<APIResponse<WorkInformation[]>> {
+  async getByEmployeeId(employeeId: number): Promise<APIResponse<EmployeeWorkInformation[]>> {
     try {
       const response = await axiosInstance.get(this.baseUrl, {
         params: {
@@ -70,33 +25,6 @@ class WorkInformationService extends BaseService<WorkInformation> {
           limit: 100
         }
       });
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  async createWorkInformation(data: CreateWorkInformationRequest): Promise<APIResponse<WorkInformation>> {
-    try {
-      const response = await axiosInstance.post(this.baseUrl, data);
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  async updateWorkInformation(id: number, data: UpdateWorkInformationRequest): Promise<APIResponse<WorkInformation>> {
-    try {
-      const response = await axiosInstance.put(`${this.baseUrl}/${id}`, data);
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  async deleteWorkInformation(id: number): Promise<APIResponse<void>> {
-    try {
-      const response = await axiosInstance.delete(`${this.baseUrl}/${id}`);
       return response.data;
     } catch (error) {
       throw error;

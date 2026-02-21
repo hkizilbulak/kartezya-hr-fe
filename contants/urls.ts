@@ -22,9 +22,12 @@ export const HR_ENDPOINTS = {
   JOB_POSITIONS: '/job-positions',
   JOB_POSITIONS_LOOKUP: '/job-positions/lookup',
   // Grades
+  GRADES: '/grades',
   GRADES_LOOKUP: '/lookup/grades',
   // Employees
   EMPLOYEES: '/employees',
+  // Employee Grades
+  EMPLOYEE_GRADES: '/employee-grades',
   // Work Information
   WORK_INFORMATION: '/work-information',
   WORK_INFORMATION_ME: '/work-information/me',
