@@ -2,7 +2,7 @@
 import { Container } from 'react-bootstrap';
 import { useEffect } from 'react';
 
-export default function AuthLayout({
+export default function AuthorizedLayout({
   children,
 }: {
   children: React.ReactNode

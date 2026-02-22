@@ -91,3 +91,23 @@ export interface UpdateLeaveRequestRequest extends CreateLeaveRequestRequest {
 export interface ApproveRejectLeaveRequest {
   comments?: string;
 }
+
+export interface CreateGradeRequest {
+  name: string;
+  description?: string;
+}
+
+export interface UpdateGradeRequest extends CreateGradeRequest {
+  id: number;
+}
+
+export interface CreateEmployeeGradeRequest {
+  employeeId: number;
+  gradeId: number;
+  startDate: string;
+  endDate?: string;
+}
+
+export interface UpdateEmployeeGradeRequest extends CreateEmployeeGradeRequest {
+  id: number;
+}

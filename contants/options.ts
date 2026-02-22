@@ -18,3 +18,9 @@ export const emergencyContactRelationOptions = [
   { value: 'SIBLING', label: 'Kardeş' },
   { value: 'OTHER', label: 'Diğer' }
 ];
+
+// Status Options
+export const statusOptions = [
+  { value: 'ACTIVE', label: 'Çalışıyor' },
+  { value: 'PASSIVE', label: 'Ayrıldı' }
+];

@@ -1,0 +1,197 @@
+@import '@/styles/_user-variables.scss';
+
+.headerContainer {
+  width: 100%;
+  margin-bottom: 2rem;
+
+  @media (max-width: 768px) {
+    display: none;
+  }
+}
+
+.headerCard {
+  background: white;
+  padding: 2rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+
+  @media (max-width: 768px) {
+    padding: 1rem;
+  }
+}
+
+// Üst Bölüm - Avatar ve Ad Soyad + Tüm Bilgiler
+.headerTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 3rem;
+  flex-wrap: wrap;
+
+  @media (max-width: 1200px) {
+    gap: 2rem;
+  }
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  min-width: fit-content;
+  flex-shrink: 0;
+
+  @media (max-width: 768px) {
+    width: 100%;
+    gap: 1rem;
+  }
+}
+
+.avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1 0%, #7c3aed 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: 600;
+  border: 3px solid white;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
+
+  @media (max-width: 768px) {
+    width: 60px;
+    height: 60px;
+    font-size: 22px;
+  }
+}
+
+.nameSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+
+  @media (max-width: 768px) {
+    flex: 1;
+  }
+}
+
+.name {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+
+  @media (max-width: 768px) {
+    font-size: 18px;
+  }
+}
+
+.jobTitle {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0;
+
+  @media (max-width: 768px) {
+    font-size: 13px;
+  }
+}
+
+.headerMiddle {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  flex: 1;
+  flex-direction: column;
+
+  @media (max-width: 1200px) {
+    gap: 0;
+  }
+
+  @media (max-width: 768px) {
+    width: 100%;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+}
+
+// İnfo Row - Üst ve Alt satırlar
+.infoRow {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  width: 100%;
+  padding: 1rem 0;
+
+  &:not(:last-child) {
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  @media (max-width: 1200px) {
+    gap: 1.5rem;
+  }
+
+  @media (max-width: 768px) {
+    width: 100%;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 0.5rem 0;
+  }
+}
+
+.infoItem {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  min-width: fit-content;
+
+  @media (max-width: 768px) {
+    width: 100%;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+}
+
+.infoLabel {
+  font-size: 12px;
+  font-weight: 700;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.infoValue {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+
+  @media (max-width: 768px) {
+    font-size: 13px;
+  }
+}
+
+.divider {
+  width: 1px;
+  height: 40px;
+  background-color: #e5e7eb;
+  flex-shrink: 0;
+
+  @media (max-width: 768px) {
+    display: none;
+  }
+}

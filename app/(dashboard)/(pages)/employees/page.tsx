@@ -16,9 +16,15 @@ import { Edit, Trash2, Eye, ChevronUp, ChevronDown, Filter } from 'react-feather
 import { toast } from 'react-toastify';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
 import { CompanyLookup, DepartmentLookup, GradeLookup } from '@/services/lookup.service';
-import { genderOptions, maritalStatusOptions } from '@/contants/options';
+import { genderOptions, maritalStatusOptions, statusOptions } from '@/contants/options';
 import '@/styles/table-list.scss';
 import '@/styles/components/table-common.scss';
+
+const EmployeeStatusBadge = ({ status }: { status: string }) => {
+  const badgeClass = status === "ACTIVE" ? "bg-success" : "bg-danger";
+  const statusText = status === "ACTIVE" ? "Çalışıyor" : "Ayrıldı";
+  return <span className={`badge ${badgeClass}`}>{statusText}</span>;
+};
 
 const EmployeesPage = () => {
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -26,7 +32,6 @@ const EmployeesPage = () => {
   const [showModal, setShowModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
-  const [isEdit, setIsEdit] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -64,6 +69,9 @@ const EmployeesPage = () => {
     marital_status: '',
     grade_id: ''
   });
+
+  // Add STATUS filter state - default to ACTIVE
+  const [statusFilter, setStatusFilter] = useState('ACTIVE');
 
   const router = useRouter();
 
@@ -159,7 +167,8 @@ const EmployeesPage = () => {
   };
 
   useEffect(() => {
-    fetchEmployees(1);
+    // Fetch employees with ACTIVE status on initial load
+    fetchEmployees(1, undefined, undefined, { status: 'ACTIVE' });
   }, []);
 
   const handleFilterChange = (name: string, value: string | string[]) => {
@@ -198,6 +207,10 @@ const EmployeesPage = () => {
       return acc;
     }, {} as any);
 
+    if (statusFilter) {
+      activeFilters['status'] = statusFilter;
+    }
+
     fetchEmployees(1, sortConfig.key || undefined, sortConfig.direction, activeFilters, itemsPerPage);
   };
 
@@ -214,7 +227,8 @@ const EmployeesPage = () => {
       marital_status: '',
       grade_id: ''
     });
-    fetchEmployees(1, sortConfig.key || undefined, sortConfig.direction, {}, itemsPerPage);
+    setStatusFilter('ACTIVE'); // Reset to ACTIVE
+    fetchEmployees(1, sortConfig.key || undefined, sortConfig.direction, { status: 'ACTIVE' }, itemsPerPage);
   };
 
   const handleSort = (key: 'first_name' | 'last_name') => {
@@ -236,6 +250,10 @@ const EmployeesPage = () => {
       return acc;
     }, {} as any);
 
+    if (statusFilter) {
+      activeFilters['status'] = statusFilter;
+    }
+
     fetchEmployees(1, key, direction, activeFilters, itemsPerPage);
   };
 
@@ -254,13 +272,6 @@ const EmployeesPage = () => {
 
   const handleAddNew = () => {
     setSelectedEmployee(null);
-    setIsEdit(false);
-    setShowModal(true);
-  };
-
-  const handleEdit = (employee: Employee) => {
-    setSelectedEmployee(employee);
-    setIsEdit(true);
     setShowModal(true);
   };
 
@@ -275,7 +286,7 @@ const EmployeesPage = () => {
       try {
         await employeeService.delete(selectedEmployee.id);
         toast.success('Çalışan başarıyla silindi');
-        fetchEmployees(currentPage, sortConfig.key || undefined, sortConfig.direction, filterParams, itemsPerPageValue);
+        fetchEmployees(currentPage, sortConfig.key || undefined, sortConfig.direction, filterParams, itemsPerPage);
         setShowDeleteModal(false);
         setSelectedEmployee(null);
       } catch (error: any) {
@@ -314,13 +325,16 @@ const EmployeesPage = () => {
       return acc;
     }, {} as any);
 
-    fetchEmployees(currentPage, sortConfig.key || undefined, sortConfig.direction, activeFilters, itemsPerPageValue);
+    if (statusFilter) {
+      activeFilters['status'] = statusFilter;
+    }
+
+    fetchEmployees(currentPage, sortConfig.key || undefined, sortConfig.direction, activeFilters, itemsPerPage);
   };
 
   const handleCloseModal = () => {
     setShowModal(false);
     setSelectedEmployee(null);
-    setIsEdit(false);
   };
 
   const handleCloseDeleteModal = () => {
@@ -342,6 +356,10 @@ const EmployeesPage = () => {
       return acc;
     }, {} as any);
 
+    if (statusFilter) {
+      activeFilters['status'] = statusFilter;
+    }
+
     fetchEmployees(newPage, sortConfig.key || undefined, sortConfig.direction, activeFilters, itemsPerPage);
   };
 
@@ -360,6 +378,10 @@ const EmployeesPage = () => {
       }
       return acc;
     }, {} as any);
+
+    if (statusFilter) {
+      activeFilters['status'] = statusFilter;
+    }
 
     fetchEmployees(1, sortConfig.key || undefined, sortConfig.direction, activeFilters, newPageSize);
   };
@@ -516,6 +538,23 @@ const EmployeesPage = () => {
                         ))}
                       </FormSelectField>
                     </Col>
+                    <Col lg={3} md={6} sm={12}>
+                      <Form.Group>
+                        <Form.Label>Statü</Form.Label>
+                        <FormSelectField
+                          name="statusFilter"
+                          value={statusFilter}
+                          onChange={(e) => setStatusFilter(e.target.value)}
+                        >
+                          <option value="">Statü Seçiniz</option>
+                          {statusOptions.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </FormSelectField>
+                      </Form.Group>
+                    </Col>
                   </Row>
                   <Row className="mt-3">
                     <Col lg={12} md={12} sm={12} className="text-end">
@@ -568,7 +607,7 @@ const EmployeesPage = () => {
                                 <td>{employee.work_information?.department_name || '-'}</td>
                                 <td>{employee.work_information?.manager || '-'}</td>
                                 <td>
-                                  <Badge bg="success">Aktif</Badge>
+                                  <EmployeeStatusBadge status={employee.status || "UNKNOWN"} />
                                 </td>
                                 <td>
                                   <Button
@@ -578,14 +617,6 @@ const EmployeesPage = () => {
                                     onClick={() => handleView(employee)}
                                   >
                                     <Eye size={14} />
-                                  </Button>
-                                  <Button
-                                    variant="outline-primary"
-                                    size="sm"
-                                    className="me-2"
-                                    onClick={() => handleEdit(employee)}
-                                  >
-                                    <Edit size={14} />
                                   </Button>
                                   <Button
                                     variant="outline-danger"
@@ -637,7 +668,6 @@ const EmployeesPage = () => {
           onHide={handleCloseModal}
           onSave={handleModalSave}
           employee={selectedEmployee}
-          isEdit={isEdit}
         />
 
         {showDeleteModal && (

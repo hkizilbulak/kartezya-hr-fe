@@ -1,4 +1,4 @@
-import { Company, Department, JobPosition, Employee, WorkInformation, LeaveType, LeaveRequest, LeaveBalance, User, LookupItem } from './hr-models';
+import { Company, Department, JobPosition, Employee, WorkInformation, LeaveType, LeaveRequest, LeaveBalance, User, LookupItem, Grade, EmployeeGrade } from './hr-models';
 
 // Base API Response
 export interface APIResponse<T = any> {
@@ -52,5 +52,12 @@ export type LeaveRequestResponse = APIResponse<LeaveRequest>;
 export type LeaveRequestsResponse = PaginatedResponse<LeaveRequest>;
 
 export type LeaveBalancesResponse = APIResponse<LeaveBalance[]>;
+
+export type GradeResponse = APIResponse<Grade>;
+export type GradesResponse = PaginatedResponse<Grade>;
+export type GradeLookupResponse = APIResponse<LookupItem[]>;
+
+export type EmployeeGradeResponse = APIResponse<EmployeeGrade>;
+export type EmployeeGradesResponse = PaginatedResponse<EmployeeGrade>;
 
 export type UserProfileResponse = APIResponse<User>;

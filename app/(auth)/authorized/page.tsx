@@ -55,13 +55,21 @@ const AuthorizedPage = () => {
   }, [searchParams, router]);
 
   return (
-    <Row className="align-items-center justify-content-center g-0 min-vh-100">
+    <Row className="align-items-center justify-content-center g-0 min-vh-100" style={{ backgroundColor: '#000000' }}>
       <Col xxl={4} lg={6} md={8} xs={12} className="py-8 py-xl-0">
-        <Card className="smooth-shadow-md">
+        <Card style={{ 
+          backgroundColor: '#212b36', 
+          border: 'none',
+          boxShadow: '0 1rem 3rem rgba(255, 255, 255, 0.15)'
+        }}>
           <Card.Body className="p-6">
             <div className="d-flex flex-column justify-content-center align-items-center">
               <div className="mb-4">
-                <p className="h3 fw-bold text-center">Kartezya HR</p>
+                <img 
+                  src="https://kartezya.com/wp-content/uploads/2025/02/togetherBoyut2.svg" 
+                  alt="Kartezya HR" 
+                  style={{ minWidth: '300px', maxWidth: '400px', height: 'auto' }}
+                />
               </div>
 
               {isProcessing ? (

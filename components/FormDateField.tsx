@@ -80,10 +80,61 @@ const FormDateField = ({
     const formatDateForDisplay = (dateString: string) => {
         if (!dateString) return "";
         try {
-            const [year, month, day] = dateString.split("-");
-            return `${day}.${month}.${year}`;
+            // Handle YYYY-MM-DD format
+            if (dateString.includes("-")) {
+                const [year, month, day] = dateString.split("-");
+                if (year && month && day) {
+                    return `${day}.${month}.${year}`;
+                }
+            }
+            
+            // Handle DD.MM.YYYY format (paste)
+            if (dateString.includes(".")) {
+                const parts = dateString.split(".");
+                if (parts.length === 3) {
+                    const day = parts[0];
+                    const month = parts[1];
+                    const year = parts[2];
+                    // Validate if it's already in correct format
+                    if (day && month && year && !isNaN(Number(day)) && !isNaN(Number(month)) && !isNaN(Number(year))) {
+                        return dateString;
+                    }
+                }
+            }
+            
+            return dateString;
         } catch {
             return dateString;
+        }
+    };
+
+    // Convert display format (DD.MM.YYYY) to storage format (YYYY-MM-DD)
+    const convertDisplayFormatToStorage = (displayString: string): string => {
+        if (!displayString) return "";
+        try {
+            const parts = displayString.split(".");
+            if (parts.length === 3) {
+                const day = parts[0].trim();
+                const month = parts[1].trim();
+                const year = parts[2].trim();
+                
+                // Validate inputs
+                const dayNum = parseInt(day);
+                const monthNum = parseInt(month);
+                const yearNum = parseInt(year);
+                
+                if (!isNaN(dayNum) && !isNaN(monthNum) && !isNaN(yearNum)) {
+                    // Basic validation
+                    if (dayNum > 0 && dayNum <= 31 && monthNum > 0 && monthNum <= 12 && yearNum > 1900) {
+                        const paddedMonth = String(monthNum).padStart(2, "0");
+                        const paddedDay = String(dayNum).padStart(2, "0");
+                        return `${yearNum}-${paddedMonth}-${paddedDay}`;
+                    }
+                }
+            }
+            return "";
+        } catch {
+            return "";
         }
     };
 
@@ -117,8 +168,40 @@ const FormDateField = ({
         setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
     };
 
+    const handlePrevYear = (e: React.MouseEvent<HTMLButtonElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setCurrentMonth(new Date(currentMonth.getFullYear() - 1, currentMonth.getMonth(), 1));
+    };
+
+    const handleNextYear = (e: React.MouseEvent<HTMLButtonElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setCurrentMonth(new Date(currentMonth.getFullYear() + 1, currentMonth.getMonth(), 1));
+    };
+
+    const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const newYear = parseInt(e.target.value);
+        setCurrentMonth(new Date(newYear, currentMonth.getMonth(), 1));
+    };
+
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const inputValue = e.target.value;
+        let inputValue = e.target.value;
+        
+        // Auto-format on paste: convert DD.MM.YYYY to YYYY-MM-DD
+        if (inputValue.includes(".")) {
+            const convertedValue = convertDisplayFormatToStorage(inputValue);
+            if (convertedValue) {
+                onChange({
+                    target: {
+                        name: name,
+                        value: convertedValue,
+                    },
+                });
+                return;
+            }
+        }
+        
         onChange({
             target: {
                 name: name,
@@ -315,6 +398,31 @@ const FormDateField = ({
                             }}
                         >
                             <button
+                                onClick={handlePrevYear}
+                                style={{
+                                    background: "none",
+                                    border: "none",
+                                    cursor: "pointer",
+                                    padding: "0.5rem",
+                                    fontSize: "1rem",
+                                    color: "#6c757d",
+                                    fontWeight: "bold",
+                                    transition: "all 0.15s ease-in-out",
+                                    opacity: 0.7,
+                                }}
+                                onMouseEnter={(e) => {
+                                    (e.currentTarget.style.transform = "scale(1.15)");
+                                    (e.currentTarget.style.opacity = "1");
+                                }}
+                                onMouseLeave={(e) => {
+                                    (e.currentTarget.style.transform = "scale(1)");
+                                    (e.currentTarget.style.opacity = "0.7");
+                                }}
+                                title="Önceki Yıl"
+                            >
+                                ❮❮
+                            </button>
+                            <button
                                 onClick={handlePrevMonth}
                                 style={{
                                     background: "none",
@@ -328,6 +436,7 @@ const FormDateField = ({
                                 }}
                                 onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.2)")}
                                 onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+                                title="Önceki Ay"
                             >
                                 ❮
                             </button>
@@ -338,6 +447,8 @@ const FormDateField = ({
                                     color: "#212529",
                                     fontFamily: "Poppins, sans-serif",
                                     whiteSpace: "nowrap",
+                                    minWidth: "120px",
+                                    textAlign: "center",
                                 }}
                             >
                                 {monthsNamesTr[currentMonth.getMonth()]} {currentMonth.getFullYear()}
@@ -356,8 +467,34 @@ const FormDateField = ({
                                 }}
                                 onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.2)")}
                                 onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+                                title="Sonraki Ay"
                             >
                                 ❯
+                            </button>
+                            <button
+                                onClick={handleNextYear}
+                                style={{
+                                    background: "none",
+                                    border: "none",
+                                    cursor: "pointer",
+                                    padding: "0.5rem",
+                                    fontSize: "1rem",
+                                    color: "#6c757d",
+                                    fontWeight: "bold",
+                                    transition: "all 0.15s ease-in-out",
+                                    opacity: 0.7,
+                                }}
+                                onMouseEnter={(e) => {
+                                    (e.currentTarget.style.transform = "scale(1.15)");
+                                    (e.currentTarget.style.opacity = "1");
+                                }}
+                                onMouseLeave={(e) => {
+                                    (e.currentTarget.style.transform = "scale(1)");
+                                    (e.currentTarget.style.opacity = "0.7");
+                                }}
+                                title="Sonraki Yıl"
+                            >
+                                ❯❯
                             </button>
                         </div>
 
@@ -391,6 +528,31 @@ const FormDateField = ({
                                 ))}
                             </div>
                             {renderCalendar()}
+                            <div
+                                style={{
+                                    marginTop: "0.5rem",
+                                    textAlign: "center",
+                                }}
+                            >
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        onChange({ target: { name, value: '' } });
+                                        setIsOpen(false); // Close the popover
+                                    }}
+                                    style={{
+                                        background: "none",
+                                        border: "1px solid #ced4da",
+                                        borderRadius: "4px",
+                                        padding: "0.25rem 0.5rem",
+                                        cursor: "pointer",
+                                        fontSize: "0.875rem",
+                                        color: "#212529",
+                                    }}
+                                >
+                                    Seçimi Kaldır
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -435,8 +597,35 @@ const FormDateField = ({
                                 alignItems: "center",
                                 padding: "1rem",
                                 borderBottom: "1px solid #e0e0e0",
+                                flexWrap: "wrap",
+                                gap: "0.5rem",
                             }}
                         >
+                            <button
+                                onClick={handlePrevYear}
+                                style={{
+                                    background: "none",
+                                    border: "none",
+                                    cursor: "pointer",
+                                    padding: "0.5rem",
+                                    fontSize: "0.9rem",
+                                    color: "#6c757d",
+                                    fontWeight: "bold",
+                                    transition: "all 0.15s ease-in-out",
+                                    opacity: 0.7,
+                                }}
+                                onMouseEnter={(e) => {
+                                    (e.currentTarget.style.transform = "scale(1.15)");
+                                    (e.currentTarget.style.opacity = "1");
+                                }}
+                                onMouseLeave={(e) => {
+                                    (e.currentTarget.style.transform = "scale(1)");
+                                    (e.currentTarget.style.opacity = "0.7");
+                                }}
+                                title="Önceki Yıl"
+                            >
+                                ❮❮
+                            </button>
                             <button
                                 onClick={handlePrevMonth}
                                 style={{
@@ -444,23 +633,27 @@ const FormDateField = ({
                                     border: "none",
                                     cursor: "pointer",
                                     padding: "0.5rem",
-                                    fontSize: "1.25rem",
+                                    fontSize: "1.1rem",
                                     color: "#0d6efd",
                                     fontWeight: "bold",
                                     transition: "all 0.15s ease-in-out",
                                 }}
                                 onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.2)")}
                                 onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+                                title="Önceki Ay"
                             >
                                 ❮
                             </button>
                             <div
                                 style={{
-                                    fontSize: "1rem",
+                                    fontSize: "0.95rem",
                                     fontWeight: 600,
                                     color: "#212529",
                                     fontFamily: "Poppins, sans-serif",
                                     whiteSpace: "nowrap",
+                                    flex: "0 1 auto",
+                                    minWidth: "100px",
+                                    textAlign: "center",
                                 }}
                             >
                                 {monthsNamesTr[currentMonth.getMonth()]} {currentMonth.getFullYear()}
@@ -472,15 +665,41 @@ const FormDateField = ({
                                     border: "none",
                                     cursor: "pointer",
                                     padding: "0.5rem",
-                                    fontSize: "1.25rem",
+                                    fontSize: "1.1rem",
                                     color: "#0d6efd",
                                     fontWeight: "bold",
                                     transition: "all 0.15s ease-in-out",
                                 }}
                                 onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.2)")}
                                 onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+                                title="Sonraki Ay"
                             >
                                 ❯
+                            </button>
+                            <button
+                                onClick={handleNextYear}
+                                style={{
+                                    background: "none",
+                                    border: "none",
+                                    cursor: "pointer",
+                                    padding: "0.5rem",
+                                    fontSize: "0.9rem",
+                                    color: "#6c757d",
+                                    fontWeight: "bold",
+                                    transition: "all 0.15s ease-in-out",
+                                    opacity: 0.7,
+                                }}
+                                onMouseEnter={(e) => {
+                                    (e.currentTarget.style.transform = "scale(1.15)");
+                                    (e.currentTarget.style.opacity = "1");
+                                }}
+                                onMouseLeave={(e) => {
+                                    (e.currentTarget.style.transform = "scale(1)");
+                                    (e.currentTarget.style.opacity = "0.7");
+                                }}
+                                title="Sonraki Yıl"
+                            >
+                                ❯❯
                             </button>
                         </div>
 
@@ -514,6 +733,31 @@ const FormDateField = ({
                                 ))}
                             </div>
                             {renderCalendar()}
+                            <div
+                                style={{
+                                    marginTop: "0.5rem",
+                                    textAlign: "center",
+                                }}
+                            >
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        onChange({ target: { name, value: '' } });
+                                        setIsOpen(false); // Close the popover
+                                    }}
+                                    style={{
+                                        background: "none",
+                                        border: "1px solid #ced4da",
+                                        borderRadius: "4px",
+                                        padding: "0.25rem 0.5rem",
+                                        cursor: "pointer",
+                                        fontSize: "0.875rem",
+                                        color: "#212529",
+                                    }}
+                                >
+                                    Seçimi Kaldır
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </>

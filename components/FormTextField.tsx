@@ -16,6 +16,8 @@ interface FormTextFieldProps {
   required?: boolean;
   disabled?: boolean;
   className?: string;
+  labelStyle?: React.CSSProperties;
+  rows?: number;
 }
 
 const FormTextField: React.FC<FormTextFieldProps> = ({
@@ -33,11 +35,13 @@ const FormTextField: React.FC<FormTextFieldProps> = ({
   required = false,
   disabled = false,
   className,
+  labelStyle,
+  rows = 3,
   ...props
 }) => {
   const Component = as;
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     onChange(name, e.target.value);
   };
 
@@ -50,7 +54,7 @@ const FormTextField: React.FC<FormTextFieldProps> = ({
   return (
     <Component md={md} className={className} {...props}>
       <Form.Group className="mb-3" controlId={controlId}>
-        <Form.Label>
+        <Form.Label style={labelStyle}>
           {label}
           {required && <span className="text-danger ms-1">*</span>}
         </Form.Label>
@@ -63,6 +67,8 @@ const FormTextField: React.FC<FormTextFieldProps> = ({
           onBlur={handleInputBlur}
           disabled={disabled}
           isInvalid={!!error}
+          as={type === "textarea" ? "textarea" : undefined}
+          rows={type === "textarea" ? rows : undefined}
         />
         {error && (
           <Form.Control.Feedback type="invalid">

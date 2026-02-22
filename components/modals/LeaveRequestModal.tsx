@@ -86,9 +86,11 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
           );
           if (response.data && response.data.working_days !== undefined) {
             setCalculatedDays(response.data.working_days);
+          } else {
+            setCalculatedDays(0);
           }
         } catch (error) {
-          setCalculatedDays(1);
+          setCalculatedDays(0);
         }
       };
       
@@ -112,8 +114,12 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
           );
           if (response.data && response.data.working_days !== undefined) {
             setCalculatedDays(response.data.working_days);
+          } else {
+            setCalculatedDays(0);
           }
+          
         } catch (error) {
+          setCalculatedDays(0);
           if (formData.startDate && formData.endDate) {
             const startDate = new Date(formData.startDate);
             const endDate = new Date(formData.endDate);
@@ -191,15 +197,6 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
     return Object.keys(errors).length === 0;
   };
 
-  const checkDateOverlap = (
-    start1: Date, 
-    end1: Date, 
-    start2: Date, 
-    end2: Date
-  ): boolean => {
-    return start1 <= end2 && start2 <= end1;
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -213,35 +210,6 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
     try {
       const startDate = new Date(formData.startDate);
       const endDate = new Date(formData.endDate);
-
-      // Check for date overlap with existing pending or approved leave requests
-      // Skip this check if we're editing an existing request
-      if (!isEdit) {
-        try {
-          const myRequestsResponse = await leaveRequestService.getMyRequests();
-          const myRequests = myRequestsResponse.data || [];
-          
-          // Filter for pending or approved requests
-          const activeRequests = myRequests.filter(req => 
-            req.status === 'PENDING' || req.status === 'APPROVED'
-          );
-          
-          // Check for date overlap
-          for (const req of activeRequests) {
-            const reqStartDate = new Date(req.startDate || req.start_date);
-            const reqEndDate = new Date(req.endDate || req.end_date);
-            
-            if (checkDateOverlap(startDate, endDate, reqStartDate, reqEndDate)) {
-              toast.error('Seçtiğiniz tarihlerde mevcut veya bekleyen izin var.');
-              setLoading(false);
-              return;
-            }
-          }
-        } catch (error) {
-          console.error('Error checking date overlap:', error);
-          // Continue with submission if we can't check for overlap
-        }
-      }
 
       const submitData = {
         leave_type_id: parseInt(formData.leaveTypeId),
@@ -342,19 +310,27 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
                     onChange={handleInputChange}
                     isInvalid={!!fieldErrors.startDate}
                     errorMessage={fieldErrors.startDate}
-                  />
-                  <Form.Check
-                    type="checkbox"
-                    name="isStartDateFullDay"
-                    id="isStartDateFullDay"
-                    label="Tam gün"
-                    checked={formData.isStartDateFullDay}
-                    onChange={(e) => setFormData(prev => ({ ...prev, isStartDateFullDay: e.target.checked }))}
-                    className="mt-2"
+                    required={true}
                   />
                 </Form.Group>
               </Col>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <div style={{ marginTop: '32px' }}>
+                    <Form.Check
+                      type="checkbox"
+                      name="isStartDateFullDay"
+                      id="isStartDateFullDay"
+                      label="Tam gün"
+                      checked={formData.isStartDateFullDay}
+                      onChange={(e) => setFormData(prev => ({ ...prev, isStartDateFullDay: e.target.checked }))}
+                    />
+                  </div>
+                </Form.Group>
+              </Col>
+            </Row>
 
+            <Row>
               <Col md={6}>
                 <Form.Group className="mb-3">
                   <FormDateField
@@ -364,16 +340,22 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
                     onChange={handleInputChange}
                     isInvalid={!!fieldErrors.endDate}
                     errorMessage={fieldErrors.endDate}
+                    required={true}
                   />
-                  <Form.Check
-                    type="checkbox"
-                    name="isFinishDateFullDay"
-                    id="isFinishDateFullDay"
-                    label="Tam gün"
-                    checked={formData.isFinishDateFullDay}
-                    onChange={(e) => setFormData(prev => ({ ...prev, isFinishDateFullDay: e.target.checked }))}
-                    className="mt-2"
-                  />
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <div style={{ marginTop: '32px' }}>
+                    <Form.Check
+                      type="checkbox"
+                      name="isFinishDateFullDay"
+                      id="isFinishDateFullDay"
+                      label="Tam gün"
+                      checked={formData.isFinishDateFullDay}
+                      onChange={(e) => setFormData(prev => ({ ...prev, isFinishDateFullDay: e.target.checked }))}
+                    />
+                  </div>
                 </Form.Group>
               </Col>
             </Row>
@@ -399,7 +381,7 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
 
             {/* Reason */}
             <Form.Group className="mb-3">
-              <Form.Label>Neden (İsteğe Bağlı)</Form.Label>
+              <Form.Label>İzin Nedeni (İsteğe Bağlı)</Form.Label>
               <Form.Control
                 as="textarea"
                 rows={3}
@@ -419,7 +401,7 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
             <Button 
               variant="primary"
               type="submit"
-              disabled={loading || !formData.teamApprovalReceived}
+              disabled={loading || !formData.teamApprovalReceived || calculatedDays === 0}
             >
               {loading ? 'Kaydediliyor...' : isEdit ? 'Güncelle' : 'Talep Oluştur'}
             </Button>

@@ -155,6 +155,23 @@ const MyLeaveRequests = () => {
     }
   };
 
+  // İptal butonunun gösterilip gösterilmeyeceğini kontrol et
+  const canCancelRequest = (request: LeaveRequest): boolean => {
+    // Status APPROVED olmalı
+    if (request.status !== 'APPROVED') return false;
+    
+    // Başlangıç tarihi bugünden sonra olmalı
+    const startDateStr = request.start_date || request.startDate;
+    if (!startDateStr) return false;
+    
+    const startDate = new Date(startDateStr);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Bugünün başlangıcı
+    startDate.setHours(0, 0, 0, 0);
+    
+    return startDate > today;
+  };
+
   const getEmployeeName = (employee: Employee | undefined): string => {
     if (!employee) return '-';
     const firstName = employee.first_name || '';
@@ -184,11 +201,17 @@ const MyLeaveRequests = () => {
     fetchLeaveRequests(currentPage, sortConfig.key || undefined, sortConfig.direction);
   };
 
-  // Bekleyen talepler (PENDING)
-  const pendingRequests = leaveRequests.filter(req => req.status === 'PENDING');
+  // Bekleyen talepler (PENDING veya iptal edilebilir APPROVED)
+  const pendingRequests = leaveRequests.filter(req => 
+    req.status === 'PENDING' || (req.status === 'APPROVED' && canCancelRequest(req))
+  );
   
-  // Tamamlanmış talepler (PENDING hariç)
-  const completedRequests = leaveRequests.filter(req => req.status !== 'PENDING');
+  // Tamamlanmış talepler (iptal edilemeyen APPROVED, REJECTED, CANCELLED)
+  const completedRequests = leaveRequests.filter(req => 
+    (req.status === 'APPROVED' && !canCancelRequest(req)) || 
+    req.status === 'REJECTED' || 
+    req.status === 'CANCELLED'
+  );
 
   /**
    * Güvenli progress bar yüzdesi hesapla
@@ -415,15 +438,17 @@ const MyLeaveRequests = () => {
                                   <td>{getStatusBadge(request.status)}</td>
                                   <td>
                                     <div className="d-flex gap-2">
-                                      <Button
-                                        variant="outline-primary"
-                                        size="sm"
-                                        title="Düzenle"
-                                        onClick={() => handleEdit(request)}
-                                        disabled={isLoading || actionLoading}
-                                      >
-                                        <Edit size={14} />
-                                      </Button>
+                                      {request.status === 'PENDING' && (
+                                        <Button
+                                          variant="outline-primary"
+                                          size="sm"
+                                          title="Düzenle"
+                                          onClick={() => handleEdit(request)}
+                                          disabled={isLoading || actionLoading}
+                                        >
+                                          <Edit size={14} />
+                                        </Button>
+                                      )}
                                       <Button
                                         variant="outline-danger"
                                         size="sm"
