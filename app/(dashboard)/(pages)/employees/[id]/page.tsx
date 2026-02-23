@@ -957,6 +957,7 @@ const EmployeeDetailPage = () => {
                                       size="sm"
                                       onClick={() => {
                                         setWorkInfoToDelete(workInfo);
+                                        setDeleteItemType('workinfo');
                                         setShowDeleteModal(true);
                                       }}
                                       title="Sil"

@@ -117,13 +117,14 @@ export interface UpdateJobPositionRequest extends CreateJobPositionRequest {
 }
 
 export interface CreateWorkInformationRequest {
-  employeeId: number;
-  jobPositionId: number;
-  startDate: string;
-  endDate?: string;
-  salary?: number;
-  workType: string;
-  status: string;
+  employee_id: number;
+  company_id: number;
+  department_id: number;
+  job_position_id: number;
+  start_date: string;
+  end_date?: string;
+  personnel_no?: string;
+  work_email?: string;
 }
 
 export interface UpdateWorkInformationRequest extends CreateWorkInformationRequest {

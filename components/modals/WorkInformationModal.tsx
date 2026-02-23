@@ -1,19 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form, Row, Col } from 'react-bootstrap';
-import { workInformationService, CreateWorkInformationRequest, lookupService } from '@/services';
+import { workInformationService, lookupService } from '@/services';
 import { CompanyLookup, DepartmentLookup, JobPositionLookup } from '@/services/lookup.service';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
 import { toast } from 'react-toastify';
 import LoadingOverlay from '@/components/LoadingOverlay';
 import FormDateField from '@/components/FormDateField';
 import FormSelectField from '@/components/FormSelectField';
+import { EmployeeWorkInformation } from '@/models/hr/hr-models';
+import { CreateWorkInformationRequest } from '@/models/hr/hr-requests';
 
 interface WorkInformationModalProps {
   show: boolean;
   onHide: () => void;
   onSave: () => void;
   employeeId: number;
-  workInformation?: any | null;
+  workInformation?: EmployeeWorkInformation | null;
   isEdit?: boolean;
 }
 
@@ -143,7 +145,7 @@ const WorkInformationModal: React.FC<WorkInformationModalProps> = ({
       if (companyId) {
         const loadDepartmentsByCompany = async () => {
           try {
-            const response = await lookupService.getDepartmentsByCompanyLookup(parseInt(companyId));
+            const response = await lookupService.getDepartmentsByCompanyLookup(companyId);
             if (response.success && response.data) {
               setDepartments(response.data);
             }
@@ -228,10 +230,10 @@ const WorkInformationModal: React.FC<WorkInformationModalProps> = ({
       };
 
       if (isEdit && workInformation) {
-        await workInformationService.updateWorkInformation(workInformation.id, submitData);
+        await workInformationService.update(workInformation.id, submitData);
         toast.success('İş bilgisi başarıyla güncellendi');
       } else {
-        await workInformationService.createWorkInformation(submitData);
+        await workInformationService.create(submitData);
         toast.success('İş bilgisi başarıyla oluşturuldu');
       }
       onSave();
