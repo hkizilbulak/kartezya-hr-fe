@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Row, Col, Card, Table, Button, Badge, Container, Form } from 'react-bootstrap';
 import { employeeService, lookupService } from '@/services';
-import { Employee } from '@/models/hr/common.types';
+import { Employee } from '@/models/hr/hr-models';
 import { PageHeading } from '@/widgets';
 import Pagination from '@/components/Pagination';
 import EmployeeModal from '@/components/modals/EmployeeModal';

@@ -1,6 +1,6 @@
 import { HR_ENDPOINTS } from '@/contants/urls';
 import { BaseService } from './base.service';
-import { Company } from '@/models/hr/common.types';
+import { Company } from '@/models/hr/hr-models';
 
 class CompanyService extends BaseService<Company> {
   constructor() {

@@ -7,7 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { leaveRequestService } from "@/services/leave-request.service";
 import { leaveBalanceService } from "@/services/leave-balance.service";
 import { employeeService } from "@/services/employee.service";
-import { LeaveRequest, LeaveBalance } from "@/models/hr/common.types";
+import { LeaveRequest, LeaveBalance } from "@/models/hr/hr-models";
 import { useRouter } from 'next/navigation';
 import LoadingOverlay from "@/components/LoadingOverlay";
 

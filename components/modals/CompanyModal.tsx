@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form } from 'react-bootstrap';
 import InputMask from 'react-input-mask';
-import { Company } from '@/models/hr/common.types';
+import { Company } from '@/models/hr/hr-models';
+import { CreateCompanyRequest, UpdateCompanyRequest } from '@/models/hr/hr-requests';
 import { companyService } from '@/services';
 import { translateErrorMessage, getFieldErrorMessage } from '@/helpers/ErrorUtils';
 import { toast } from 'react-toastify';
@@ -22,7 +23,7 @@ const CompanyModal: React.FC<CompanyModalProps> = ({
   company = null,
   isEdit = false
 }) => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<CreateCompanyRequest>({
     name: '',
     email: '',
     phone: '',
@@ -74,12 +75,13 @@ const CompanyModal: React.FC<CompanyModalProps> = ({
   const validateForm = (): boolean => {
     const errors: {[key: string]: string} = {};
     
-    // Her alan için validasyon
     Object.keys(formData).forEach(fieldName => {
-      const fieldValue = formData[fieldName as keyof typeof formData];
-      const errorMessage = getFieldErrorMessage(fieldName, fieldValue);
-      if (errorMessage) {
-        errors[fieldName] = errorMessage;
+      const fieldValue = formData[fieldName as keyof CreateCompanyRequest];
+      if (fieldValue !== undefined) {
+        const errorMessage = getFieldErrorMessage(fieldName, fieldValue);
+        if (errorMessage) {
+          errors[fieldName] = errorMessage;
+        }
       }
     });
 
@@ -98,10 +100,15 @@ const CompanyModal: React.FC<CompanyModalProps> = ({
 
     try {
       if (isEdit && company) {
-        await companyService.update(company.id, formData);
+        const updateRequest: UpdateCompanyRequest = {
+          ...formData,
+          id: company.id
+        };
+        await companyService.update(company.id, updateRequest);
         toast.success('Şirket başarıyla güncellendi');
       } else {
-        await companyService.create(formData);
+        const createRequest: CreateCompanyRequest = formData;
+        await companyService.create(createRequest);
         toast.success('Şirket başarıyla oluşturuldu');
       }
       onSave();

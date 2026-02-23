@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Row, Col, Card, Table, Button, Container } from 'react-bootstrap';
 import { jobPositionService } from '@/services';
-import { JobPosition } from '@/models/hr/common.types';
+import { JobPosition } from '@/models/hr/hr-models';
 import { PageHeading } from '@/widgets';
 import Pagination from '@/components/Pagination';
 import JobPositionModal from '@/components/modals/JobPositionModal';

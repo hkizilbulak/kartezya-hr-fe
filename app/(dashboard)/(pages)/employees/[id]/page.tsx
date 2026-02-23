@@ -2,14 +2,15 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Container, Spinner, Row, Col, Card, Button, Nav, Tab, Form, Table } from 'react-bootstrap';
-import { employeeService, workInformationService, employeeGradeService, lookupService } from '@/services';
-import { Employee, EmployeeWorkInformation } from '@/models/hr/common.types';
+import { employeeService, workInformationService, employeeGradeService, employeeContractService, lookupService } from '@/services';
+import { Employee, EmployeeWorkInformation } from '@/models/hr/hr-models';
 import { toast } from 'react-toastify';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
-import { Edit, Trash2, Save, X } from 'react-feather';
+import { Edit, Trash2 } from 'react-feather';
 import EmployeeHeaderProfile from '@/components/employee-detail/EmployeeHeaderProfile';
 import WorkInformationModal from '@/components/modals/WorkInformationModal';
 import EmployeeGradeModal from '@/components/modals/EmployeeGradeModal';
+import EmployeeContractModal from '@/components/modals/EmployeeContractModal';
 import DeleteModal from '@/components/DeleteModal';
 import styles from './page.module.scss';
 import { genderOptions, maritalStatusOptions, emergencyContactRelationOptions, statusOptions } from '@/contants/options';
@@ -30,21 +31,26 @@ const EmployeeDetailPage = () => {
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [workInformations, setWorkInformations] = useState<EmployeeWorkInformation[]>([]);
   const [employeeGrades, setEmployeeGrades] = useState<any[]>([]);
+  const [employeeContracts, setEmployeeContracts] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showWorkInfoModal, setShowWorkInfoModal] = useState(false);
   const [showGradeModal, setShowGradeModal] = useState(false);
+  const [showContractModal, setShowContractModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isWorkInfoEdit, setIsWorkInfoEdit] = useState(false);
   const [isGradeEdit, setIsGradeEdit] = useState(false);
+  const [isContractEdit, setIsContractEdit] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [selectedWorkInfo, setSelectedWorkInfo] = useState<EmployeeWorkInformation | null>(null);
   const [selectedGrade, setSelectedGrade] = useState<any | null>(null);
+  const [selectedContract, setSelectedContract] = useState<any | null>(null);
   const [workInfoToDelete, setWorkInfoToDelete] = useState<EmployeeWorkInformation | null>(null);
   const [gradeToDelete, setGradeToDelete] = useState<any | null>(null);
+  const [contractToDelete, setContractToDelete] = useState<any | null>(null);
   const [grades, setGrades] = useState<GradeLookup[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [roles, setRoles] = useState<string[]>(['EMPLOYEE']);
-  const [deleteItemType, setDeleteItemType] = useState<'workinfo' | 'grade' | null>(null);
+  const [deleteItemType, setDeleteItemType] = useState<'workinfo' | 'grade' | 'contract' | null>(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -74,13 +80,6 @@ const EmployeeDetailPage = () => {
     emergency_contact: '',
     emergency_contact_relation: '',
   });
-
-  // Helper function to get display value for enum
-  const getEnumDisplayValue = (enumValue: string, options: any[]): string => {
-    if (!enumValue) return '-';
-    const option = options.find(opt => opt.value === enumValue);
-    return option ? option.label : enumValue;
-  };
 
   useEffect(() => {
     fetchEmployeeDetails();
@@ -120,6 +119,8 @@ const EmployeeDetailPage = () => {
         fetchWorkInformations(response.data.id);
         // Fetch employee grades
         fetchEmployeeGrades(response.data.id);
+        // Fetch employee contracts
+        fetchEmployeeContracts(response.data.id);
       }
     } catch (error: any) {
       const errorMessage = error.response?.data?.error || error.message || 'Veri çekme sırasında hata oluştu';
@@ -194,6 +195,38 @@ const EmployeeDetailPage = () => {
     }
   };
 
+  const fetchEmployeeContracts = async (empId: number) => {
+    try {
+      const response = await employeeContractService.getByEmployeeId(empId);
+
+      if (response?.data) {
+        let allContracts: any[] = [];
+
+        // Check if response.data is paginated or direct array
+        if ((response.data as any).items && Array.isArray((response.data as any).items)) {
+          // Paginated response
+          allContracts = (response.data as any).items;
+        } else if (Array.isArray(response.data)) {
+          // Direct array response
+          allContracts = response.data as any[];
+        }
+
+        // Sort by start_date descending (en yeni en üstte)
+        const sorted = allContracts.sort((a: any, b: any) => {
+          const dateA = new Date(a.start_date || 0).getTime();
+          const dateB = new Date(b.start_date || 0).getTime();
+          return dateB - dateA;
+        });
+
+        setEmployeeContracts(sorted);
+      } else {
+        setEmployeeContracts([]);
+      }
+    } catch (error) {
+      setEmployeeContracts([]);
+    }
+  };
+
   const handleDeleteWorkInfo = async () => {
     if (!workInfoToDelete) return;
 
@@ -225,6 +258,26 @@ const EmployeeDetailPage = () => {
       setGradeToDelete(null);
       if (employee) {
         fetchEmployeeGrades(employee.id);
+      }
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.error || error.message || 'Silme işlemi sırasında hata oluştu';
+      toast.error(translateErrorMessage(errorMessage));
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleDeleteContract = async () => {
+    if (!contractToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      await employeeContractService.delete(contractToDelete.id);
+      toast.success('Sözleşme başarıyla silindi');
+      setShowDeleteModal(false);
+      setContractToDelete(null);
+      if (employee) {
+        fetchEmployeeContracts(employee.id);
       }
     } catch (error: any) {
       const errorMessage = error.response?.data?.error || error.message || 'Silme işlemi sırasında hata oluştu';
@@ -442,6 +495,7 @@ const EmployeeDetailPage = () => {
               email: employee.email,
               phone: employee.phone || '-',
               address: employee.address || '-',
+              totalExperience: getDisplayExperience(),
             }}
           />
 
@@ -1015,11 +1069,84 @@ const EmployeeDetailPage = () => {
                   {/* Sözleşme Bilgileri Tab */}
                   <Tab.Pane eventKey="contract-info">
                     <div className={styles.section}>
-                      <Card className="border-0 shadow-sm">
-                        <Card.Body className="py-5 text-center">
-                          <p className="text-muted mb-0">Sözleşme bilgisi kaydı bulunamadı</p>
-                        </Card.Body>
-                      </Card>
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '1.5rem' }}>
+                        <Button
+                          className="d-flex align-items-center"
+                          variant="primary"
+                          onClick={() => {
+                            setSelectedContract(null);
+                            setIsContractEdit(false);
+                            setShowContractModal(true);
+                            // Fetch contracts when opening modal
+                            if (employee) {
+                              fetchEmployeeContracts(employee.id);
+                            }
+                          }}
+                        >
+                          <i className="fe fe-plus"></i>
+                          <span className="d-none d-lg-flex ms-2">Yeni Sözleşme</span>
+                        </Button>
+                      </div>
+
+                      {employeeContracts.length > 0 ? (
+                        <Table responsive className="table-list">
+                          <thead>
+                            <tr>
+                              <th>Sözleşme No</th>
+                              <th>Başlama Tarihi</th>
+                              <th>Bitiş Tarihi</th>
+                              <th></th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {employeeContracts.map((contract) => {
+                              const isActive = !contract.end_date || new Date(contract.end_date) > new Date();
+                              return (
+                                <tr key={contract.id}>
+                                  <td>{contract.contract_no || '-'}</td>
+                                  <td>{contract.start_date ? formatDate(contract.start_date) : '-'}</td>
+                                  <td>{contract.end_date ? formatDate(contract.end_date) : '-'}</td>
+                                  
+                                  <td>
+                                    <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                                      <Button
+                                        variant="outline-primary"
+                                        size="sm"
+                                        onClick={() => {
+                                          setSelectedContract(contract);
+                                          setIsContractEdit(true);
+                                          setShowContractModal(true);
+                                        }}
+                                        title="Düzenle"
+                                      >
+                                        <Edit size={14} />
+                                      </Button>
+                                      <Button
+                                        variant="outline-danger"
+                                        size="sm"
+                                        onClick={() => {
+                                          setContractToDelete(contract);
+                                          setDeleteItemType('contract');
+                                          setShowDeleteModal(true);
+                                        }}
+                                        title="Sil"
+                                      >
+                                        <Trash2 size={14} />
+                                      </Button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </Table>
+                      ) : (
+                        <Card className="border-0 shadow-sm">
+                          <Card.Body className="py-5 text-center">
+                            <p className="text-muted mb-0">Sözleşme bilgisi kaydı bulunamadı</p>
+                          </Card.Body>
+                        </Card>
+                      )}
                     </div>
                   </Tab.Pane>
                 </Tab.Content>
@@ -1069,6 +1196,26 @@ const EmployeeDetailPage = () => {
         isEdit={isGradeEdit}
       />
 
+      <EmployeeContractModal
+        show={showContractModal}
+        onHide={() => {
+          setShowContractModal(false);
+          setSelectedContract(null);
+          setIsContractEdit(false);
+        }}
+        onSave={() => {
+          setShowContractModal(false);
+          setSelectedContract(null);
+          setIsContractEdit(false);
+          if (employee) {
+            fetchEmployeeContracts(employee.id);
+          }
+        }}
+        employeeId={employee?.id || parseInt(employeeId)}
+        employeeContract={selectedContract}
+        isEdit={isContractEdit}
+      />
+
       {showDeleteModal && deleteItemType === 'workinfo' && (
         <DeleteModal
           onClose={() => {
@@ -1092,6 +1239,19 @@ const EmployeeDetailPage = () => {
           loading={isDeleting}
           title="Grade Bilgisi Sil"
           message="Grade bilgisini silmek istediğinize emin misiniz?"
+        />
+      )}
+
+      {showDeleteModal && deleteItemType === 'contract' && (
+        <DeleteModal
+          onClose={() => {
+            setShowDeleteModal(false);
+            setContractToDelete(null);
+          }}
+          onHandleDelete={handleDeleteContract}
+          loading={isDeleting}
+          title="Sözleşme Sil"
+          message="Sözleşmeyi silmek istediğinize emin misiniz?"
         />
       )}
     </Container>

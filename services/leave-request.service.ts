@@ -1,6 +1,6 @@
 import { HR_ENDPOINTS } from '@/contants/urls';
 import { BaseService, APIResponse, PaginatedResponse, PaginationParams } from './base.service';
-import { LeaveRequest } from '@/models/hr/common.types';
+import { LeaveRequest } from '@/models/hr/hr-models';
 import axiosInstance from '@/helpers/api/axiosInstance';
 
 class LeaveRequestService extends BaseService<LeaveRequest> {
@@ -49,9 +49,9 @@ class LeaveRequestService extends BaseService<LeaveRequest> {
   }
 
   // Cancel leave request (for employees - their own requests)
-  async cancelLeaveRequest(id: number, data: { reason: string }): Promise<APIResponse<LeaveRequest>> {
+  async cancelLeaveRequest(id: number): Promise<APIResponse<LeaveRequest>> {
     try {
-      const response = await axiosInstance.post(`${this.baseUrl}/${id}/cancel`, data);
+      const response = await axiosInstance.post(`${this.baseUrl}/${id}/cancel`);
       return response.data;
     } catch (error) {
       throw error;

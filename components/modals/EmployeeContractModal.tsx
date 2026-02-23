@@ -1,82 +1,64 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form, Row, Col } from 'react-bootstrap';
-import { employeeGradeService, lookupService } from '@/services';
-import { GradeLookup } from '@/services/lookup.service';
-import { CreateEmployeeGradeRequest, UpdateEmployeeGradeRequest } from '@/models/hr/hr-requests';
+import { employeeContractService } from '@/services';
+import { CreateEmployeeContractRequest, UpdateEmployeeContractRequest } from '@/models/hr/hr-requests';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
 import { toast } from 'react-toastify';
 import LoadingOverlay from '@/components/LoadingOverlay';
 import FormDateField from '@/components/FormDateField';
-import FormSelectField from '@/components/FormSelectField';
-import { EmployeeGrade } from '@/models/hr/hr-models';
+import { EmployeeContract } from '@/models/hr/hr-models';
 
-interface EmployeeGradeModalProps {
+interface EmployeeContractModalProps {
   show: boolean;
   onHide: () => void;
   onSave: () => void;
   employeeId: number;
-  employeeGrade?: EmployeeGrade | null;
+  employeeContract?: EmployeeContract | null;
   isEdit?: boolean;
 }
 
-const EmployeeGradeModal: React.FC<EmployeeGradeModalProps> = ({
+const EmployeeContractModal: React.FC<EmployeeContractModalProps> = ({
   show,
   onHide,
   onSave,
   employeeId,
-  employeeGrade = null,
+  employeeContract = null,
   isEdit = false
 }) => {
-  const [formData, setFormData] = useState<CreateEmployeeGradeRequest>({
+  const [formData, setFormData] = useState<CreateEmployeeContractRequest>({
     employee_id: employeeId,
-    grade_id: 0,
+    contract_no: '',
     start_date: '',
     end_date: ''
   });
 
-  const [grades, setGrades] = useState<GradeLookup[]>([]);
   const [loading, setLoading] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<{[key: string]: string}>({});
 
   useEffect(() => {
-    if (show) {
-      fetchGrades();
-    }
-  }, [show]);
-
-  useEffect(() => {
-    if (isEdit && employeeGrade) {
+    if (isEdit && employeeContract) {
       setFormData({
         employee_id: employeeId,
-        grade_id: employeeGrade?.grade?.id || 0,
-        start_date: employeeGrade.start_date ? employeeGrade.start_date.split('T')[0] : '',
-        end_date: employeeGrade.end_date ? employeeGrade.end_date.split('T')[0] : ''
+        contract_no: employeeContract.contract_no || '',
+        start_date: employeeContract.start_date ? employeeContract.start_date.split('T')[0] : '',
+        end_date: employeeContract.end_date ? employeeContract.end_date.split('T')[0] : ''
       });
     } else {
       setFormData({
         employee_id: employeeId,
-        grade_id: 0,
+        contract_no: '',
         start_date: '',
         end_date: ''
       });
     }
     setFieldErrors({});
-  }, [show, employeeGrade, isEdit, employeeId]);
-
-  const fetchGrades = async () => {
-    try {
-      const response = await lookupService.getGradesLookup();
-      setGrades(response.data || []);
-    } catch (error) {
-      toast.error('Gradeler yüklenemedi');
-    }
-  };
+  }, [show, employeeContract, isEdit, employeeId]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: name === 'grade_id' ? parseInt(value) || 0 : value
+      [name]: value
     }));
 
     if (fieldErrors[name]) {
@@ -90,8 +72,8 @@ const EmployeeGradeModal: React.FC<EmployeeGradeModalProps> = ({
   const validateForm = (): boolean => {
     const errors: {[key: string]: string} = {};
 
-    if (!formData.grade_id || formData.grade_id <= 0) {
-      errors.grade_id = 'Grade seçimi zorunludur';
+    if (!formData.contract_no || !formData.contract_no.trim()) {
+      errors.contract_no = 'Sözleşme numarası zorunludur';
     }
     if (!formData.start_date) {
       errors.start_date = 'Başlama tarihi zorunludur';
@@ -111,17 +93,17 @@ const EmployeeGradeModal: React.FC<EmployeeGradeModalProps> = ({
     setLoading(true);
 
     try {
-      if (isEdit && employeeGrade) {
-        const updateRequest: UpdateEmployeeGradeRequest = {
+      if (isEdit && employeeContract) {
+        const updateRequest: UpdateEmployeeContractRequest = {
           ...formData,
-          id: employeeGrade.id
+          id: employeeContract.id
         };
-        await employeeGradeService.update(employeeGrade.id, updateRequest);
-        toast.success('Grade bilgisi başarıyla güncellendi');
+        await employeeContractService.update(employeeContract.id, updateRequest);
+        toast.success('Sözleşme başarıyla güncellendi');
       } else {
-        const createRequest: CreateEmployeeGradeRequest = formData;
-        await employeeGradeService.create(createRequest);
-        toast.success('Grade bilgisi başarıyla oluşturuldu');
+        const createRequest: CreateEmployeeContractRequest = formData;
+        await employeeContractService.create(createRequest);
+        toast.success('Sözleşme başarıyla oluşturuldu');
       }
       onSave();
       onHide();
@@ -156,30 +138,25 @@ const EmployeeGradeModal: React.FC<EmployeeGradeModalProps> = ({
 
         <Modal.Header closeButton>
           <Modal.Title>
-            {isEdit ? 'Grade Bilgisi Düzenle' : 'Yeni Grade Bilgisi'}
+            {isEdit ? 'Sözleşmeyi Düzenle' : 'Yeni Sözleşme Ekle'}
           </Modal.Title>
         </Modal.Header>
 
         <Form onSubmit={handleSubmit}>
           <Modal.Body>
             <Form.Group className="mb-3">
-              <Form.Label>Grade <span className="text-danger">*</span></Form.Label>
-              <FormSelectField
-                name="grade_id"
-                value={formData.grade_id.toString()}
+              <Form.Label>Sözleşme No <span className="text-danger">*</span></Form.Label>
+              <Form.Control
+                type="text"
+                name="contract_no"
+                value={formData.contract_no}
                 onChange={handleInputChange}
-                isInvalid={!!fieldErrors.grade_id}
-              >
-                <option value="0">Grade seçiniz</option>
-                {grades.map((grade) => (
-                  <option key={grade.id} value={grade.id.toString()}>
-                    {grade.name}
-                  </option>
-                ))}
-              </FormSelectField>
-              {fieldErrors.grade_id && (
+                placeholder="Sözleşme numarasını giriniz"
+                isInvalid={!!fieldErrors.contract_no}
+              />
+              {fieldErrors.contract_no && (
                 <div className="text-danger mt-1" style={{ fontSize: '0.875rem' }}>
-                  {fieldErrors.grade_id}
+                  {fieldErrors.contract_no}
                 </div>
               )}
             </Form.Group>
@@ -187,7 +164,7 @@ const EmployeeGradeModal: React.FC<EmployeeGradeModalProps> = ({
             <Row className="mb-3">
               <Col md={6}>
                 <FormDateField
-                  label="Başlama Tarihi"
+                  label="Başlangıç Tarihi"
                   name="start_date"
                   value={formData.start_date}
                   onChange={handleInputChange}
@@ -224,4 +201,4 @@ const EmployeeGradeModal: React.FC<EmployeeGradeModalProps> = ({
   );
 };
 
-export default EmployeeGradeModal;
+export default EmployeeContractModal;

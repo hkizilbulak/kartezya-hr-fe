@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Row, Col, Card, Table, Button, Container } from 'react-bootstrap';
 import { departmentService } from '@/services';
-import { Department } from '@/models/hr/common.types';
+import { Department } from '@/models/hr/hr-models';
 import { PageHeading } from '@/widgets';
 import Pagination from '@/components/Pagination';
 import DepartmentModal from '@/components/modals/DepartmentModal';

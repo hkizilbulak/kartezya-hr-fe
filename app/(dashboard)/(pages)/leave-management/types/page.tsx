@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Row, Col, Card, Table, Button, Container } from 'react-bootstrap';
 import { leaveTypeService } from '@/services/leave-type.service';
-import { LeaveType } from '@/models/hr/common.types';
+import { LeaveType } from '@/models/hr/hr-models';
 import { PageHeading } from '@/widgets';
 import Pagination from '@/components/Pagination';
 import LeaveTypeModal from '@/components/modals/LeaveTypeModal';

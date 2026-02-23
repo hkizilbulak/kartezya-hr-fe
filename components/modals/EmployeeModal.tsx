@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form, Row, Col } from 'react-bootstrap';
 import InputMask from 'react-input-mask';
-import { Employee } from '@/models/hr/common.types';
+import { Employee } from '@/models/hr/hr-models';
 import { employeeService, lookupService } from '@/services';
 import { GradeLookup } from '@/services/lookup.service';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';

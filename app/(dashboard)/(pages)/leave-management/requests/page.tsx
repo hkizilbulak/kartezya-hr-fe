@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Row, Col, Card, Table, Button, Modal, Form, Container } from 'react-bootstrap';
 import { leaveRequestService } from '@/services/leave-request.service';
-import { LeaveRequest, Employee } from '@/models/hr/common.types';
+import { Employee, LeaveRequest } from '@/models/hr/hr-models';
 import { PageHeading } from '@/widgets';
 import LeaveRequestModal from '@/components/modals/LeaveRequestModal';
 import Pagination from '@/components/Pagination';
@@ -77,7 +77,7 @@ const LeaveRequestsPage = () => {
     if (request.status !== 'APPROVED') return false;
     
     // Başlangıç tarihi bugünden sonra olmalı
-    const startDateStr = request.start_date || request.startDate;
+    const startDateStr = request.start_date || request.start_date;
     if (!startDateStr) return false;
     
     const startDate = new Date(startDateStr);
@@ -131,8 +131,8 @@ const LeaveRequestsPage = () => {
   };
 
   const handleApprove = async (request: LeaveRequest) => {
-    const leaveTypeName = request.leave_type?.name || request.leaveType?.name;
-    const requestedDays = request.requested_days || request.requestedDays;
+    const leaveTypeName = request.leave_type?.name || request.leave_type?.name;
+    const requestedDays = request.requested_days || request.requested_days;
     const remainingDays = request.remaining_days;
 
     if (leaveTypeName === 'Yıllık İzin' || leaveTypeName === 'Annual Leave') {
@@ -213,9 +213,7 @@ const LeaveRequestsPage = () => {
     
     setActionLoading(true);
     try {
-      await leaveRequestService.cancelLeaveRequest(cancelRequest.id, {
-        reason: 'İzin talebi iptal edildi'
-      });
+      await leaveRequestService.cancelLeaveRequest(cancelRequest.id);
       toast.success('İzin talebi iptal edildi');
       fetchLeaveRequests(currentPage, sortConfig.key || undefined, sortConfig.direction);
       setShowCancelModal(false);
@@ -280,8 +278,8 @@ const LeaveRequestsPage = () => {
   };
 
   const getHalfDayInfo = (request: LeaveRequest): string => {
-    const isStartFullDay = request.isStartDateFullDay !== false;
-    const isEndFullDay = request.isFinishDateFullDay !== false;
+    const isStartFullDay = request.is_finish_date_full_day !== false;
+    const isEndFullDay = request.is_finish_date_full_day !== false;
     
     if (isStartFullDay && isEndFullDay) {
       return 'Tam Gün';
@@ -351,10 +349,10 @@ const LeaveRequestsPage = () => {
                           <tbody>
                             {paginatedPendingRequests.length ? (
                               paginatedPendingRequests.map((request: LeaveRequest) => {
-                                const leaveTypeName = request.leave_type?.name || request.leaveType?.name;
-                                const startDate = request.start_date || request.startDate;
-                                const endDate = request.end_date || request.endDate;
-                                const requestedDays = request.requested_days || request.requestedDays;
+                                const leaveTypeName = request.leave_type?.name || request.leave_type?.name;
+                                const startDate = request.start_date || request.start_date;
+                                const endDate = request.end_date || request.end_date;
+                                const requestedDays = request.requested_days || request.requested_days;
                                 const createdAt = request.created_at || request.createdAt;
                                 const employeeId = request.employee?.id || '-';
 
@@ -362,7 +360,7 @@ const LeaveRequestsPage = () => {
                                   <tr key={request.id}>
                                     <td>{formatDate(createdAt)}</td>
                                     <td>{employeeId}</td>
-                                    <td>{getEmployeeName(request.employee)}</td>
+                                    <td>{request.employee ? getEmployeeName(request.employee) : ''}</td>
                                     <td>{leaveTypeName}</td>
                                     <td>{formatDate(startDate)}</td>
                                     <td>{formatDate(endDate)}</td>
@@ -463,10 +461,10 @@ const LeaveRequestsPage = () => {
                           <tbody>
                             {paginatedCompletedRequests.length ? (
                               paginatedCompletedRequests.map((request: LeaveRequest) => {
-                                const leaveTypeName = request.leave_type?.name || request.leaveType?.name;
-                                const startDate = request.start_date || request.startDate;
-                                const endDate = request.end_date || request.endDate;
-                                const requestedDays = request.requested_days || request.requestedDays;
+                                const leaveTypeName = request.leave_type?.name || request.leave_type?.name;
+                                const startDate = request.start_date || request.start_date;
+                                const endDate = request.end_date || request.end_date;
+                                const requestedDays = request.requested_days || request.requested_days;
                                 const createdAt = request.created_at || request.createdAt;
                                 const employeeId = request.employee?.id || '-';
 
@@ -474,7 +472,7 @@ const LeaveRequestsPage = () => {
                                   <tr key={request.id}>
                                     <td>{formatDate(createdAt)}</td>
                                     <td>{employeeId}</td>
-                                    <td>{getEmployeeName(request.employee)}</td>
+                                    <td>{request.employee ? getEmployeeName(request.employee) : ''}</td>
                                     <td>{leaveTypeName}</td>
                                     <td>{formatDate(startDate)}</td>
                                     <td>{formatDate(endDate)}</td>

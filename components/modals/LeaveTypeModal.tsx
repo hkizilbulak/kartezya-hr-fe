@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form, Row, Col } from 'react-bootstrap';
-import { leaveTypeService, LeaveType } from '@/services/leave-type.service';
+import { leaveTypeService } from '@/services/leave-type.service';
 import { translateErrorMessage, getFieldErrorMessage } from '@/helpers/ErrorUtils';
 import { toast } from 'react-toastify';
 import LoadingOverlay from '@/components/LoadingOverlay';
+import { LeaveType } from '@/models/hr/hr-models';
 
 interface LeaveTypeModalProps {
   show: boolean;

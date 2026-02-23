@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react';
 import { employeeService } from '@/services/employee.service';
-import { Employee } from '@/models/hr/common.types';
+import { Employee } from '@/models/hr/hr-models';
 import { Container, Row, Col, Button, Alert, Card, Form } from 'react-bootstrap';
 import InputMask from 'react-input-mask';
 import { PageHeading } from '@/widgets';

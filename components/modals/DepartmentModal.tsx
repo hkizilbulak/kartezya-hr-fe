@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form } from 'react-bootstrap';
-import { Department } from '@/models/hr/common.types';
+import { Department } from '@/models/hr/hr-models';
+import { CreateDepartmentRequest, UpdateDepartmentRequest } from '@/models/hr/hr-requests';
 import { departmentService, lookupService } from '@/services';
 import { CompanyLookup } from '@/services/lookup.service';
 import { translateErrorMessage, getFieldErrorMessage } from '@/helpers/ErrorUtils';
@@ -23,9 +24,9 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
   department = null,
   isEdit = false
 }) => {
-  const [formData, setFormData] = useState({
-    companyId: '',
+  const [formData, setFormData] = useState<CreateDepartmentRequest>({
     name: '',
+    company_id: 0,
     manager: ''
   });
   const [companies, setCompanies] = useState<CompanyLookup[]>([]);
@@ -41,17 +42,18 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
   useEffect(() => {
     if (isEdit && department) {
       setFormData({
-        companyId: department.company?.id?.toString() || department.companyId?.toString() || '',
         name: department.name || '',
-        manager: department.manager || ''
+        company_id: department.company?.id || department.company_id || 0,
+        manager: department.manager || '',
       });
     } else {
       setFormData({
-        companyId: '',
         name: '',
+        company_id: 0,
         manager: ''
       });
     }
+    setFieldErrors({});
   }, [show, department, isEdit]);
 
   const fetchCompanies = async () => {
@@ -68,7 +70,7 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: name === 'company_id' ? parseInt(value) || 0 : value
     }));
 
     if (fieldErrors[name]) {
@@ -82,13 +84,12 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
   const validateForm = (): boolean => {
     const errors: {[key: string]: string} = {};
     
-    Object.keys(formData).forEach(fieldName => {
-      const fieldValue = formData[fieldName as keyof typeof formData];
-      const errorMessage = getFieldErrorMessage(fieldName, fieldValue);
-      if (errorMessage) {
-        errors[fieldName] = errorMessage;
-      }
-    });
+    if (!formData.name || !formData.name.trim()) {
+      errors.name = 'Departman adı zorunludur';
+    }
+    if (!formData.company_id || formData.company_id <= 0) {
+      errors.company_id = 'Şirket seçimi zorunludur';
+    }
 
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
@@ -104,22 +105,16 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
     setLoading(true);
 
     try {
-      const submitData = {
-        name: formData.name.trim(),
-        company_id: parseInt(formData.companyId),
-        manager: formData.manager.trim()
-      };
-
-      if (isNaN(submitData.company_id) || submitData.company_id <= 0) {
-        toast.error('Geçerli bir şirket seçiniz');
-        return;
-      }
-
       if (isEdit && department) {
-        await departmentService.update(department.id, submitData);
+        const updateRequest: UpdateDepartmentRequest = {
+          ...formData,
+          id: department.id
+        };
+        await departmentService.update(department.id, updateRequest);
         toast.success('Departman başarıyla güncellendi');
       } else {
-        await departmentService.create(submitData);
+        const createRequest: CreateDepartmentRequest = formData;
+        await departmentService.create(createRequest);
         toast.success('Departman başarıyla oluşturuldu');
       }
       onSave();
@@ -164,21 +159,21 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
             <Form.Group className="mb-3">
               <Form.Label>Şirket <span className="text-danger">*</span></Form.Label>
               <FormSelectField
-                name="companyId"
-                value={formData.companyId}
+                name="company_id"
+                value={formData.company_id.toString()}
                 onChange={handleInputChange}
-                isInvalid={!!fieldErrors.companyId}
+                isInvalid={!!fieldErrors.company_id}
               >
-                <option value="">Şirket seçiniz</option>
+                <option value="0">Şirket seçiniz</option>
                 {companies.map((company) => (
-                  <option key={company.id} value={company.id}>
+                  <option key={company.id} value={company.id.toString()}>
                     {company.name}
                   </option>
                 ))}
               </FormSelectField>
-              {fieldErrors.companyId && (
+              {fieldErrors.company_id && (
                 <div className="text-danger mt-1" style={{ fontSize: '0.875rem' }}>
-                  {fieldErrors.companyId}
+                  {fieldErrors.company_id}
                 </div>
               )}
             </Form.Group>
@@ -190,7 +185,7 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
                 name="name"
                 value={formData.name}
                 onChange={handleInputChange}
-                placeholder="Departman adını giriniz"
+                placeholder="Departman adı giriniz"
                 isInvalid={!!fieldErrors.name}
               />
               {fieldErrors.name && (
@@ -201,16 +196,16 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
             </Form.Group>
 
             <Form.Group className="mb-3">
-              <Form.Label>Yönetici</Form.Label>
+              <Form.Label>Yönetici Adı</Form.Label>
               <Form.Control
                 type="text"
                 name="manager"
                 value={formData.manager}
                 onChange={handleInputChange}
-                placeholder="Yönetici adını giriniz (isteğe bağlı)"
+                placeholder="Yönetici adı giriniz"
                 isInvalid={!!fieldErrors.manager}
               />
-              {fieldErrors.manager && (
+              {fieldErrors.name && (
                 <div className="text-danger mt-1" style={{ fontSize: '0.875rem' }}>
                   {fieldErrors.manager}
                 </div>

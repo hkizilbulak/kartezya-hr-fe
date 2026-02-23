@@ -1,6 +1,6 @@
 import { HR_ENDPOINTS } from '@/contants/urls';
 import { APIResponse } from './base.service';
-import { LeaveBalance } from '@/models/hr/common.types';
+import { LeaveBalance } from '@/models/hr/hr-models';
 import axiosInstance from '@/helpers/api/axiosInstance';
 
 export const leaveBalanceService = {

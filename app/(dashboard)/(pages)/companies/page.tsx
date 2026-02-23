@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Row, Col, Card, Table, Button, Badge, Container } from 'react-bootstrap';
 import { companyService } from '@/services';
-import { Company } from '@/models/hr/common.types';
+import { Company } from '@/models/hr/hr-models';
 import { PageHeading } from '@/widgets';
 import Pagination from '@/components/Pagination';
 import CompanyModal from '@/components/modals/CompanyModal';

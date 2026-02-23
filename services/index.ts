@@ -5,6 +5,7 @@ export * from './department.service';
 export * from './job-position.service';
 export * from './employee.service';
 export * from './employee-grade.service';
+export * from './employee-contract.service';
 export * from './work-information.service';
 export * from './leave-type.service';
 export * from './leave-request.service';

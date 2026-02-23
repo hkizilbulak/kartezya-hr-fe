@@ -3,11 +3,10 @@ import { useState, useEffect } from 'react';
 import { Row, Col, Card, Table, Button, Container } from 'react-bootstrap';
 import { leaveRequestService } from '@/services/leave-request.service';
 import { leaveBalanceService } from '@/services/leave-balance.service';
-import { LeaveRequest, Employee, LeaveBalance } from '@/models/hr/common.types';
+import { Employee, LeaveRequest, LeaveBalance } from '@/models/hr/hr-models';
 import { PageHeading } from '@/widgets';
 import LeaveRequestModal from '@/components/modals/LeaveRequestModal';
 import DeleteModal from '@/components/DeleteModal';
-import Pagination from '@/components/Pagination';
 import LoadingOverlay from '@/components/LoadingOverlay';
 import { Edit, Plus, ChevronUp, ChevronDown } from 'react-feather';
 import { toast } from 'react-toastify';
@@ -106,9 +105,7 @@ const MyLeaveRequests = () => {
     if (!selectedRequest) return;
     setActionLoading(true);
     try {
-      await leaveRequestService.cancelLeaveRequest(selectedRequest.id, {
-        reason: 'İzin talebi iptal edildi'
-      });
+      await leaveRequestService.cancelLeaveRequest(selectedRequest.id);
       toast.success('İzin talebi iptal edildi');
       fetchLeaveRequests(currentPage, sortConfig.key || undefined, sortConfig.direction);
       setSelectedRequest(null);
@@ -161,7 +158,7 @@ const MyLeaveRequests = () => {
     if (request.status !== 'APPROVED') return false;
     
     // Başlangıç tarihi bugünden sonra olmalı
-    const startDateStr = request.start_date || request.startDate;
+    const startDateStr = request.start_date || request.start_date;
     if (!startDateStr) return false;
     
     const startDate = new Date(startDateStr);
@@ -424,10 +421,10 @@ const MyLeaveRequests = () => {
                         <tbody>
                           {pendingRequests.length ? (
                             pendingRequests.map((request: LeaveRequest) => {
-                              const leaveTypeName = request.leave_type?.name || request.leaveType?.name;
-                              const startDate = request.start_date || request.startDate;
-                              const endDate = request.end_date || request.endDate;
-                              const requestedDays = request.requested_days || request.requestedDays;
+                              const leaveTypeName = request.leave_type?.name || request.leave_type?.name;
+                              const startDate = request.start_date || request.start_date;
+                              const endDate = request.end_date || request.end_date;
+                              const requestedDays = request.requested_days || request.requested_days;
 
                               return (
                                 <tr key={request.id}>
@@ -502,10 +499,10 @@ const MyLeaveRequests = () => {
                         <tbody>
                           {completedRequests.length ? (
                             completedRequests.map((request: LeaveRequest) => {
-                              const leaveTypeName = request.leave_type?.name || request.leaveType?.name;
-                              const startDate = request.start_date || request.startDate;
-                              const endDate = request.end_date || request.endDate;
-                              const requestedDays = request.requested_days || request.requestedDays;
+                              const leaveTypeName = request.leave_type?.name || request.leave_type?.name;
+                              const startDate = request.start_date || request.start_date;
+                              const endDate = request.end_date || request.end_date;
+                              const requestedDays = request.requested_days || request.requested_days;
 
                               return (
                                 <tr key={request.id}>

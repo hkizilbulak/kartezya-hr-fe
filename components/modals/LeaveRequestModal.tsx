@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Form, Alert, Button, Row, Col } from 'react-bootstrap';
-import { LeaveRequest } from '@/models/hr/common.types';
+import { LeaveRequest } from '@/models/hr/hr-models';
 import { leaveRequestService } from '@/services/leave-request.service';
 import { lookupService } from '@/services/lookup.service';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
@@ -50,17 +50,17 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
 
   useEffect(() => {
     if (isEdit && leaveRequest && leaveTypes.length > 0) {
-      const leaveTypeId = (leaveRequest.leave_type_id || leaveRequest.leaveTypeId || leaveRequest.leave_type?.id)?.toString() || '';
+      const leaveTypeId = (leaveRequest.leave_type_id || leaveRequest.leave_type_id || leaveRequest.leave_type?.id)?.toString() || '';
       
-      const startDateStr = (leaveRequest.start_date || leaveRequest.startDate)?.split('T')[0] || '';
-      const endDateStr = (leaveRequest.end_date || leaveRequest.endDate)?.split('T')[0] || '';
+      const startDateStr = (leaveRequest.start_date || leaveRequest.start_date)?.split('T')[0] || '';
+      const endDateStr = (leaveRequest.end_date || leaveRequest.end_date)?.split('T')[0] || '';
       
       setFormData({
         leaveTypeId: leaveTypeId,
         startDate: startDateStr,
         endDate: endDateStr,
-        isStartDateFullDay: leaveRequest.is_start_date_full_day !== undefined ? leaveRequest.is_start_date_full_day : (leaveRequest.isStartDateFullDay ?? true),
-        isFinishDateFullDay: leaveRequest.is_finish_date_full_day !== undefined ? leaveRequest.is_finish_date_full_day : (leaveRequest.isFinishDateFullDay ?? true),
+        isStartDateFullDay: leaveRequest.is_start_date_full_day !== undefined ? leaveRequest.is_start_date_full_day : (leaveRequest.is_finish_date_full_day ?? true),
+        isFinishDateFullDay: leaveRequest.is_finish_date_full_day !== undefined ? leaveRequest.is_finish_date_full_day : (leaveRequest.is_finish_date_full_day ?? true),
         reason: leaveRequest.reason || '',
         teamApprovalReceived: false
       });

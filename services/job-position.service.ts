@@ -1,6 +1,6 @@
 import { HR_ENDPOINTS } from '@/contants/urls';
 import { BaseService } from './base.service';
-import { JobPosition } from '@/models/hr/common.types';
+import { JobPosition } from '@/models/hr/hr-models';
 
 class JobPositionService extends BaseService<JobPosition> {
   constructor() {

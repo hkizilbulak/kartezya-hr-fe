@@ -13,6 +13,7 @@ interface EmployeeHeaderProfileProps {
     email: string;
     phone: string;
     address: string;
+    totalExperience?: string;
   };
 }
 
@@ -71,6 +72,11 @@ export default function EmployeeHeaderProfile({
               <div className={styles.infoItem}>
                 <span className={styles.infoLabel}>Telefon:</span>
                 <span className={styles.infoValue}>{employee.phone}</span>
+              </div>
+              <div className={styles.divider}></div>
+              <div className={styles.infoItem}>
+                <span className={styles.infoLabel}>Toplam Tecrübe:</span>
+                <span className={styles.infoValue}>{employee.totalExperience}</span>
               </div>
             </div>
           </div>

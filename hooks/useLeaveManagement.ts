@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { leaveBalanceService } from '@/services/leave-balance.service';
 import { leaveRequestService } from '@/services/leave-request.service';
-import { LeaveRequest, LeaveBalance } from '@/models/hr/common.types';
+import { LeaveRequest, LeaveBalance } from '@/models/hr/hr-models';
 import { PaginationParams } from '@/services/base.service';
 
 export const useLeaveManagement = () => {

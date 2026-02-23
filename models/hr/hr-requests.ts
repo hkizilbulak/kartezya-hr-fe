@@ -4,6 +4,85 @@ export interface LoginRequest {
   password: string;
 }
 
+export interface CreateEmployeeRequest {
+  email: string;
+  company_email: string;
+  first_name: string;
+  last_name: string;
+  phone: string;
+  address?: string;
+  state?: string;
+  city?: string;
+  gender?: string;
+  date_of_birth?: string;
+  hire_date: string;
+  leave_date?: string;
+  total_gap?: number;
+  marital_status?: string;
+  emergency_contact?: string;
+  emergency_contact_name?: string;
+  emergency_contact_relation?: string;
+  grade_id?: number;
+  is_grade_up?: boolean;
+  contract_no?: string;
+  profession_start_date?: string;
+  note?: string;
+  mother_name?: string;
+  father_name?: string;
+  nationality?: string;
+  identity_no?: string;
+  roles: string[];
+}
+
+export interface UpdateEmployeeRequest {
+  email?: string;
+  company_email?: string;
+  first_name: string;
+  last_name: string;
+  phone?: string;
+  address?: string;
+  state?: string;
+  city?: string;
+  gender?: string;
+  date_of_birth?: string;
+  hire_date?: string;
+  leave_date?: string;
+  total_gap?: number;
+  marital_status?: string;
+  emergency_contact?: string;
+  emergency_contact_name?: string;
+  emergency_contact_relation?: string;
+  grade_id?: number;
+  is_grade_up?: boolean;
+  contract_no?: string;
+  profession_start_date?: string;
+  note?: string;
+  mother_name?: string;
+  father_name?: string;
+  nationality?: string;
+  identity_no?: string;
+  roles?: string[];
+}
+
+export interface UpdateMyProfileRequest {
+  email?: string;
+  phone?: string;
+  address?: string;
+  state?: string;
+  city?: string;
+  gender?: string;
+  date_of_birth?: string;
+  profession_start_date?: string;
+  marital_status?: string;
+  emergency_contact?: string;
+  emergency_contact_name?: string;
+  emergency_contact_relation?: string;
+  mother_name?: string;
+  father_name?: string;
+  nationality?: string;
+  identity_no?: string;
+}
+
 export interface CreateCompanyRequest {
   name: string;
   description?: string;
@@ -19,8 +98,8 @@ export interface UpdateCompanyRequest extends CreateCompanyRequest {
 
 export interface CreateDepartmentRequest {
   name: string;
-  description?: string;
-  companyId: number;
+  manager?: string;
+  company_id: number;
 }
 
 export interface UpdateDepartmentRequest extends CreateDepartmentRequest {
@@ -34,20 +113,6 @@ export interface CreateJobPositionRequest {
 }
 
 export interface UpdateJobPositionRequest extends CreateJobPositionRequest {
-  id: number;
-}
-
-export interface CreateEmployeeRequest {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone?: string;
-  dateOfBirth?: string;
-  address?: string;
-  employeeNumber: string;
-}
-
-export interface UpdateEmployeeRequest extends CreateEmployeeRequest {
   id: number;
 }
 
@@ -102,12 +167,23 @@ export interface UpdateGradeRequest extends CreateGradeRequest {
 }
 
 export interface CreateEmployeeGradeRequest {
-  employeeId: number;
-  gradeId: number;
-  startDate: string;
-  endDate?: string;
+  employee_id: number;
+  grade_id: number;
+  start_date: string;
+  end_date?: string;
 }
 
 export interface UpdateEmployeeGradeRequest extends CreateEmployeeGradeRequest {
+  id: number;
+}
+
+export interface CreateEmployeeContractRequest {
+  employee_id: number;
+  contract_no: string;
+  start_date: string;
+  end_date?: string;
+}
+
+export interface UpdateEmployeeContractRequest extends CreateEmployeeContractRequest {
   id: number;
 }

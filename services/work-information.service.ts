@@ -1,7 +1,7 @@
 import { HR_ENDPOINTS } from '@/contants/urls';
 import { BaseService, APIResponse } from './base.service';
 import axiosInstance from '@/helpers/api/axiosInstance';
-import { EmployeeWorkInformation } from '@/models/hr/common.types';
+import { EmployeeWorkInformation } from '@/models/hr/hr-models';
 
 class WorkInformationService extends BaseService<EmployeeWorkInformation> {
   constructor() {

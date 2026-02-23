@@ -21,6 +21,30 @@ class EmployeeGradeService extends BaseService<EmployeeGrade> {
       throw error;
     }
   }
+
+  /**
+   * Create grade with snake_case fields
+   */
+  async create(data: any): Promise<APIResponse<EmployeeGrade>> {
+    try {
+      const response = await axiosInstance.post(`${HR_ENDPOINTS.EMPLOYEE_GRADES}`, data);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Update grade with snake_case fields
+   */
+  async update(id: number, data: any): Promise<APIResponse<EmployeeGrade>> {
+    try {
+      const response = await axiosInstance.put(`${HR_ENDPOINTS.EMPLOYEE_GRADES}/${id}`, data);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  }
 }
 
 export const employeeGradeService = new EmployeeGradeService();

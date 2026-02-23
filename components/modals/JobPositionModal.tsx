@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form } from 'react-bootstrap';
-import { JobPosition } from '@/models/hr/common.types';
+import { JobPosition } from '@/models/hr/hr-models';
 import { jobPositionService } from '@/services';
 import { translateErrorMessage, getFieldErrorMessage } from '@/helpers/ErrorUtils';
 import { toast } from 'react-toastify';
