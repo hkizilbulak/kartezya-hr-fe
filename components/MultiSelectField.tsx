@@ -29,6 +29,7 @@ const MultiSelectField: React.FC<MultiSelectFieldProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [dropdownPosition, setDropdownPosition] = useState({ 
     top: 0, 
     left: 0, 
@@ -38,6 +39,7 @@ const MultiSelectField: React.FC<MultiSelectFieldProps> = ({
   });
   const dropdownRef = useRef<HTMLDivElement>(null);
   const selectRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -59,13 +61,22 @@ const MultiSelectField: React.FC<MultiSelectFieldProps> = ({
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
       document.body.classList.add('modal-open');
+      // Focus search input when dropdown opens
+      setTimeout(() => {
+        if (searchInputRef.current && !isMobile) {
+          searchInputRef.current.focus();
+        }
+      }, 100);
+    } else {
+      // Clear search when dropdown closes
+      setSearchQuery("");
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
       document.body.classList.remove('modal-open');
     };
-  }, [isOpen]);
+  }, [isOpen, isMobile]);
 
   const updateDropdownPosition = () => {
     if (selectRef.current) {
@@ -137,6 +148,16 @@ const MultiSelectField: React.FC<MultiSelectFieldProps> = ({
     }
     return `${value.length} seçildi`;
   };
+
+  const filteredOptions = React.useMemo(() => {
+    if (!searchQuery.trim()) return options;
+    
+    const query = searchQuery.toLowerCase().trim();
+    return options.filter(option => 
+      option.label.toLowerCase().includes(query) ||
+      option.value.toLowerCase().includes(query)
+    );
+  }, [options, searchQuery]);
 
   const renderSelectedTags = () => {
     if (value.length <= 1) return null;
@@ -218,14 +239,27 @@ const MultiSelectField: React.FC<MultiSelectFieldProps> = ({
               maxHeight: `${dropdownPosition.maxHeight}px`
             }}
           >
-            <div className="overflow-auto" style={{ maxHeight: `${dropdownPosition.maxHeight}px` }}>
+            {/* Search Input */}
+            <div className="p-2 border-bottom bg-light sticky-top">
+              <input
+                ref={searchInputRef}
+                type="text"
+                className="form-control form-control-sm"
+                placeholder="Ara..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>
+            
+            <div className="overflow-auto" style={{ maxHeight: `${dropdownPosition.maxHeight - 50}px` }}>
               <div className="list-group list-group-flush">
-                {options.length === 0 ? (
+                {filteredOptions.length === 0 ? (
                   <div className="list-group-item border-0 text-center text-muted py-3">
-                    Seçenek bulunamadı
+                    {searchQuery ? 'Sonuç bulunamadı' : 'Seçenek bulunamadı'}
                   </div>
                 ) : (
-                  options.map((option) => {
+                  filteredOptions.map((option) => {
                     const isSelected = value.includes(option.value);
                     return (
                       <button
@@ -266,14 +300,28 @@ const MultiSelectField: React.FC<MultiSelectFieldProps> = ({
           />
           <div className="position-fixed bottom-0 start-0 w-100 bg-white shadow-lg border-top rounded-top-3" 
                style={{ zIndex: 1070, maxHeight: '60vh' }}>
-            <div className="overflow-auto" style={{ maxHeight: 'calc(60vh - 60px)' }}>
+            
+            {/* Search Input for Mobile */}
+            <div className="p-3 border-bottom bg-light">
+              <input
+                ref={searchInputRef}
+                type="text"
+                className="form-control"
+                placeholder="Ara..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>
+            
+            <div className="overflow-auto" style={{ maxHeight: 'calc(60vh - 120px)' }}>
               <div className="list-group list-group-flush">
-                {options.length === 0 ? (
+                {filteredOptions.length === 0 ? (
                   <div className="list-group-item border-0 text-center text-muted py-3">
-                    Seçenek bulunamadı
+                    {searchQuery ? 'Sonuç bulunamadı' : 'Seçenek bulunamadı'}
                   </div>
                 ) : (
-                  options.map((option) => {
+                  filteredOptions.map((option) => {
                     const isSelected = value.includes(option.value);
                     return (
                       <button
