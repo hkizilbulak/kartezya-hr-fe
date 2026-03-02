@@ -1,11 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    eslint: {
-        ignoreDuringBuilds: true,
-    },
     typescript: {
         ignoreBuildErrors: true,
     },
+    turbopack: {},
     webpack: (config, { isServer }) => {
         if (!isServer) {
             config.resolve.fallback = {

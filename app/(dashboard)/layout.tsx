@@ -1,6 +1,6 @@
 'use client';
 
-import 'styles/theme.scss';
+import '@/styles/theme.scss';
 import { useAuth } from "@/hooks/useAuth";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect } from "react";
