@@ -113,7 +113,7 @@ export interface LeaveType {
   name: string;
   description?: string;
   is_paid: boolean;
-  is_limited: boolean;
+  limit_amount: number;
   max_days?: number;
   is_accrual: boolean;
   is_required_document: boolean;

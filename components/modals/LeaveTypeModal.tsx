@@ -25,7 +25,7 @@ const LeaveTypeModal: React.FC<LeaveTypeModalProps> = ({
     name: '',
     description: '',
     is_paid: false,
-    is_limited: false,
+    limit_amount: 0,
     is_accrual: false,
     is_required_document: false
   });
@@ -38,7 +38,7 @@ const LeaveTypeModal: React.FC<LeaveTypeModalProps> = ({
         name: leaveType.name || '',
         description: leaveType.description || '',
         is_paid: !!leaveType.is_paid,
-        is_limited: !!leaveType.is_limited,
+        limit_amount: leaveType.limit_amount || 0,
         is_accrual: !!leaveType.is_accrual,
         is_required_document: !!leaveType.is_required_document
       });
@@ -47,7 +47,7 @@ const LeaveTypeModal: React.FC<LeaveTypeModalProps> = ({
         name: '',
         description: '',
         is_paid: false,
-        is_limited: false,
+        limit_amount: 0,
         is_accrual: false,
         is_required_document: false
       });
@@ -56,8 +56,18 @@ const LeaveTypeModal: React.FC<LeaveTypeModalProps> = ({
   }, [show, leaveType, isEdit]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value, type, checked } = e.target as HTMLInputElement;
-    const val: any = type === 'checkbox' ? checked : value;
+    const { name, value } = e.target;
+    const target = e.target as HTMLInputElement;
+    
+    let val: any;
+    if (target.type === 'checkbox') {
+      val = target.checked;
+    } else if (target.type === 'number') {
+      val = value === '' ? 0 : parseInt(value, 10);
+    } else {
+      val = value;
+    }
+    
     setFormData(prev => ({ ...prev, [name]: val }));
 
     if (fieldErrors[name]) {
@@ -150,22 +160,28 @@ const LeaveTypeModal: React.FC<LeaveTypeModalProps> = ({
               </Col>
 
               <Col md={4}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Limit (Gün)</Form.Label>
+                  <Form.Control
+                    type="number"
+                    name="limit_amount"
+                    value={formData.limit_amount}
+                    onChange={handleInputChange}
+                    placeholder="0"
+                    min="0"
+                    step="1"
+                  />
+                  <Form.Text className="text-muted">
+                    0 = Limitsiz
+                  </Form.Text>
+                </Form.Group>
+
                 <Form.Group className="mb-2">
                   <Form.Check
                     type="checkbox"
                     label="Ücretli"
                     name="is_paid"
                     checked={formData.is_paid}
-                    onChange={handleInputChange}
-                  />
-                </Form.Group>
-
-                <Form.Group className="mb-2">
-                  <Form.Check
-                    type="checkbox"
-                    label="Limitli"
-                    name="is_limited"
-                    checked={formData.is_limited}
                     onChange={handleInputChange}
                   />
                 </Form.Group>
