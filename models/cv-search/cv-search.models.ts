@@ -69,3 +69,64 @@ export interface BatchStatusResponse {
   pending: number
   results: BulkUploadJobResult[]
 }
+
+// ── Candidate Models ──────────────────────────────────────────────────────────
+
+export interface CandidateListItem {
+  id: number
+  name: string
+  current_position: string
+  seniority: string
+  interview_count: number
+  latest_outcome: string
+  created_at: string
+}
+
+export interface ListCandidatesResponse {
+  candidates: CandidateListItem[]
+  total: number
+  limit: number
+  offset: number
+}
+
+export interface Interview {
+  id: number
+  candidate_id: number
+  interview_date: string
+  team: string
+  interviewer_name: string
+  interview_type: 'technical' | 'hr' | 'case_study' | 'other' | string
+  notes: string
+  outcome: 'passed' | 'failed' | 'pending' | string
+  created_at: string
+  updated_at: string
+}
+
+export interface InterviewRequest {
+  interview_date: string // Required, YYYY-MM-DD
+  team?: string
+  interviewer_name?: string
+  interview_type?: 'technical' | 'hr' | 'case_study' | 'other' | string
+  notes?: string
+  outcome?: 'passed' | 'failed' | 'pending' | string
+}
+
+export interface CandidateDetail {
+  id: number
+  name: string
+  email: string
+  phone: string
+  location: string
+  graph_node_id: number
+  current_position: string
+  seniority: string
+  interviews: Interview[]
+  created_at: string
+}
+
+// ── Search Suggestion Models ──────────────────────────────────────────────────
+
+export interface SuggestionResult {
+  text: string
+  type: 'skill' | 'company' | 'position' | string
+}

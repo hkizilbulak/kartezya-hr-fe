@@ -1,16 +1,17 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
-  Row, Col, Card, Table, Button, Badge, Container, Form, Collapse,
+  Row, Col, Card, Table, Button, Badge, Container, Form,
 } from 'react-bootstrap';
 import { cvSearchService } from '@/services';
 import type {
   FusedCandidateResponse,
   HybridSearchResponse,
+  SuggestionResult,
 } from '@/models/cv-search/cv-search.models';
 import { PageHeading } from '@/widgets';
 import LoadingOverlay from '@/components/LoadingOverlay';
-import { Search, ChevronDown, ChevronUp } from 'react-feather';
+import { Search, ChevronDown, ChevronUp, Plus } from 'react-feather';
 import { toast } from 'react-toastify';
 import '@/styles/table-list.scss';
 import '@/styles/components/table-common.scss';
@@ -22,6 +23,15 @@ const scoreColor = (score: number): string => {
   return '#6c757d';
 };
 
+const suggestionTypeLabel = (type: string) => {
+  switch (type) {
+    case 'skill': return 'Beceri';
+    case 'company': return 'Şirket';
+    case 'position': return 'Pozisyon';
+    default: return type;
+  }
+};
+
 const CvSearchPage = () => {
   const [query, setQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
@@ -29,8 +39,74 @@ const CvSearchPage = () => {
   const [results, setResults] = useState<FusedCandidateResponse[]>([]);
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
 
-  const handleSearch = async () => {
+  // Popular queries
+  const [popularQueries, setPopularQueries] = useState<string[]>([]);
+
+  // Suggestions
+  const [suggestions, setSuggestions] = useState<SuggestionResult[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const suggestDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const textareaRef = useRef<HTMLInputElement>(null);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
+  // When true, the next suggestions effect run is skipped (programmatic query set)
+  const suppressSuggestRef = useRef(false);
+
+  // Load popular queries on mount
+  useEffect(() => {
+    cvSearchService.getPopularQueries().then((data) => {
+      setPopularQueries((data ?? []).slice(0, 10));
+    }).catch(() => {
+      // silently ignore
+    });
+  }, []);
+
+  // Debounced suggestions
+  useEffect(() => {
+    if (suggestDebounceRef.current) clearTimeout(suggestDebounceRef.current);
+    // Skip if the query was set programmatically (popular query / suggestion click)
+    if (suppressSuggestRef.current) {
+      suppressSuggestRef.current = false;
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
     const trimmed = query.trim();
+    if (trimmed.length < 2) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+    suggestDebounceRef.current = setTimeout(async () => {
+      try {
+        const data = await cvSearchService.getSuggestions(trimmed, 5);
+        setSuggestions(data ?? []);
+        setShowSuggestions((data ?? []).length > 0);
+      } catch {
+        setSuggestions([]);
+        setShowSuggestions(false);
+      }
+    }, 300);
+    return () => {
+      if (suggestDebounceRef.current) clearTimeout(suggestDebounceRef.current);
+    };
+  }, [query]);
+
+  // Close suggestions on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (
+        suggestionsRef.current && !suggestionsRef.current.contains(e.target as Node) &&
+        textareaRef.current && !textareaRef.current.contains(e.target as Node)
+      ) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const executeSearch = useCallback(async (q: string) => {
+    const trimmed = q.trim();
     if (!trimmed) {
       toast.warning('Lütfen bir arama sorgusu girin.');
       return;
@@ -39,6 +115,7 @@ const CvSearchPage = () => {
     setResults([]);
     setExpandedRows(new Set());
     setMeta(null);
+    setShowSuggestions(false);
     try {
       const response = await cvSearchService.hybridSearch(trimmed);
       setResults(response.candidates || []);
@@ -61,12 +138,34 @@ const CvSearchPage = () => {
     } finally {
       setIsSearching(false);
     }
+  }, []);
+
+  const handleSearch = () => executeSearch(query);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Escape') {
+      setShowSuggestions(false);
+      return;
+    }
+    if (e.key === 'Enter') {
+      executeSearch(query);
+    }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-      handleSearch();
-    }
+  const handleSuggestionClick = (s: SuggestionResult) => {
+    suppressSuggestRef.current = true;
+    setQuery(s.text);
+    setShowSuggestions(false);
+    setSuggestions([]);
+    executeSearch(s.text);
+  };
+
+  const handlePopularQueryClick = (q: string) => {
+    suppressSuggestRef.current = true;
+    setQuery(q);
+    setShowSuggestions(false);
+    setSuggestions([]);
+    executeSearch(q);
   };
 
   const toggleRow = (rank: number) => {
@@ -113,20 +212,67 @@ const CvSearchPage = () => {
                 <Form.Label className="fw-semibold mb-2">
                   Arama Sorgusu
                   <span className="text-muted fw-normal small ms-2">
-                    (Ctrl+Enter ile arayın)
+                    (Enter ile arayın)
                   </span>
                 </Form.Label>
-                <Form.Control
-                  as="textarea"
-                  rows={3}
-                  placeholder="Örn: 5 yıl deneyimli backend geliştirici, Python ve PostgreSQL bilen, tercihen İstanbul'da"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  onKeyDown={handleKeyDown as any}
-                  disabled={isSearching}
-                  style={{ resize: 'vertical' }}
-                />
+
+                {/* Textarea + Suggestions wrapper */}
+                <div style={{ position: 'relative' }}>
+                  <Form.Control
+                    ref={textareaRef}
+                    type="text"
+                    placeholder="Örn: 5 yıl deneyimli backend geliştirici, Python ve PostgreSQL bilen, tercihen İstanbul'da"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                    disabled={isSearching}
+                  />
+
+                  {/* Autocomplete dropdown */}
+                  {showSuggestions && suggestions.length > 0 && (
+                    <div
+                      ref={suggestionsRef}
+                      style={{
+                        position: 'absolute',
+                        top: '100%',
+                        left: 0,
+                        right: 0,
+                        zIndex: 1050,
+                        background: '#fff',
+                        border: '1px solid #dee2e6',
+                        borderTop: 'none',
+                        borderRadius: '0 0 6px 6px',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                        maxHeight: 220,
+                        overflowY: 'auto',
+                      }}
+                    >
+                      {suggestions.map((s, i) => (
+                        <div
+                          key={i}
+                          onMouseDown={(e) => { e.preventDefault(); handleSuggestionClick(s); }}
+                          style={{ cursor: 'pointer' }}
+                          className="d-flex align-items-center justify-content-between px-3 py-2"
+                          onMouseEnter={(e) => (e.currentTarget.style.background = '#f8f9fa')}
+                          onMouseLeave={(e) => (e.currentTarget.style.background = '#fff')}
+                        >
+                          <span className="fw-semibold small">{s.text}</span>
+                          <Badge
+                            bg="light"
+                            text="secondary"
+                            className="border small ms-2"
+                            style={{ fontSize: '0.68rem' }}
+                          >
+                            {suggestionTypeLabel(s.type)}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </Form.Group>
+
               <div className="mt-3">
                 <Button
                   variant="primary"
@@ -137,6 +283,40 @@ const CvSearchPage = () => {
                   Ara
                 </Button>
               </div>
+
+              {/* Popular Queries */}
+              {popularQueries.length > 0 && (
+                <div className="mt-3">
+                  <div className="text-muted small mb-2">Popüler Aramalar:</div>
+                  <div className="d-flex flex-wrap gap-2">
+                    {popularQueries.map((q, i) => (
+                      <div
+                        key={i}
+                        className="d-inline-flex align-items-center border rounded-pill px-2 py-1 gap-1"
+                        style={{ background: '#f8f9fa', fontSize: '0.8rem', maxWidth: 300 }}
+                      >
+                        <span
+                          className="text-truncate"
+                          style={{ maxWidth: 240, cursor: 'default' }}
+                          title={q}
+                        >
+                          {q}
+                        </span>
+                        <button
+                          type="button"
+                          className="btn btn-link p-0 ms-1 text-primary"
+                          style={{ lineHeight: 1, fontSize: '0.8rem' }}
+                          title="Bu sorguyla ara"
+                          disabled={isSearching}
+                          onClick={() => handlePopularQueryClick(q)}
+                        >
+                          <Plus size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </Card.Body>
           </Card>
         </Col>

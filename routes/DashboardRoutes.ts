@@ -119,6 +119,12 @@ export const DashboardMenu: IMenuProps[] = [
 				name: 'CV Arama',
 				link: '/cv-search',
 				requiredRoles: ['ADMIN']
+			},
+			{
+				id: 'candidates',
+				name: 'Adaylar',
+				link: '/candidates',
+				requiredRoles: ['ADMIN']
 			}
 		]
 	},

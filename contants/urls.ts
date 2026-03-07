@@ -53,4 +53,9 @@ export const CV_SEARCH_ENDPOINTS = {
   BULK_UPLOAD: '/cv/bulk-upload',
   BATCH_STATUS: '/cv/batch',
   HYBRID_SEARCH: '/search/hybrid',
+  // Candidates
+  CANDIDATES: '/candidates',
+  // Search
+  POPULAR_QUERIES: '/search/popular-queries',
+  SUGGEST: '/search/suggest',
 }
