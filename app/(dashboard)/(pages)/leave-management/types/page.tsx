@@ -190,7 +190,7 @@ const LeaveTypesPage = () => {
                               İzin Türü {getSortIcon('name')}
                             </th>
                             <th>Ücret Durumu</th>
-                            <th>Limitli</th>
+                            <th>Limit (Gün)</th>
                             <th>Devredilebilir</th>
                             <th>Belge Gerekli</th>
                             <th>İşlemler</th>
@@ -207,8 +207,8 @@ const LeaveTypesPage = () => {
                                   </span>
                                 </td>
                                 <td>
-                                  <span className={`badge ${leaveType.is_limited ? 'bg-warning' : 'bg-light text-dark'}`}>
-                                    {leaveType.is_limited ? 'Evet' : 'Hayır'}
+                                  <span className={`badge ${leaveType.limit_amount > 0 ? 'bg-warning' : 'bg-light text-dark'}`}>
+                                    {leaveType.limit_amount > 0 ? `${leaveType.limit_amount} gün` : 'Limitsiz'}
                                   </span>
                                 </td>
                                 <td>
