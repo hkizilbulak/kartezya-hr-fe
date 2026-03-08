@@ -1,5 +1,4 @@
-import { BaseService, APIResponse } from './base.service';
-import { WorkDayReportFilter, WorkDayReportResponse } from '@/models/hr/report.model';
+import { WorkDayReportResponse } from '@/models/hr/report.model';
 import axiosInstance from '@/helpers/api/axiosInstance';
 
 class ReportService {

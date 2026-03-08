@@ -102,6 +102,32 @@ export const DashboardMenu: IMenuProps[] = [
 			}
 		]
 	},
+	{
+		id: 'cv-management',
+		title: 'CV Yönetimi',
+		icon: 'file',
+		requiredRoles: ['ADMIN'],
+		children: [
+			{
+				id: 'cv-upload',
+				name: 'CV Yükleme',
+				link: '/cv-upload',
+				requiredRoles: ['ADMIN']
+			},
+			{
+				id: 'cv-search',
+				name: 'CV Arama',
+				link: '/cv-search',
+				requiredRoles: ['ADMIN']
+			},
+			{
+				id: 'candidates',
+				name: 'Adaylar',
+				link: '/candidates',
+				requiredRoles: ['ADMIN']
+			}
+		]
+	},
 ];
 
 export default DashboardMenu;

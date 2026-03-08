@@ -371,7 +371,6 @@ const WorkDayReportPage = () => {
                                 >
                                   İŞ GÜNÜ {getSortIcon('work_days')}
                                 </th>
-                                <th className="text-end">RESMİ TATİL</th>
                                 <th className="text-end">KULLANILAN İZİN</th>
                                 <th className="text-end">ÇALIŞILAN GÜN</th>
                                 <th
@@ -386,7 +385,6 @@ const WorkDayReportPage = () => {
                                 >
                                   DEPARTMAN {getSortIcon('department_name')}
                                 </th>
-                                <th>YÖNETİCİ</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -396,17 +394,15 @@ const WorkDayReportPage = () => {
                                     <td>{row.id}</td>
                                     <td>{row.first_name} {row.last_name}</td>
                                     <td className="text-end">{Math.round(row.work_days)}</td>
-                                    <td className="text-end">{Math.round(row.holiday_days)}</td>
                                     <td className="text-end">{row.used_leave_days.toFixed(1)}</td>
                                     <td className="text-end">{row.worked_days.toFixed(1)}</td>
                                     <td>{row.company_name}</td>
                                     <td>{row.department_name}</td>
-                                    <td>{row.manager || '-'}</td>
                                   </tr>
                                 ))
                               ) : (
                                 <tr>
-                                  <td colSpan={9} className="text-center py-4">
+                                  <td colSpan={13} className="text-center py-4">
                                     Veri bulunamadı
                                   </td>
                                 </tr>

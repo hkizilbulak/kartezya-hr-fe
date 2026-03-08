@@ -16,6 +16,8 @@ const ADMIN_REQUIRED_ROUTES = [
   '/leave-management/types',
   '/leave-management/requests',
   '/reports/work-day',
+  '/cv-upload',
+  '/cv-search',
 ];
 
 export default function DashboardLayout({

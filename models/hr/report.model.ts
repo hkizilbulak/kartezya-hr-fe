@@ -14,8 +14,11 @@ export interface WorkDayReportRow {
 	company_name: string;
 	department_name: string;
 	manager: string;
+	team_start_date: string | null;
+	team_end_date: string | null;
+	hire_date: string | null;
+	leave_date: string | null;
 	work_days: number;
-	holiday_days: number;
 	used_leave_days: number;
 	worked_days: number;
 }

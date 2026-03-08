@@ -20,7 +20,7 @@ export const exportToExcel = async (reportData: WorkDayReportResponse) => {
 
     // Row 1: Title
     const titleRow = ws.addRow(['ÇALIŞMA GÜNÜ RAPORU']);
-    ws.mergeCells(rowNum, 1, rowNum, 12); // Merge A1:L1
+    ws.mergeCells(rowNum, 1, rowNum, 15); // Merge A1:L1
     titleRow.height = 24;
     const titleCell = titleRow.getCell(1);
     titleCell.font = { bold: true, size: 16 };
@@ -33,7 +33,7 @@ export const exportToExcel = async (reportData: WorkDayReportResponse) => {
 
     // Row 3: Date range
     const dateRow = ws.addRow([`${formatDate(startDate)} - ${formatDate(endDate)}`]);
-    ws.mergeCells(rowNum, 1, rowNum, 12); // Merge A3:L3
+    ws.mergeCells(rowNum, 1, rowNum, 15); // Merge A3:L3
     dateRow.height = 18;
     const dateCell = dateRow.getCell(1);
     dateCell.font = { bold: true, size: 12 };
@@ -83,11 +83,14 @@ export const exportToExcel = async (reportData: WorkDayReportResponse) => {
       'AD',
       'SOYAD',
       'KİMLİK NO',
+      'İŞE GİRİŞ TARİHİ',
+      'İŞTEN AYRILIŞ TARİHİ',
       'ŞİRKET',
       'DEPARTMAN',
       'YÖNETİCİ',
+      'TAKIMA BAŞLANGIÇ',
+      'TAKIMDAN AYRILIŞ',
       'İŞ GÜNÜ',
-      'RESMİ TATİL GÜNÜ',
       'KULLANILAN İZİN',
       'ÇALIŞILAN GÜN'
     ]);
@@ -123,17 +126,21 @@ export const exportToExcel = async (reportData: WorkDayReportResponse) => {
           row.first_name,
           row.last_name,
           row.identity_no,
+          row.hire_date ? new Date(row.hire_date).toLocaleDateString('tr-TR') : '-',
+          row.leave_date ? new Date(row.leave_date).toLocaleDateString('tr-TR') : '-',
           row.company_name,
           row.department_name,
           row.manager || '-',
+          row.team_start_date ? new Date(row.team_start_date).toLocaleDateString('tr-TR') : '-',
+          row.team_end_date ? new Date(row.team_end_date).toLocaleDateString('tr-TR') : '-',
           Math.round(row.work_days),
-          Math.round(row.holiday_days),
           row.used_leave_days.toFixed(1),
-          Math.round(row.worked_days)
+          row.worked_days.toFixed(1)
         ]);
         
         // Check if used_leave_days > 0 for yellow highlighting
-        const isYellowRow = row.used_leave_days > 0;
+        const isYellowRow = row.used_leave_days > 0 
+        || ((reportData.total_work_days - reportData.total_holiday_days).toFixed(1) !== row.worked_days.toFixed(1));
         
         // Add borders and conditional formatting to data cells
         dataRow.eachCell((cell) => {
@@ -160,11 +167,14 @@ export const exportToExcel = async (reportData: WorkDayReportResponse) => {
       { width: 15 },  // AD
       { width: 15 },  // SOYAD
       { width: 15 },  // KİMLİK NO
+      { width: 15 },  // İŞE GİRİŞ TARİHİ
+      { width: 20 },  // İŞTEN AYRILIŞ TARİHİ
       { width: 20 },  // ŞİRKET
       { width: 20 },  // DEPARTMAN
       { width: 20 },  // YÖNETİCİ
+      { width: 20 },  // TAKIMA BAŞLANGIÇ
+      { width: 20 },  // TAKIMDAN AYRILIŞ
       { width: 12 },  // İŞ GÜNÜ
-      { width: 18 },  // RESMİ TATİL GÜNÜ
       { width: 15 },  // KULLANILAN İZİN
       { width: 15 }   // ÇALIŞILAN GÜN
     ];

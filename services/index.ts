@@ -13,3 +13,4 @@ export * from './leave-balance.service';
 export * from './lookup.service';
 export * from './report.service';
 export * from './base.service';
+export * from './cv-search.service';

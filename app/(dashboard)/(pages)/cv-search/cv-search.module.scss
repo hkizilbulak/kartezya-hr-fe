@@ -1,0 +1,42 @@
+.stickyCol1 {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: white;
+}
+
+.stickyCol2 {
+  position: sticky;
+  left: 50px;
+  z-index: 2;
+  background: white;
+}
+
+.stickyHeader {
+  z-index: 3 !important;
+}
+
+.clickableRow {
+  cursor: pointer;
+  user-select: none;
+}
+
+.selectedRow {
+  --bs-table-bg: #ffe4e6 !important;
+  background-color: #ffe4e6 !important;
+
+  .stickyCol1,
+  .stickyCol2 {
+    background-color: #ffe4e6 !important;
+  }
+}
+
+.detailRow {
+  --bs-table-bg: #dbeafe !important;
+  background-color: #dbeafe !important;
+
+  .stickyCol1,
+  .stickyCol2 {
+    background-color: #dbeafe !important;
+  }
+}
