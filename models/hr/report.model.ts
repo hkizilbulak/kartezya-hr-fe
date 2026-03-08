@@ -30,3 +30,23 @@ export interface WorkDayReportResponse {
 	total_holiday_days: number;
 	rows: WorkDayReportRow[];
 }
+
+export interface GradeReportRow {
+	id: number;
+	first_name: string;
+	last_name: string;
+	hire_date: string | null;
+	company_name: string;
+	department_name: string;
+	manager: string;
+	team_start_date: string | null;
+	profession_start_date: string | null;
+	total_gap: number;
+	total_experience_text: string;
+	current_grade: string;
+	expected_grade: string;
+}
+
+export interface GradeReportResponse {
+	rows: GradeReportRow[];
+}

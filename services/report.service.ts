@@ -1,7 +1,10 @@
-import { WorkDayReportResponse } from '@/models/hr/report.model';
+import { 
+	WorkDayReportResponse,
+	GradeReportResponse 
+} from '@/models/hr/report.model';
 import axiosInstance from '@/helpers/api/axiosInstance';
 
-class ReportService {
+export const reportService = {
 	/**
 	 * Get work day report
 	 */
@@ -34,8 +37,29 @@ class ReportService {
 		);
 
 		return response.data as WorkDayReportResponse;
+	},
+
+	/**
+	 * Get grade report
+	 */
+	async getGradeReport(
+		companyId?: number,
+		departmentId?: number
+	): Promise<GradeReportResponse> {
+		const params = new URLSearchParams({
+		});
+		if (companyId) {
+			params.append('company_id', companyId.toString());
+		}
+
+		if (departmentId) {
+			params.append('department_id', departmentId.toString());
+		}
+
+		const response = await axiosInstance.get(
+			`/reports/grade?${params.toString()}`
+		);
+
+		return response.data as GradeReportResponse;
 	}
 }
-
-export const reportService = new ReportService();
-export default reportService;

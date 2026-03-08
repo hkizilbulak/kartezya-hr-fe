@@ -2,10 +2,9 @@
 import { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Button, Form, Table } from 'react-bootstrap';
 import { reportService, lookupService } from '@/services';
-import { WorkDayReportResponse, WorkDayReportRow } from '@/models/hr/report.model';
+import { GradeReportResponse, GradeReportRow } from '@/models/hr/report.model';
 import { CompanyLookup, DepartmentLookup } from '@/services/lookup.service';
 import { PageHeading } from '@/widgets';
-import FormDateField from '@/components/FormDateField';
 import FormSelectField from '@/components/FormSelectField';
 import LoadingOverlay from '@/components/LoadingOverlay';
 import Pagination from '@/components/Pagination';
@@ -16,19 +15,16 @@ import * as ExcelUtils from '@/helpers/excelExport';
 import '@/styles/table-list.scss';
 import '@/styles/components/table-common.scss';
 
-const WorkDayReportPage = () => {
-  const [reportData, setReportData] = useState<WorkDayReportResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(true); // Initialize as true for initial loading
+const GradeReportPage = () => {
+  const [reportData, setReportData] = useState<GradeReportResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const [showTable, setShowTable] = useState(false);
 
   // Filter state
-  const [startDate, setStartDate] = useState<string>('');
-  const [endDate, setEndDate] = useState<string>('');
   const [companies, setCompanies] = useState<CompanyLookup[]>([]);
   const [departments, setDepartments] = useState<DepartmentLookup[]>([]);
   const [selectedCompany, setSelectedCompany] = useState<string>('');
   const [selectedDepartment, setSelectedDepartment] = useState<string>('');
-  const [isActive, setIsActive] = useState(true);
   const [companiesLoading, setCompaniesLoading] = useState(false);
   const [departmentsLoading, setDepartmentsLoading] = useState(false);
   const [allDepartments, setAllDepartments] = useState<DepartmentLookup[]>([]);
@@ -37,33 +33,17 @@ const WorkDayReportPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [sortConfig, setSortConfig] = useState<{
-    key: 'first_name' | 'last_name' | 'identity_no' | 'company_name' | 'department_name' | 'work_days' | null;
+    key: 'first_name' | 'last_name' | 'company_name' | 'department_name' | 'total_gap' | 'current_grade' | 'expected_grade' | null;
     direction: 'ASC' | 'DESC';
   }>({
     key: null,
     direction: 'ASC'
   });
 
-  // Initialize dates on mount
-  useEffect(() => {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = today.getMonth();
-    
-    // First day of current month
-    const firstDay = new Date(year, month, 1);
-    // Last day of current month
-    const lastDay = new Date(year, month + 1, 0);
-    
-    setStartDate(firstDay.toISOString().split('T')[0]);
-    setEndDate(lastDay.toISOString().split('T')[0]);
-  }, []);
-
   // Fetch companies and all departments on mount
   useEffect(() => {
     const fetchLookups = async () => {
       try {
-        setIsLoading(true); // Show loading while fetching lookups
         setCompaniesLoading(true);
         const [companiesRes, departmentsRes] = await Promise.all([
           lookupService.getCompaniesLookup(),
@@ -82,7 +62,6 @@ const WorkDayReportPage = () => {
         toast.error(translateErrorMessage(errorMessage));
       } finally {
         setCompaniesLoading(false);
-        setIsLoading(false); // Hide loading after lookups are fetched
       }
     };
 
@@ -121,21 +100,13 @@ const WorkDayReportPage = () => {
   }, [selectedCompany, allDepartments]);
 
   const handleGetReport = async () => {
-    if (!startDate || !endDate) {
-      toast.warning('Lütfen başlangıç ve bitiş tarihini belirtiniz');
-      return;
-    }
-
     try {
       setIsLoading(true);
       setShowTable(false);
 
-      const response = await reportService.getWorkDayReport(
-        startDate,
-        endDate,
+      const response = await reportService.getGradeReport(
         selectedCompany ? parseInt(selectedCompany) : undefined,
-        selectedDepartment ? parseInt(selectedDepartment) : undefined,
-        isActive
+        selectedDepartment ? parseInt(selectedDepartment) : undefined
       );
 
       setReportData(response);
@@ -156,14 +127,14 @@ const WorkDayReportPage = () => {
     }
 
     try {
-      await ExcelUtils.exportToExcel(reportData);
+      await ExcelUtils.exportGradeToExcel(reportData);
       toast.success('Rapor Excel\'e başarıyla aktarıldı');
     } catch (error: any) {
       toast.error('Excel export sırasında hata oluştu');
     }
   };
 
-  const handleSort = (key: 'first_name' | 'last_name' | 'identity_no' | 'company_name' | 'department_name' | 'work_days') => {
+  const handleSort = (key: 'first_name' | 'last_name' | 'company_name' | 'department_name' | 'total_gap' | 'current_grade' | 'expected_grade') => {
     let direction: 'ASC' | 'DESC' = 'ASC';
     if (sortConfig.key === key && sortConfig.direction === 'ASC') {
       direction = 'DESC';
@@ -172,7 +143,7 @@ const WorkDayReportPage = () => {
     setCurrentPage(1);
   };
 
-  const getSortIcon = (columnKey: 'first_name' | 'last_name' | 'identity_no' | 'company_name' | 'department_name' | 'work_days') => {
+  const getSortIcon = (columnKey: 'first_name' | 'last_name' | 'company_name' | 'department_name' | 'total_gap' | 'current_grade' | 'expected_grade') => {
     if (sortConfig.key !== columnKey) {
       return null;
     }
@@ -189,8 +160,8 @@ const WorkDayReportPage = () => {
     // Apply sorting
     if (sortConfig.key) {
       sorted.sort((a, b) => {
-        const aValue = a[sortConfig.key as keyof WorkDayReportRow];
-        const bValue = b[sortConfig.key as keyof WorkDayReportRow];
+        const aValue = a[sortConfig.key as keyof GradeReportRow];
+        const bValue = b[sortConfig.key as keyof GradeReportRow];
 
         if (typeof aValue === 'string' && typeof bValue === 'string') {
           return sortConfig.direction === 'ASC' 
@@ -226,7 +197,7 @@ const WorkDayReportPage = () => {
 
   const handlePageSizeChange = (newPageSize: number) => {
     setItemsPerPage(newPageSize);
-    setCurrentPage(1); // Reset to first page when changing page size
+    setCurrentPage(1);
   };
 
   return (
@@ -236,7 +207,7 @@ const WorkDayReportPage = () => {
         
         <div className="page-heading-wrapper">
           <PageHeading 
-            heading="Çalışma Günü Raporu"
+            heading="Grade Raporu"
             showCreateButton={false}
             showFilterButton={false}
           />
@@ -249,28 +220,8 @@ const WorkDayReportPage = () => {
               <Card className="mb-4 border-0 shadow-sm">
                 <Card.Body className="p-4">
                   <Row className="g-3">
-                    {/* Start Date */}
-                    <Col md={6} lg={3}>
-                      <FormDateField
-                        label="Başlangıç Tarihi"
-                        name="startDate"
-                        value={startDate}
-                        onChange={(e) => setStartDate(e.target.value)}
-                      />
-                    </Col>
-
-                    {/* End Date */}
-                    <Col md={6} lg={3}>
-                      <FormDateField
-                        label="Bitiş Tarihi"
-                        name="endDate"
-                        value={endDate}
-                        onChange={(e) => setEndDate(e.target.value)}
-                      />
-                    </Col>
-
                     {/* Company Select */}
-                    <Col md={6} lg={3}>
+                    <Col md={6} lg={4}>
                       <Form.Group>
                         <Form.Label className="fw-500">Şirket</Form.Label>
                         <FormSelectField
@@ -279,7 +230,7 @@ const WorkDayReportPage = () => {
                           onChange={(e) => setSelectedCompany(e.target.value)}
                           disabled={companiesLoading}
                         >
-                          <option value="">Şirket Seçiniz</option>
+                          <option value="">Tüm Şirketler</option>
                           {companies.map((company) => (
                             <option key={company.id} value={String(company.id)}>
                               {company.name}
@@ -290,16 +241,16 @@ const WorkDayReportPage = () => {
                     </Col>
 
                     {/* Department Select */}
-                    <Col md={6} lg={3}>
+                    <Col md={6} lg={4}>
                       <Form.Group>
                         <Form.Label className="fw-500">Departman</Form.Label>
                         <FormSelectField
                           name="selectedDepartment"
                           value={selectedDepartment}
                           onChange={(e) => setSelectedDepartment(e.target.value)}
-                          disabled={departmentsLoading}
+                          disabled={departmentsLoading || !selectedCompany}
                         >
-                          <option value="">Departman Seçiniz</option>
+                          <option value="">Tüm Departmanlar</option>
                           {departments.map((dept) => (
                             <option key={dept.id} value={String(dept.id)}>
                               {dept.name}
@@ -309,23 +260,11 @@ const WorkDayReportPage = () => {
                       </Form.Group>
                     </Col>
 
-                    {/* Sadece Aktif Çalışanlar */}
-                    <Col xs={12}>
-                      <Form.Check
-                        type="checkbox"
-                        id="isActiveCheckbox"
-                        label="Sadece Aktif Çalışanlar"
-                        checked={isActive}
-                        onChange={(e) => setIsActive(e.target.checked)}
-                      />
-                    </Col>
-
                     {/* Butonlar */}
                     <Col xs={12} className="d-flex gap-2 justify-content-end">
                       <Button
                         variant="primary"
                         onClick={handleGetReport}
-                        disabled={!startDate || !endDate}
                       >Raporu Getir</Button>
                       {showTable && reportData && (
                         <Button
@@ -351,7 +290,6 @@ const WorkDayReportPage = () => {
               <Col lg={12} md={12} sm={12}>
                 <div className="table-wrapper">
                   <Card className="border-0 shadow-sm position-relative">
-
                     <Card.Body className="p-0">
                       <div className="table-box">
                         <div className="table-responsive">
@@ -365,14 +303,7 @@ const WorkDayReportPage = () => {
                                 >
                                   AD SOYAD {getSortIcon('first_name')}
                                 </th>
-                                <th
-                                  onClick={() => handleSort('work_days')}
-                                  className="sortable-header text-end"
-                                >
-                                  İŞ GÜNÜ {getSortIcon('work_days')}
-                                </th>
-                                <th className="text-end">KULLANILAN İZİN</th>
-                                <th className="text-end">ÇALIŞILAN GÜN</th>
+                                <th>İŞE GİRİŞ</th>
                                 <th
                                   onClick={() => handleSort('company_name')}
                                   className="sortable-header"
@@ -385,24 +316,47 @@ const WorkDayReportPage = () => {
                                 >
                                   DEPARTMAN {getSortIcon('department_name')}
                                 </th>
+                                <th>YÖNETİCİ</th>
+                                <th>TAKIMA BAŞLANGIÇ</th>
+                                <th>MESLEĞE BAŞLANGIÇ</th>
+                                <th>TOPLAM DENEYİM</th>
+                                <th
+                                  onClick={() => handleSort('current_grade')}
+                                  className="sortable-header"
+                                >
+                                  MEVCUT GRADE {getSortIcon('current_grade')}
+                                </th>
+                                <th
+                                  onClick={() => handleSort('expected_grade')}
+                                  className="sortable-header"
+                                >
+                                  BEKLENEN GRADE {getSortIcon('expected_grade')}
+                                </th>
                               </tr>
                             </thead>
                             <tbody>
                               {getSortedAndPaginatedData().length > 0 ? (
-                                getSortedAndPaginatedData().map((row: WorkDayReportRow) => (
-                                  <tr key={row.id}>
-                                    <td>{row.id}</td>
-                                    <td>{row.first_name} {row.last_name}</td>
-                                    <td className="text-end">{Math.round(row.work_days)}</td>
-                                    <td className="text-end">{row.used_leave_days.toFixed(1)}</td>
-                                    <td className="text-end">{row.worked_days.toFixed(1)}</td>
-                                    <td>{row.company_name}</td>
-                                    <td>{row.department_name}</td>
-                                  </tr>
-                                ))
+                                getSortedAndPaginatedData().map((row: GradeReportRow) => {
+                                  const hasGap = row.total_gap > 0;
+                                  return (
+                                    <tr key={row.id} style={hasGap ? { backgroundColor: '#fff3cd' } : undefined}>
+                                      <td>{row.id}</td>
+                                      <td>{row.first_name} {row.last_name}</td>
+                                      <td>{row.hire_date ? new Date(row.hire_date).toLocaleDateString('tr-TR') : '-'}</td>
+                                      <td>{row.company_name}</td>
+                                      <td>{row.department_name}</td>
+                                      <td>{row.manager || '-'}</td>
+                                      <td>{row.team_start_date ? new Date(row.team_start_date).toLocaleDateString('tr-TR') : '-'}</td>
+                                      <td>{row.profession_start_date ? new Date(row.profession_start_date).toLocaleDateString('tr-TR') : '-'}</td>
+                                      <td>{row.total_experience_text || '-'}</td>
+                                      <td>{row.current_grade || '-'}</td>
+                                      <td>{row.expected_grade || '-'}</td>
+                                    </tr>
+                                  );
+                                })
                               ) : (
                                 <tr>
-                                  <td colSpan={13} className="text-center py-4">
+                                  <td colSpan={11} className="text-center py-4">
                                     Veri bulunamadı
                                   </td>
                                 </tr>
@@ -440,4 +394,4 @@ const WorkDayReportPage = () => {
   );
 };
 
-export default WorkDayReportPage;
+export default GradeReportPage;

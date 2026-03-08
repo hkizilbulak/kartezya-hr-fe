@@ -99,6 +99,12 @@ export const DashboardMenu: IMenuProps[] = [
 				link: '/reports/work-day',
 				name: 'Çalışma Günü Raporu',
 				requiredRoles: ['ADMIN']
+			},
+			{
+				id: 'grade',
+				link: '/reports/grade',
+				name: 'Grade Raporu',
+				requiredRoles: ['ADMIN']
 			}
 		]
 	},

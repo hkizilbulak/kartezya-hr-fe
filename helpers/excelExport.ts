@@ -1,5 +1,5 @@
 import ExcelJS from 'exceljs';
-import { WorkDayReportResponse } from '@/models/hr/report.model';
+import { WorkDayReportResponse, GradeReportResponse } from '@/models/hr/report.model';
 
 export const exportToExcel = async (reportData: WorkDayReportResponse) => {
   try {
@@ -181,6 +181,143 @@ export const exportToExcel = async (reportData: WorkDayReportResponse) => {
 
     // Generate filename
     const filename = `calismaguvu_raporu_${formatDate(startDate).replace(/\//g, '-')}.xlsx`;
+
+    // Write file - browser downloads it
+    const buffer = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.click();
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error('Excel export hatası:', error);
+    throw error;
+  }
+};
+
+export const exportGradeToExcel = async (reportData: GradeReportResponse) => {
+  try {
+    // Create a new workbook
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('Grade Raporu');
+
+    let rowNum = 1;
+
+    // Row 1: Title
+    const titleRow = ws.addRow(['GRADE RAPORU']);
+    ws.mergeCells(rowNum, 1, rowNum, 12);
+    titleRow.height = 24;
+    const titleCell = titleRow.getCell(1);
+    titleCell.font = { bold: true, size: 16 };
+    titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+    rowNum++;
+
+    // Row 2: Empty
+    ws.addRow([]);
+    rowNum++;
+
+    // Row 5: Empty
+    ws.addRow([]);
+    rowNum++;
+
+    // Row 6: Headers
+    const headerRow = ws.addRow([
+      'SIRA NO',
+      'ID',
+      'AD SOYAD',
+      'İŞE GİR. TAR.',
+      'MESLEĞE BAŞ. TAR.',
+      'TOPLAM DENEYIM',
+      'MEVCUT GRADE',
+      'BEKLENEN GRADE',
+      'ŞİRKET',
+      'DEPARTMAN',
+      'YÖNETİCİ',
+      'TAKIMA BAŞ. TAR.'
+    ]);
+    headerRow.height = 20;
+    
+    // Style header cells
+    headerRow.eachCell((cell) => {
+      cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4472C4' } };
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+      cell.border = {
+        top: { style: 'thin' },
+        left: { style: 'thin' },
+        bottom: { style: 'thin' },
+        right: { style: 'thin' }
+      };
+    });
+    rowNum++;
+
+    // Add data rows
+    if (reportData.rows && reportData.rows.length > 0) {
+      // Sort rows by first_name and last_name
+      const sortedRows = [...reportData.rows].sort((a, b) => {
+        const nameA = `${a.first_name} ${a.last_name}`.toLowerCase();
+        const nameB = `${b.first_name} ${b.last_name}`.toLowerCase();
+        return nameA.localeCompare(nameB, 'tr-TR');
+      });
+
+      sortedRows.forEach((row, index) => {
+        const dataRow = ws.addRow([
+          index + 1,
+          row.id,
+          row.first_name + ' ' + row.last_name,
+          row.hire_date ? new Date(row.hire_date).toLocaleDateString('tr-TR') : '-',
+          row.profession_start_date ? new Date(row.profession_start_date).toLocaleDateString('tr-TR') : '-',
+          row.total_experience_text || '-',
+          row.current_grade || '-',
+          row.expected_grade || '-',
+          row.company_name,
+          row.department_name,
+          row.manager || '-',
+          row.team_start_date ? new Date(row.team_start_date).toLocaleDateString('tr-TR') : '-'
+        ]);
+        
+        // Check if there's a gap for yellow highlighting
+        const isYellowRow = row.current_grade !== row.expected_grade;
+        
+        // Add borders and conditional formatting to data cells
+        dataRow.eachCell((cell) => {
+          cell.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' }
+          };
+          cell.alignment = { vertical: 'middle' };
+          
+          // Apply yellow background if there's a gap
+          if (isYellowRow) {
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFF00' } };
+          }
+        });
+      });
+    }
+
+    // Set column widths
+    ws.columns = [
+      { width: 10 },  // SIRA NO
+      { width: 8 },   // ID
+      { width: 25 },  // AD SOYAD
+      { width: 15 },  // İŞE GİRİŞ TARİHİ
+      { width: 20 },  // MESLEĞE BAŞLANGIÇ
+      { width: 20 },  // TOPLAM DENEYIM
+      { width: 15 },  // MEVCUT GRADE
+      { width: 15 },  // BEKLENEN GRADE
+      { width: 20 },  // ŞİRKET
+      { width: 20 },  // DEPARTMAN
+      { width: 20 },  // YÖNETİCİ
+      { width: 20 },  // TAKIMA BAŞLANGIÇ
+    ];
+
+    // Generate filename
+    const today = new Date().toLocaleDateString('tr-TR').replace(/\//g, '-');
+    const filename = `grade_raporu_${today}.xlsx`;
 
     // Write file - browser downloads it
     const buffer = await wb.xlsx.writeBuffer();
