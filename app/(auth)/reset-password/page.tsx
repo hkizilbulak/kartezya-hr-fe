@@ -4,7 +4,7 @@ import useMounted from "@/hooks/useMounted";
 import { authService, ResetPasswordRequest, ValidateResetTokenRequest } from "@/services/auth.service";
 import FormTextField from "@/components/FormTextField";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { toast } from "react-toastify";
 
@@ -18,7 +18,7 @@ interface FormErrors {
   confirmPassword?: string;
 }
 
-const ResetPassword = () => {
+const ResetPasswordContent = () => {
   const hasMounted = useMounted();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -256,6 +256,24 @@ const ResetPassword = () => {
         </Card>
       </Col>
     </Row>
+  );
+};
+
+const ResetPassword = () => {
+  return (
+    <Suspense fallback={
+      <Row className="align-items-center justify-content-center g-0 min-vh-100">
+        <Col xxl={4} lg={6} md={8} xs={12} className="py-8 py-xl-0">
+          <Card className="smooth-shadow-md">
+            <Card.Body className="p-6 text-center">
+              <Spinner animation="border" variant="primary" />
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+    }>
+      <ResetPasswordContent />
+    </Suspense>
   );
 };
 

@@ -1,11 +1,11 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Row, Col, Card, Spinner } from "react-bootstrap";
 import { toast } from "react-toastify";
 import { authService } from "@/services/auth.service";
 
-const AuthorizedPage = () => {
+const AuthorizedContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isProcessing, setIsProcessing] = useState(true);
@@ -122,6 +122,30 @@ const AuthorizedPage = () => {
         </Card>
       </Col>
     </Row>
+  );
+};
+
+const AuthorizedPage = () => {
+  return (
+    <Suspense fallback={
+      <Row className="align-items-center justify-content-center g-0 min-vh-100" style={{ backgroundColor: '#000000' }}>
+        <Col xxl={4} lg={6} md={8} xs={12} className="py-8 py-xl-0">
+          <Card style={{ 
+            backgroundColor: '#212b36', 
+            border: 'none',
+            boxShadow: '0 1rem 3rem rgba(255, 255, 255, 0.15)'
+          }}>
+            <Card.Body className="p-6">
+              <div className="d-flex flex-column justify-content-center align-items-center">
+                <Spinner animation="border" variant="primary" />
+              </div>
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+    }>
+      <AuthorizedContent />
+    </Suspense>
   );
 };
 

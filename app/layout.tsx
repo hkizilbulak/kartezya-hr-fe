@@ -1,4 +1,4 @@
-import "styles/theme.scss";
+import "@/styles/theme.scss";
 import "react-toastify/dist/ReactToastify.css";
 
 import type { Metadata } from "next";
