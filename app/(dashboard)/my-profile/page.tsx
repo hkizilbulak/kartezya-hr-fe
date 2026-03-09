@@ -66,6 +66,15 @@ const Profile = () => {
     fetchEmployeeData();
   }, []);
 
+  const normalizePhoneForMask = (phone?: string) => {
+    const digits = (phone || '').replace(/\D/g, '');
+    if (!digits) return '';
+    if (digits.length === 11 && digits.startsWith('0')) {
+      return digits.slice(1);
+    }
+    return digits.slice(0, 10);
+  };
+
   const fetchEmployeeData = async () => {
     try {
       setLoading(true);
@@ -80,7 +89,7 @@ const Profile = () => {
           last_name: response.data.last_name || '',
           email: response.data.email || '',
           company_email: response.data.user?.email || '',
-          phone: response.data.phone || '',
+          phone: normalizePhoneForMask(response.data.phone),
           address: response.data.address || '',
           state: response.data.state || '',
           city: response.data.city || '',
@@ -89,7 +98,7 @@ const Profile = () => {
           hire_date: formatDateForInput(response.data.hire_date),
           profession_start_date: formatDateForInput((response.data as any).profession_start_date),
           marital_status: response.data.marital_status || '',
-          emergency_contact: response.data.emergency_contact || '',
+          emergency_contact: normalizePhoneForMask(response.data.emergency_contact),
           emergency_contact_name: response.data.emergency_contact_name || '',
           emergency_contact_relation: response.data.emergency_contact_relation || '',
           mother_name: response.data.mother_name || '',

@@ -33,8 +33,5 @@
     "simplebar": "^6.2.5",
     "simplebar-react": "^3.2.4",
     "typescript": "5.9.3"
-  },
-  "devDependencies": {
-    "@types/react-input-mask": "^3.0.6"
   }
 }

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form } from 'react-bootstrap';
-import InputMask from 'react-input-mask';
+import { IMaskInput } from 'react-imask';
 import { Company } from '@/models/hr/hr-models';
 import { CreateCompanyRequest, UpdateCompanyRequest } from '@/models/hr/hr-requests';
 import { companyService } from '@/services';
@@ -34,12 +34,21 @@ const CompanyModal: React.FC<CompanyModalProps> = ({
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<{[key: string]: string}>({});
 
+  const normalizePhoneForMask = (phone?: string) => {
+    const digits = (phone || '').replace(/\D/g, '');
+    if (!digits) return '';
+    if (digits.length === 11 && digits.startsWith('0')) {
+      return digits.slice(1);
+    }
+    return digits.slice(0, 10);
+  };
+
   useEffect(() => {
     if (isEdit && company) {
       setFormData({
         name: company.name || '',
         email: company.email || '',
-        phone: company.phone || '',
+        phone: normalizePhoneForMask(company.phone),
         address: company.address || '',
         website: company.website || ''
       });
@@ -64,6 +73,20 @@ const CompanyModal: React.FC<CompanyModalProps> = ({
     }));
 
     // Anlık validasyon - hata varsa temizle
+    if (fieldErrors[name]) {
+      setFieldErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
+    }
+  };
+
+  const handleMaskedInputChange = (name: keyof CreateCompanyRequest, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+
     if (fieldErrors[name]) {
       setFieldErrors(prev => ({
         ...prev,
@@ -185,21 +208,16 @@ const CompanyModal: React.FC<CompanyModalProps> = ({
 
             <Form.Group className="mb-3">
               <Form.Label>Telefon</Form.Label>
-              <InputMask
-                mask="(999) 999 9999"
+              <IMaskInput
+                className={`form-control${fieldErrors.phone ? ' is-invalid' : ''}`}
+                mask="(000) 000 0000"
                 value={formData.phone}
-                onChange={handleInputChange}
-              >
-                {(inputProps: any) => (
-                  <Form.Control
-                    {...inputProps}
-                    type="tel"
-                    name="phone"
-                    placeholder="(123) 111 1111"
-                    isInvalid={!!fieldErrors.phone}
-                  />
-                )}
-              </InputMask>
+                name="phone"
+                type="tel"
+                placeholder="(123) 111 1111"
+                onAccept={(value) => handleMaskedInputChange('phone', String(value ?? ''))}
+                overwrite
+              />
               {fieldErrors.phone && (
                 <div className="text-danger mt-1" style={{ fontSize: '0.875rem' }}>
                   {fieldErrors.phone}

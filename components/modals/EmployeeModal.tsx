@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form, Row, Col } from 'react-bootstrap';
-import InputMask from 'react-input-mask';
+import { IMaskInput } from 'react-imask';
 import { Employee } from '@/models/hr/hr-models';
 import { employeeService, lookupService } from '@/services';
 import { GradeLookup } from '@/services/lookup.service';
@@ -103,6 +103,20 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+
+    if (fieldErrors[name]) {
+      setFieldErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
+    }
+  };
+
+  const handleMaskedInputChange = (name: keyof FormData, value: string) => {
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -298,21 +312,16 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
               <Col md={6}>
                 <Form.Group>
                   <Form.Label>Telefon <span className="text-danger">*</span></Form.Label>
-                  <InputMask
-                    mask="(999) 999 9999"
+                  <IMaskInput
+                    className={`form-control${fieldErrors.phone ? ' is-invalid' : ''}`}
+                    mask="(000) 000 0000"
                     value={formData.phone}
-                    onChange={handleInputChange}
-                  >
-                    {(inputProps: any) => (
-                      <Form.Control
-                        {...inputProps}
-                        type="tel"
-                        name="phone"
-                        placeholder="(123) 111 1111"
-                        isInvalid={!!fieldErrors.phone}
-                      />
-                    )}
-                  </InputMask>
+                    name="phone"
+                    type="tel"
+                    placeholder="(123) 111 1111"
+                    onAccept={(value) => handleMaskedInputChange('phone', String(value ?? ''))}
+                    overwrite
+                  />
                   {fieldErrors.phone && (
                     <div className="text-danger mt-1" style={{ fontSize: '0.875rem' }}>
                       {fieldErrors.phone}
