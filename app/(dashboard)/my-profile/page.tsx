@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { employeeService } from '@/services/employee.service';
 import { Employee } from '@/models/hr/hr-models';
 import { Container, Row, Col, Button, Alert, Card, Form } from 'react-bootstrap';
-import InputMask from 'react-input-mask';
+import { IMaskInput } from 'react-imask';
 import { PageHeading } from '@/widgets';
 import FormSelectField from '@/components/FormSelectField';
 import FormDateField from '@/components/FormDateField';
@@ -115,6 +115,13 @@ const Profile = () => {
 
   const handleInputChange = (e: React.ChangeEvent<any>) => {
     const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleMaskedInputChange = (name: keyof FormData, value: string) => {
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -357,20 +364,16 @@ const Profile = () => {
                       <Col md={6}>
                         <Form.Group className="mb-3">
                           <Form.Label>Telefon No</Form.Label>
-                          <InputMask
-                            mask="(999) 999 9999"
+                          <IMaskInput
+                            className="form-control"
+                            mask="(000) 000 0000"
                             value={formData.phone}
-                            onChange={handleInputChange}
-                          >
-                            {(inputProps: any) => (
-                              <Form.Control
-                                {...inputProps}
-                                type="tel"
-                                name="phone"
-                                placeholder="(123) 111 1111"
-                              />
-                            )}
-                          </InputMask>
+                            name="phone"
+                            type="tel"
+                            placeholder="(123) 111 1111"
+                            onAccept={(value) => handleMaskedInputChange('phone', String(value ?? ''))}
+                            overwrite
+                          />
                         </Form.Group>
                       </Col>
                     </Row>
@@ -547,20 +550,16 @@ const Profile = () => {
                       <Col md={4}>
                         <Form.Group className="mb-3">
                           <Form.Label>Telefon No</Form.Label>
-                          <InputMask
-                            mask="(999) 999 9999"
+                          <IMaskInput
+                            className="form-control"
+                            mask="(000) 000 0000"
                             value={formData.emergency_contact}
-                            onChange={handleInputChange}
-                          >
-                            {(inputProps: any) => (
-                              <Form.Control
-                                {...inputProps}
-                                type="tel"
-                                name="emergency_contact"
-                                placeholder="(123) 111 1111"
-                              />
-                            )}
-                          </InputMask>
+                            name="emergency_contact"
+                            type="tel"
+                            placeholder="(123) 111 1111"
+                            onAccept={(value) => handleMaskedInputChange('emergency_contact', String(value ?? ''))}
+                            overwrite
+                          />
                         </Form.Group>
                       </Col>
                       <FormSelectField
