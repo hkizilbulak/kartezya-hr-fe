@@ -4,7 +4,6 @@ import { LeaveBalance } from '@/models/hr/hr-models';
 import axiosInstance from '@/helpers/api/axiosInstance';
 
 export const leaveBalanceService = {
-  // Get my leave balance for annual leave
   getMyLeaveBalance: async () => {
     try {
       const response = await axiosInstance.get(HR_ENDPOINTS.LEAVE.BALANCES_ME);
