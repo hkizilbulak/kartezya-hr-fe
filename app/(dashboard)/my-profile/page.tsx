@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { employeeService } from '@/services/employee.service';
 import { Employee } from '@/models/hr/hr-models';
 import { Container, Row, Col, Button, Alert, Card, Form } from 'react-bootstrap';
-import InputMask from 'react-input-mask';
+import { IMaskInput } from 'react-imask';
 import { PageHeading } from '@/widgets';
 import FormSelectField from '@/components/FormSelectField';
 import FormDateField from '@/components/FormDateField';
@@ -66,6 +66,15 @@ const Profile = () => {
     fetchEmployeeData();
   }, []);
 
+  const normalizePhoneForMask = (phone?: string) => {
+    const digits = (phone || '').replace(/\D/g, '');
+    if (!digits) return '';
+    if (digits.length === 11 && digits.startsWith('0')) {
+      return digits.slice(1);
+    }
+    return digits.slice(0, 10);
+  };
+
   const fetchEmployeeData = async () => {
     try {
       setLoading(true);
@@ -80,7 +89,7 @@ const Profile = () => {
           last_name: response.data.last_name || '',
           email: response.data.email || '',
           company_email: response.data.user?.email || '',
-          phone: response.data.phone || '',
+          phone: normalizePhoneForMask(response.data.phone),
           address: response.data.address || '',
           state: response.data.state || '',
           city: response.data.city || '',
@@ -89,7 +98,7 @@ const Profile = () => {
           hire_date: formatDateForInput(response.data.hire_date),
           profession_start_date: formatDateForInput((response.data as any).profession_start_date),
           marital_status: response.data.marital_status || '',
-          emergency_contact: response.data.emergency_contact || '',
+          emergency_contact: normalizePhoneForMask(response.data.emergency_contact),
           emergency_contact_name: response.data.emergency_contact_name || '',
           emergency_contact_relation: response.data.emergency_contact_relation || '',
           mother_name: response.data.mother_name || '',
@@ -115,6 +124,13 @@ const Profile = () => {
 
   const handleInputChange = (e: React.ChangeEvent<any>) => {
     const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleMaskedInputChange = (name: keyof FormData, value: string) => {
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -357,20 +373,16 @@ const Profile = () => {
                       <Col md={6}>
                         <Form.Group className="mb-3">
                           <Form.Label>Telefon No</Form.Label>
-                          <InputMask
-                            mask="(999) 999 9999"
+                          <IMaskInput
+                            className="form-control"
+                            mask="(000) 000 0000"
                             value={formData.phone}
-                            onChange={handleInputChange}
-                          >
-                            {(inputProps: any) => (
-                              <Form.Control
-                                {...inputProps}
-                                type="tel"
-                                name="phone"
-                                placeholder="(123) 111 1111"
-                              />
-                            )}
-                          </InputMask>
+                            name="phone"
+                            type="tel"
+                            placeholder="(123) 111 1111"
+                            onAccept={(value) => handleMaskedInputChange('phone', String(value ?? ''))}
+                            overwrite
+                          />
                         </Form.Group>
                       </Col>
                     </Row>
@@ -547,20 +559,16 @@ const Profile = () => {
                       <Col md={4}>
                         <Form.Group className="mb-3">
                           <Form.Label>Telefon No</Form.Label>
-                          <InputMask
-                            mask="(999) 999 9999"
+                          <IMaskInput
+                            className="form-control"
+                            mask="(000) 000 0000"
                             value={formData.emergency_contact}
-                            onChange={handleInputChange}
-                          >
-                            {(inputProps: any) => (
-                              <Form.Control
-                                {...inputProps}
-                                type="tel"
-                                name="emergency_contact"
-                                placeholder="(123) 111 1111"
-                              />
-                            )}
-                          </InputMask>
+                            name="emergency_contact"
+                            type="tel"
+                            placeholder="(123) 111 1111"
+                            onAccept={(value) => handleMaskedInputChange('emergency_contact', String(value ?? ''))}
+                            overwrite
+                          />
                         </Form.Group>
                       </Col>
                       <FormSelectField
