@@ -157,7 +157,7 @@ const CvSearchPage = () => {
     setQuery(s.text);
     setShowSuggestions(false);
     setSuggestions([]);
-    executeSearch(s.text);
+    textareaRef.current?.focus();
   };
 
   const handlePopularQueryClick = (q: string) => {
@@ -165,7 +165,7 @@ const CvSearchPage = () => {
     setQuery(q);
     setShowSuggestions(false);
     setSuggestions([]);
-    executeSearch(q);
+    textareaRef.current?.focus();
   };
 
   const toggleRow = (rank: number) => {
