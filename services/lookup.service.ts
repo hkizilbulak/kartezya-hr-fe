@@ -22,6 +22,7 @@ export interface JobPositionLookup {
 export interface LeaveTypeLookup {
   id: number;
   name: string;
+  description?: string;
 }
 
 export interface GradeLookup {
