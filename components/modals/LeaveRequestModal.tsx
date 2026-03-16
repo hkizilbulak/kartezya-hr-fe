@@ -298,6 +298,11 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
                   {fieldErrors.leaveTypeId}
                 </div>
               )}
+              {formData.leaveTypeId && leaveTypes.find(t => t.id.toString() === formData.leaveTypeId)?.description && (
+                <div className="mt-2" style={{ fontSize: '0.875rem', color: '#6c757d', opacity: 0.8 }}>
+                  {leaveTypes.find(t => t.id.toString() === formData.leaveTypeId)?.description}
+                </div>
+              )}
             </Form.Group>
 
             <Row>
