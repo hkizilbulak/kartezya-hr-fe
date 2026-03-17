@@ -335,13 +335,11 @@ const LeaveRequestsPage = () => {
                           <thead>
                             <tr>
                               <th>Talep Tarihi</th>
-                              <th>Çalışan ID</th>
-                              <th>Çalışan Adı</th>
+                              <th>Personel Adı</th>
                               <th>İzin Türü</th>
                               <th>Başlangıç Tarihi</th>
                               <th>Bitiş Tarihi</th>
-                              <th>Kullanılan Gün</th>
-                              <th>Yarım/Tam Gün</th>
+                              <th className="text-center">Kullanılan Gün</th>
                               <th>Durum</th>
                               <th>İşlemler</th>
                             </tr>
@@ -359,13 +357,11 @@ const LeaveRequestsPage = () => {
                                 return (
                                   <tr key={request.id}>
                                     <td>{formatDate(createdAt)}</td>
-                                    <td>{employeeId}</td>
                                     <td>{request.employee ? getEmployeeName(request.employee) : ''}</td>
                                     <td>{leaveTypeName}</td>
                                     <td>{formatDate(startDate)}</td>
                                     <td>{formatDate(endDate)}</td>
-                                    <td>{requestedDays || '-'}</td>
-                                    <td>{getHalfDayInfo(request)}</td>
+                                    <td className="text-center">{requestedDays || '-'}</td>
                                     <td>{getStatusBadge(request.status)}</td>
                                     <td>
                                       <div className="d-flex gap-2">
@@ -408,7 +404,7 @@ const LeaveRequestsPage = () => {
                               })
                             ) : (
                               <tr>
-                                <td colSpan={10} className="text-center py-4">
+                                <td colSpan={8} className="text-center py-4">
                                   Bekleyen talep bulunamadı
                                 </td>
                               </tr>
@@ -448,13 +444,11 @@ const LeaveRequestsPage = () => {
                           <thead>
                             <tr>
                               <th>Talep Tarihi</th>
-                              <th>Çalışan ID</th>
-                              <th>Çalışan Adı</th>
+                              <th>Personel Adı</th>
                               <th>İzin Türü</th>
                               <th>Başlangıç Tarihi</th>
                               <th>Bitiş Tarihi</th>
-                              <th>Kullanılan Gün</th>
-                              <th>Yarım/Tam Gün</th>
+                              <th className="text-center">Kullanılan Gün</th>
                               <th>Durum</th>
                             </tr>
                           </thead>
@@ -471,20 +465,18 @@ const LeaveRequestsPage = () => {
                                 return (
                                   <tr key={request.id}>
                                     <td>{formatDate(createdAt)}</td>
-                                    <td>{employeeId}</td>
                                     <td>{request.employee ? getEmployeeName(request.employee) : ''}</td>
                                     <td>{leaveTypeName}</td>
                                     <td>{formatDate(startDate)}</td>
                                     <td>{formatDate(endDate)}</td>
-                                    <td>{requestedDays || '-'}</td>
-                                    <td>{getHalfDayInfo(request)}</td>
+                                    <td className="text-center">{requestedDays || '-'}</td>
                                     <td>{getStatusBadge(request.status)}</td>
                                   </tr>
                                 );
                               })
                             ) : (
                               <tr>
-                                <td colSpan={9} className="text-center py-4">
+                                <td colSpan={7} className="text-center py-4">
                                   Tamamlanmış talep bulunamadı
                                 </td>
                               </tr>
