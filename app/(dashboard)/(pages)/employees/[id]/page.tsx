@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Container, Spinner, Row, Col, Card, Button, Nav, Tab, Form, Table } from 'react-bootstrap';
 import { employeeService, workInformationService, employeeGradeService, employeeContractService, lookupService } from '@/services';
@@ -11,6 +11,7 @@ import EmployeeHeaderProfile from '@/components/employee-detail/EmployeeHeaderPr
 import WorkInformationModal from '@/components/modals/WorkInformationModal';
 import EmployeeGradeModal from '@/components/modals/EmployeeGradeModal';
 import EmployeeContractModal from '@/components/modals/EmployeeContractModal';
+import EmployeeLeaveRequests from '@/components/leave/EmployeeLeaveRequests';
 import DeleteModal from '@/components/DeleteModal';
 import styles from './page.module.scss';
 import { genderOptions, maritalStatusOptions, emergencyContactRelationOptions, statusOptions } from '@/contants/options';
@@ -51,6 +52,7 @@ const EmployeeDetailPage = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [roles, setRoles] = useState<string[]>(['EMPLOYEE']);
   const [deleteItemType, setDeleteItemType] = useState<'workinfo' | 'grade' | 'contract' | null>(null);
+  const [activeTab, setActiveTab] = useState<string>('employee-info');
 
   // Form state
   const [formData, setFormData] = useState({
@@ -80,14 +82,30 @@ const EmployeeDetailPage = () => {
     emergency_contact_relation: '',
   });
 
+  const lastFetchedEmployeeId = useRef<string | null>(null);
+  const fetchedTabs = useRef<Set<string>>(new Set(['employee-info']));
+
   useEffect(() => {
+    if (lastFetchedEmployeeId.current === employeeId) return;
+    lastFetchedEmployeeId.current = employeeId;
     fetchEmployeeDetails();
   }, [employeeId]);
 
   useEffect(() => {
-    // Fetch grades when component mounts
-    fetchGrades();
-  }, []);
+    if (!employee) return;
+    
+    if (!fetchedTabs.current.has(activeTab)) {
+      if (activeTab === 'work-info') {
+        fetchWorkInformations(employee.id);
+      } else if (activeTab === 'grade-info') {
+        fetchGrades();
+        fetchEmployeeGrades(employee.id);
+      } else if (activeTab === 'contract-info') {
+        fetchEmployeeContracts(employee.id);
+      }
+      fetchedTabs.current.add(activeTab);
+    }
+  }, [activeTab, employee]);
 
   useEffect(() => {
     // Rol bilgisini employee state'inden al
@@ -114,12 +132,6 @@ const EmployeeDetailPage = () => {
 
       if (response?.data) {
         setEmployee(response.data);
-        // Fetch work informations for this employee
-        fetchWorkInformations(response.data.id);
-        // Fetch employee grades
-        fetchEmployeeGrades(response.data.id);
-        // Fetch employee contracts
-        fetchEmployeeContracts(response.data.id);
       }
     } catch (error: any) {
       const errorMessage = error.response?.data?.error || error.message || 'Veri çekme sırasında hata oluştu';
@@ -502,7 +514,7 @@ const EmployeeDetailPage = () => {
             <p className="text-muted mb-0">{workInformations.length > 0 ? (workInformations[0].job_position?.title) : (employee.work_information?.job_title)}</p>
           </div>
 
-          <Tab.Container id="employee-tabs" defaultActiveKey="employee-info">
+          <Tab.Container id="employee-tabs" activeKey={activeTab} onSelect={(k) => setActiveTab(k || 'employee-info')}>
             <Card className="border-0 shadow-sm">
               <Card.Header className="border-bottom-0 bg-transparent">
                 <Nav
@@ -552,6 +564,13 @@ const EmployeeDetailPage = () => {
                       eventKey="contract-info"
                     >
                       Sözleşme Bilgileri
+                    </Nav.Link>
+                  </Nav.Item>
+                  <Nav.Item style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>
+                    <Nav.Link
+                      eventKey="leave-info"
+                    >
+                      İzin Bilgileri
                     </Nav.Link>
                   </Nav.Item>
                 </Nav>
@@ -1131,6 +1150,15 @@ const EmployeeDetailPage = () => {
                             <p className="text-muted mb-0">Sözleşme bilgisi kaydı bulunamadı</p>
                           </Card.Body>
                         </Card>
+                      )}
+                    </div>
+                  </Tab.Pane>
+
+                  {/* İzin Bilgileri Tab */}
+                  <Tab.Pane eventKey="leave-info">
+                    <div className={styles.section}>
+                      {activeTab === 'leave-info' && (
+                        <EmployeeLeaveRequests employeeId={employeeId} hideCreateButton={true} />
                       )}
                     </div>
                   </Tab.Pane>

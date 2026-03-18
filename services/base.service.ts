@@ -16,6 +16,7 @@ export interface PaginationParams {
   sort?: string;
   direction?: 'ASC' | 'DESC';
   search?: string;
+  [key: string]: any;
 }
 
 export class BaseService<T = any> {

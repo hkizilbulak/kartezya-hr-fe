@@ -64,7 +64,7 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
         reason: leaveRequest.reason || '',
         teamApprovalReceived: false
       });
-    } else if (!isEdit) {
+    } else if (!isEdit && show) {
       const today = new Date();
       const todayStr = today.toISOString().split('T')[0];
       
@@ -100,7 +100,7 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
   }, [show, leaveRequest, isEdit, leaveTypes]);
 
   useEffect(() => {
-    if (formData.startDate && formData.endDate) {
+    if (show && formData.startDate && formData.endDate) {
       const calculateDays = async () => {
         try {
           const startDate = new Date(formData.startDate);

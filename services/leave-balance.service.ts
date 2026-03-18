@@ -20,6 +20,34 @@ export const leaveBalanceService = {
     }
   },
 
+  getByEmployeeId: async (employeeId: string | number) => {
+    try {
+      const response = await axiosInstance.get(HR_ENDPOINTS.LEAVE.BALANCES, {
+        params: { employee_id: employeeId }
+      });
+      if (response.data?.data && Array.isArray(response.data.data)) {
+        return {
+          success: true,
+          data: response.data.data[0] || null
+        };
+      }
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  getBalancesByEmployeeId: async (employeeId: string | number): Promise<APIResponse<LeaveBalance[]>> => {
+    try {
+      const response = await axiosInstance.get(HR_ENDPOINTS.LEAVE.BALANCES, {
+        params: { employee_id: employeeId }
+      });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
   // Get my leave balances
   getMyLeaveBalances: async (): Promise<APIResponse<LeaveBalance[]>> => {
     try {

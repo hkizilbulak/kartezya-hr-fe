@@ -40,6 +40,7 @@ export const HR_ENDPOINTS = {
     TYPES_LOOKUP: '/leave/types/lookup',
     REQUESTS: '/leave/requests',
     REQUESTS_ME: '/leave/requests/me',
+    BALANCES: '/leave/balances',
     BALANCES_ME: '/leave/balances/me'
   }
 }
