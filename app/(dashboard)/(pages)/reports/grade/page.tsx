@@ -296,7 +296,6 @@ const GradeReportPage = () => {
                           <Table hover className="mb-0">
                             <thead>
                               <tr>
-                                <th>ID</th>
                                 <th
                                   onClick={() => handleSort('first_name')}
                                   className="sortable-header"
@@ -304,19 +303,6 @@ const GradeReportPage = () => {
                                   AD SOYAD {getSortIcon('first_name')}
                                 </th>
                                 <th>İŞE GİRİŞ</th>
-                                <th
-                                  onClick={() => handleSort('company_name')}
-                                  className="sortable-header"
-                                >
-                                  ŞİRKET {getSortIcon('company_name')}
-                                </th>
-                                <th
-                                  onClick={() => handleSort('department_name')}
-                                  className="sortable-header"
-                                >
-                                  DEPARTMAN {getSortIcon('department_name')}
-                                </th>
-                                <th>YÖNETİCİ</th>
                                 <th>TAKIMA BAŞLANGIÇ</th>
                                 <th>MESLEĞE BAŞLANGIÇ</th>
                                 <th>TOPLAM DENEYİM</th>
@@ -332,6 +318,19 @@ const GradeReportPage = () => {
                                 >
                                   BEKLENEN GRADE {getSortIcon('expected_grade')}
                                 </th>
+                                <th
+                                  onClick={() => handleSort('company_name')}
+                                  className="sortable-header"
+                                >
+                                  ŞİRKET {getSortIcon('company_name')}
+                                </th>
+                                <th
+                                  onClick={() => handleSort('department_name')}
+                                  className="sortable-header"
+                                >
+                                  DEPARTMAN {getSortIcon('department_name')}
+                                </th>
+                                <th>YÖNETİCİ</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -340,17 +339,16 @@ const GradeReportPage = () => {
                                   const hasGap = row.total_gap > 0;
                                   return (
                                     <tr key={row.id} style={hasGap ? { backgroundColor: '#fff3cd' } : undefined}>
-                                      <td>{row.id}</td>
                                       <td>{row.first_name} {row.last_name}</td>
                                       <td>{row.hire_date ? new Date(row.hire_date).toLocaleDateString('tr-TR') : '-'}</td>
-                                      <td>{row.company_name}</td>
-                                      <td>{row.department_name}</td>
-                                      <td>{row.manager || '-'}</td>
                                       <td>{row.team_start_date ? new Date(row.team_start_date).toLocaleDateString('tr-TR') : '-'}</td>
                                       <td>{row.profession_start_date ? new Date(row.profession_start_date).toLocaleDateString('tr-TR') : '-'}</td>
                                       <td>{row.total_experience_text || '-'}</td>
                                       <td>{row.current_grade || '-'}</td>
                                       <td>{row.expected_grade || '-'}</td>
+                                      <td>{row.company_name}</td>
+                                      <td>{row.department_name}</td>
+                                      <td>{row.manager || '-'}</td>
                                     </tr>
                                   );
                                 })

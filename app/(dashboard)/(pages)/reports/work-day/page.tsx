@@ -358,7 +358,6 @@ const WorkDayReportPage = () => {
                           <Table hover className="mb-0">
                             <thead>
                               <tr>
-                                <th>ID</th>
                                 <th
                                   onClick={() => handleSort('first_name')}
                                   className="sortable-header"
@@ -391,7 +390,6 @@ const WorkDayReportPage = () => {
                               {getSortedAndPaginatedData().length > 0 ? (
                                 getSortedAndPaginatedData().map((row: WorkDayReportRow) => (
                                   <tr key={row.id}>
-                                    <td>{row.id}</td>
                                     <td>{row.first_name} {row.last_name}</td>
                                     <td className="text-end">{Math.round(row.work_days)}</td>
                                     <td className="text-end">{row.used_leave_days.toFixed(1)}</td>
