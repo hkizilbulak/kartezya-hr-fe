@@ -72,7 +72,6 @@ const EmployeeDetailPage = () => {
     hire_date: '',
     leave_date: '',
     profession_start_date: '',
-    is_grade_up: false,
     total_gap: 0,
     status: '',
     note: '',
@@ -327,7 +326,6 @@ const EmployeeDetailPage = () => {
         roles: roles,
         status: employee.status,
         total_gap: parseFloat(String(employee.total_gap || 0)),
-        is_grade_up: employee.is_grade_up || false,
       };
 
       await employeeService.update(employee.id, submitData);
@@ -790,20 +788,6 @@ const EmployeeDetailPage = () => {
                               </option>
                             ))}
                           </FormSelectField>
-                        </Col>
-                        <Col md={4}>
-                          <div className="mb-3">
-                            <Form.Group controlId="isGradeUp">
-                              <Form.Label>Grade Yükseltildi</Form.Label>
-                              <Form.Check
-                                type="switch"
-                                id="is_grade_up"
-                                label={(employee as any).is_grade_up ? 'Evet' : 'Hayır'}
-                                checked={(employee as any).is_grade_up}
-                                onChange={(e) => setEmployee({ ...employee, is_grade_up: e.target.checked } as any)}
-                              />
-                            </Form.Group>
-                          </div>
                         </Col>
                       </Row>
                       <Row>

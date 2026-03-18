@@ -23,7 +23,6 @@ export interface CreateEmployeeRequest {
   emergency_contact_name?: string;
   emergency_contact_relation?: string;
   grade_id?: number;
-  is_grade_up?: boolean;
   contract_no?: string;
   profession_start_date?: string;
   note?: string;
@@ -53,7 +52,6 @@ export interface UpdateEmployeeRequest {
   emergency_contact_name?: string;
   emergency_contact_relation?: string;
   grade_id?: number;
-  is_grade_up?: boolean;
   contract_no?: string;
   profession_start_date?: string;
   note?: string;
