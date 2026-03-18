@@ -16,8 +16,7 @@
 // Material Design Icons
 @import url("https://cdnjs.cloudflare.com/ajax/libs/MaterialDesign-Webfont/7.2.96/css/materialdesignicons.min.css");
 
-// Feathers CSS for Before Icon
-@import url("/fonts/feather-icons/feather.css");
+// Feathers CSS - layout.tsx üzerinden import edilmektedir
 
 // Bootstrap functions
 @import "~bootstrap/scss/functions";

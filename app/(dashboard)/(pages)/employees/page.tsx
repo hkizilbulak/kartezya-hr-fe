@@ -513,74 +513,93 @@ const EmployeesPage = () => {
             showCreateButton={true}
             showFilterButton={true}
             createButtonText="Yeni Çalışan"
+            filterButtonText={showFilters ? 'Filtreleri Gizle' : 'Gelişmiş Filtreler'}
             onCreate={handleAddNew}
             onToggleFilter={() => setShowFilters(!showFilters)}
           />
         </div>
 
+        {/* Her zaman görünen hızlı filtreler */}
+        <Row className="mb-3">
+          <Col lg={12} md={12} sm={12}>
+            <Card className="border-0 shadow-sm">
+              <Card.Body>
+                <Row className="g-3 align-items-end">
+                  <Col lg={3} md={6} sm={12}>
+                    <FormSelectField
+                      label="Şirket"
+                      name="quick-company"
+                      value={quickSearchParams.company}
+                      onChange={(e) => handleQuickSearchChange('company', e.target.value)}
+                      disabled={companiesLoading}
+                    >
+                      <option value="">Şirket seçiniz</option>
+                      {companies.map((company) => (
+                        <option key={company.id} value={company.name}>
+                          {company.name}
+                        </option>
+                      ))}
+                    </FormSelectField>
+                  </Col>
+                  <Col lg={3} md={6} sm={12}>
+                    <FormSelectField
+                      label="Departman"
+                      name="quick-department"
+                      value={quickSearchParams.department}
+                      onChange={(e) => handleQuickSearchChange('department', e.target.value)}
+                    >
+                      <option value="">Departman seçiniz</option>
+                      {allDepartments.map((department) => (
+                        <option key={department.id} value={department.name}>
+                          {department.name}
+                        </option>
+                      ))}
+                    </FormSelectField>
+                  </Col>
+                  <Col lg={3} md={6} sm={12}>
+                    <FormSelectField
+                      label="Unvan"
+                      name="quick-job-title"
+                      value={quickSearchParams.jobTitle}
+                      onChange={(e) => handleQuickSearchChange('jobTitle', e.target.value)}
+                    >
+                      <option value="">Unvan seçiniz</option>
+                      {jobPositions.map((position) => (
+                        <option key={position.id} value={position.title}>
+                          {position.title}
+                        </option>
+                      ))}
+                    </FormSelectField>
+                  </Col>
+                  <Col lg={3} md={6} sm={12}>
+                    <FormTextField
+                      controlId="filter-first-name"
+                      label="Ad Soyad"
+                      name="first_name"
+                      type="text"
+                      value={filterParams.first_name}
+                      onChange={(name, value) => handleFilterChange(name, value)}
+                      placeholder="Ad soyad giriniz"
+                    />
+                  </Col>
+                  <Col lg={12} md={12} sm={12} className="text-end">
+                    <Button variant="secondary" size="sm" onClick={clearFilters}>
+                      Filtreleri Temizle
+                    </Button>
+                  </Col>
+                </Row>
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+
+        {/* Gelişmiş filtreler - butona basınca açılır */}
         {showFilters && (
           <Row className="mb-4">
             <Col lg={12} md={12} sm={12}>
               <Card className="border-0 shadow-sm">
                 <Card.Body>
                   <Row className="g-3">
-                    <Col lg={3} md={6} sm={12}>
-                      <FormSelectField
-                        label="Şirket"
-                        name="quick-company"
-                        value={quickSearchParams.company}
-                        onChange={(e) => handleQuickSearchChange('company', e.target.value)}
-                        disabled={companiesLoading}
-                      >
-                        <option value="">Şirket seçiniz</option>
-                        {companies.map((company) => (
-                          <option key={company.id} value={company.name}>
-                            {company.name}
-                          </option>
-                        ))}
-                      </FormSelectField>
-                    </Col>
-                    <Col lg={3} md={6} sm={12}>
-                      <FormSelectField
-                        label="Departman"
-                        name="quick-department"
-                        value={quickSearchParams.department}
-                        onChange={(e) => handleQuickSearchChange('department', e.target.value)}
-                      >
-                        <option value="">Departman seçiniz</option>
-                        {allDepartments.map((department) => (
-                          <option key={department.id} value={department.name}>
-                            {department.name}
-                          </option>
-                        ))}
-                      </FormSelectField>
-                    </Col>
-                    <Col lg={3} md={6} sm={12}>
-                      <FormSelectField
-                        label="Unvan"
-                        name="quick-job-title"
-                        value={quickSearchParams.jobTitle}
-                        onChange={(e) => handleQuickSearchChange('jobTitle', e.target.value)}
-                      >
-                        <option value="">Unvan seçiniz</option>
-                        {jobPositions.map((position) => (
-                          <option key={position.id} value={position.title}>
-                            {position.title}
-                          </option>
-                        ))}
-                      </FormSelectField>
-                    </Col>
-                    <Col lg={3} md={6} sm={12}>
-                      <FormTextField
-                        controlId="filter-first-name"
-                        label="Ad Soyad"
-                        name="first_name"
-                        type="text"
-                        value={filterParams.first_name}
-                        onChange={(name, value) => handleFilterChange(name, value)}
-                        placeholder="Ad soyad giriniz"
-                      />
-                    </Col>
                     <Col lg={3} md={6} sm={12}>
                       <FormTextField
                         controlId="filter-email"
@@ -675,16 +694,6 @@ const EmployeesPage = () => {
                           ))}
                         </FormSelectField>
                       </Form.Group>
-                    </Col>
-                  </Row>
-                  <Row className="mt-3">
-                    <Col lg={12} md={12} sm={12} className="text-end">
-                      <Button variant="primary" className="me-2" onClick={applyFilters}>
-                        Filtrele
-                      </Button>
-                      <Button variant="secondary" onClick={clearFilters}>
-                        Temizle
-                      </Button>
                     </Col>
                   </Row>
                 </Card.Body>

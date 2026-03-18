@@ -5,6 +5,7 @@ type IProps = {
   showCreateButton?: boolean;
   showFilterButton?: boolean;
   createButtonText?: string;
+  filterButtonText?: string;
   onCreate?: () => void;
   onToggleFilter?: () => void;
 };
@@ -14,6 +15,7 @@ const PageHeading = ({
   showCreateButton = true,
   showFilterButton = true,
   createButtonText,
+  filterButtonText,
   onCreate,
   onToggleFilter,
 }: IProps) => {
@@ -52,7 +54,7 @@ const PageHeading = ({
                   }}
                 >
                   <i className="fe fe-filter" style={{ marginRight: '0.5rem' }}></i>
-                  <span className="d-none d-lg-flex">Filtrele</span>
+                  <span className="d-none d-lg-flex">{filterButtonText || 'Filtrele'}</span>
                 </Button>
               )}
             </div>

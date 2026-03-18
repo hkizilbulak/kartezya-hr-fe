@@ -21,6 +21,9 @@ export default async function RootLayout({
 }) {
   return (
     <html lang="tr">
+      <head>
+        <link rel="stylesheet" href="/fonts/feather-icons/feather.css" />
+      </head>
       <body className="bg-light">
         <NextAuthProvider>
           {children}
