@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Modal, Form, Alert, Button, Row, Col } from 'react-bootstrap';
 import { LeaveRequest } from '@/models/hr/hr-models';
 import { leaveRequestService } from '@/services/leave-request.service';
@@ -42,6 +42,10 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
   const [calculatedDays, setCalculatedDays] = useState(0);
   const [generalError, setGeneralError] = useState<string>('');
 
+  const selectedLeaveType = leaveTypes.find(t => t.id.toString() === formData.leaveTypeId);
+  const limitAmount = selectedLeaveType?.limit_amount;
+  const hasFixedLimit = limitAmount !== null && limitAmount !== undefined && limitAmount > 0;
+
   useEffect(() => {
     if (show) {
       fetchLeaveTypes();
@@ -49,8 +53,8 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
   }, [show]);
 
   useEffect(() => {
-    if (isEdit && leaveRequest && leaveTypes.length > 0) {
-      const leaveTypeId = (leaveRequest.leave_type_id || leaveRequest.leave_type_id || leaveRequest.leave_type?.id)?.toString() || '';
+    if (show && isEdit && leaveRequest && leaveTypes.length > 0) {
+      const leaveTypeId = (leaveRequest.leave_type_id || leaveRequest.leave_type?.id)?.toString() || '';
       
       const startDateStr = (leaveRequest.start_date || leaveRequest.start_date)?.split('T')[0] || '';
       const endDateStr = (leaveRequest.end_date || leaveRequest.end_date)?.split('T')[0] || '';
@@ -64,7 +68,13 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
         reason: leaveRequest.reason || '',
         teamApprovalReceived: false
       });
-    } else if (!isEdit && show) {
+      setFieldErrors({});
+    }
+  }, [show, leaveRequest, isEdit, leaveTypes]);
+
+  // Handle fresh form initialization completely separately
+  useEffect(() => {
+    if (show && !isEdit) {
       const today = new Date();
       const todayStr = today.toISOString().split('T')[0];
       
@@ -77,32 +87,47 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
         reason: '',
         teamApprovalReceived: false
       });
-      
-      const calculateTodayDays = async () => {
-        try {
-          const response = await leaveRequestService.calculateWorkingDays(
-            today.toISOString(),
-            today.toISOString()
-          );
-          if (response.data && response.data.working_days !== undefined) {
-            setCalculatedDays(response.data.working_days);
-          } else {
-            setCalculatedDays(0);
-          }
-        } catch (error) {
-          setCalculatedDays(0);
-        }
-      };
-      
-      calculateTodayDays();
+      setCalculatedDays(0);
+      setFieldErrors({});
     }
-    setFieldErrors({});
-  }, [show, leaveRequest, isEdit, leaveTypes]);
+  }, [show, isEdit]);
+
+  const lastCalcParams = useRef<string>('');
 
   useEffect(() => {
-    if (show && formData.startDate && formData.endDate) {
-      const calculateDays = async () => {
-        try {
+    if (!show || !formData.startDate) return;
+
+    const paramKey = hasFixedLimit 
+      ? `fixed|${formData.startDate}|${limitAmount}|${formData.isStartDateFullDay}|${formData.isFinishDateFullDay}`
+      : `range|${formData.startDate}|${formData.endDate}|${formData.isStartDateFullDay}|${formData.isFinishDateFullDay}`;
+
+    if (lastCalcParams.current === paramKey) return;
+    
+    // Only set as fetched if we actually have enough data to calculate
+    if (!hasFixedLimit && !formData.endDate) return;
+
+    const calculateDatesOrDays = async () => {
+      lastCalcParams.current = paramKey;
+      try {
+        if (hasFixedLimit) {
+          // Calculate end date based on fixed days limit
+          const startDateIso = new Date(formData.startDate).toISOString();
+          const response = await leaveRequestService.calculateEndDate(
+            startDateIso,
+            limitAmount,
+            formData.isStartDateFullDay,
+            formData.isFinishDateFullDay
+          );
+          
+          if (response.data && response.data.end_date) {
+            const newEndDateStr = response.data.end_date.split('T')[0];
+            if (formData.endDate !== newEndDateStr) {
+               setFormData(prev => ({ ...prev, endDate: newEndDateStr }));
+            }
+            setCalculatedDays(response.data.working_days !== undefined ? response.data.working_days : limitAmount);
+          }
+        } else if (formData.endDate) {
+          // Normal working days calculation
           const startDate = new Date(formData.startDate);
           const endDate = new Date(formData.endDate);
           
@@ -112,30 +137,30 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
             formData.isStartDateFullDay,
             formData.isFinishDateFullDay
           );
+          
           if (response.data && response.data.working_days !== undefined) {
             setCalculatedDays(response.data.working_days);
           } else {
             setCalculatedDays(0);
           }
+        }
+      } catch (error) {
+        setCalculatedDays(0);
+        if (formData.startDate && formData.endDate && !hasFixedLimit) {
+          const startDate = new Date(formData.startDate);
+          const endDate = new Date(formData.endDate);
           
-        } catch (error) {
-          setCalculatedDays(0);
-          if (formData.startDate && formData.endDate) {
-            const startDate = new Date(formData.startDate);
-            const endDate = new Date(formData.endDate);
-            
-            if (startDate <= endDate) {
-              const timeDiff = endDate.getTime() - startDate.getTime();
-              const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
-              setCalculatedDays(daysDiff);
-            }
+          if (startDate <= endDate) {
+            const timeDiff = endDate.getTime() - startDate.getTime();
+            const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
+            setCalculatedDays(daysDiff);
           }
         }
-      };
-      
-      calculateDays();
-    }
-  }, [formData.startDate, formData.endDate, formData.isStartDateFullDay, formData.isFinishDateFullDay]);
+      }
+    };
+    
+    calculateDatesOrDays();
+  }, [formData.startDate, formData.endDate, formData.isStartDateFullDay, formData.isFinishDateFullDay, formData.leaveTypeId, hasFixedLimit, limitAmount, show]);
 
   const fetchLeaveTypes = async () => {
     try {
@@ -273,10 +298,18 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
                 name="leaveTypeId"
                 value={formData.leaveTypeId}
                 onChange={(e: any) => {
+                  const newLeaveTypeId = e.target.value;
+                  const selectedType = leaveTypes.find(t => t.id.toString() === newLeaveTypeId);
+                  const newLimitAmount = selectedType?.limit_amount;
+                  const newHasFixedLimit = newLimitAmount !== null && newLimitAmount !== undefined && newLimitAmount > 0;
+
                   setFormData(prev => ({
                     ...prev,
-                    leaveTypeId: e.target.value
+                    leaveTypeId: newLeaveTypeId,
+                    // Eğer limit yoksa endDate'i startDate'e eşitle
+                    ...(!newHasFixedLimit ? { endDate: prev.startDate } : {})
                   }));
+
                   if (fieldErrors.leaveTypeId) {
                     setFieldErrors(prev => ({
                       ...prev,
@@ -346,6 +379,7 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
                     isInvalid={!!fieldErrors.endDate}
                     errorMessage={fieldErrors.endDate}
                     required={true}
+                    disabled={hasFixedLimit}
                   />
                 </Form.Group>
               </Col>
