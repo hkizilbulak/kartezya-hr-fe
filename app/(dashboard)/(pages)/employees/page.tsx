@@ -1,7 +1,7 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Row, Col, Card, Table, Button, Badge, Container, Form } from 'react-bootstrap';
+import { Row, Col, Card, Table, Button, Container, Form } from 'react-bootstrap';
 import { employeeService, lookupService } from '@/services';
 import { Employee } from '@/models/hr/hr-models';
 import { PageHeading } from '@/widgets';
@@ -11,11 +11,10 @@ import DeleteModal from '@/components/DeleteModal';
 import LoadingOverlay from '@/components/LoadingOverlay';
 import FormSelectField from '@/components/FormSelectField';
 import FormTextField from '@/components/FormTextField';
-import MultiSelectField from '@/components/MultiSelectField';
-import { Edit, Trash2, Eye, ChevronUp, ChevronDown, Filter } from 'react-feather';
+import { Trash2, Eye, ChevronUp, ChevronDown } from 'react-feather';
 import { toast } from 'react-toastify';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
-import { CompanyLookup, DepartmentLookup, GradeLookup } from '@/services/lookup.service';
+import { CompanyLookup, DepartmentLookup, GradeLookup, JobPositionLookup } from '@/services/lookup.service';
 import { genderOptions, maritalStatusOptions, statusOptions } from '@/contants/options';
 import '@/styles/table-list.scss';
 import '@/styles/components/table-common.scss';
@@ -50,18 +49,15 @@ const EmployeesPage = () => {
   // Filter states
   const [showFilters, setShowFilters] = useState(false);
   const [companies, setCompanies] = useState<CompanyLookup[]>([]);
-  const [departments, setDepartments] = useState<DepartmentLookup[]>([]);
+  const [jobPositions, setJobPositions] = useState<JobPositionLookup[]>([]);
   const [grades, setGrades] = useState<GradeLookup[]>([]);
   const [allDepartments, setAllDepartments] = useState<DepartmentLookup[]>([]);
   const [companiesLoading, setCompaniesLoading] = useState(false);
-  const [departmentsLoading, setDepartmentsLoading] = useState(false);
 
   // Filter parameters
   const [filterParams, setFilterParams] = useState({
-    id: '',
     first_name: '',
     email: '',
-    company_id: '',
     department_ids: [] as string[], // Changed to array for multiple selection
     manager: '',
     identity_no: '',
@@ -73,6 +69,14 @@ const EmployeesPage = () => {
   // Add STATUS filter state - default to ACTIVE
   const [statusFilter, setStatusFilter] = useState('ACTIVE');
 
+  const [quickSearchParams, setQuickSearchParams] = useState({
+    company: '',
+    department: '',
+    jobTitle: ''
+  });
+  const isQuickSearchInitialized = useRef(false);
+  const skipNextAutoFilter = useRef(false);
+
   const router = useRouter();
 
   // Fetch lookups on mount
@@ -80,10 +84,11 @@ const EmployeesPage = () => {
     const fetchLookups = async () => {
       try {
         setCompaniesLoading(true);
-        const [companiesRes, departmentsRes, gradesRes] = await Promise.all([
+        const [companiesRes, departmentsRes, gradesRes, jobPositionsRes] = await Promise.all([
           lookupService.getCompaniesLookup(),
           lookupService.getDepartmentsLookup(),
-          lookupService.getGradesLookup()
+          lookupService.getGradesLookup(),
+          lookupService.getJobPositionsLookup()
         ]);
         
         if (companiesRes.success && companiesRes.data) {
@@ -94,6 +99,9 @@ const EmployeesPage = () => {
         }
         if (gradesRes.success && gradesRes.data) {
           setGrades(gradesRes.data);
+        }
+        if (jobPositionsRes.success && jobPositionsRes.data) {
+          setJobPositions(jobPositionsRes.data);
         }
       } catch (error: any) {
         const errorMessage = error.response?.data?.error || error.message;
@@ -106,49 +114,40 @@ const EmployeesPage = () => {
     fetchLookups();
   }, []);
 
-  // Update departments when company changes
-  useEffect(() => {
-    if (filterParams.company_id) {
-      const loadDepartmentsByCompany = async () => {
-        try {
-          setDepartmentsLoading(true);
-          const response = await lookupService.getDepartmentsByCompanyLookup(parseInt(filterParams.company_id));
-          if (response.success && response.data) {
-            setDepartments(response.data);
-          } else {
-            setDepartments(allDepartments.filter((dept: any) => 
-              dept.company_id && String(dept.company_id) === filterParams.company_id
-            ));
-          }
-        } catch (error: any) {
-          setDepartments(allDepartments.filter((dept: any) => 
-            dept.company_id && String(dept.company_id) === filterParams.company_id
-          ));
-        } finally {
-          setDepartmentsLoading(false);
-        }
-      };
-
-      loadDepartmentsByCompany();
-      // Clear department selection when company changes
-      setFilterParams(prev => ({ ...prev, department_ids: [] }));
-    } else {
-      setDepartments([]);
-      setFilterParams(prev => ({ ...prev, department_ids: [] }));
-    }
-  }, [filterParams.company_id, allDepartments]);
-
   const fetchEmployees = async (page: number = 1, sortKey?: string, sortDir?: 'ASC' | 'DESC', filters?: any, perPage?: number) => {
     try {
       setIsLoading(true);
 
-      const params: any = { 
+      const rawParams: any = {
         page, 
         limit: perPage || itemsPerPage,
         sort: sortKey,
         direction: sortDir,
         ...filters
       };
+
+      const params = Object.entries(rawParams).reduce((acc, [key, value]) => {
+        if (value === undefined || value === null) {
+          return acc;
+        }
+
+        if (typeof value === 'string' && value.trim() === '') {
+          return acc;
+        }
+
+        if (Array.isArray(value) && value.length === 0) {
+          return acc;
+        }
+
+        acc[key] = value;
+        return acc;
+      }, {} as Record<string, any>);
+
+      const query = new URLSearchParams();
+      Object.entries(params).forEach(([key, value]) => {
+        query.set(key, String(value));
+      });
+      console.log(`[Employees API] /api/v1/employees?${query.toString()}`);
 
       const response = await employeeService.getAll(params);
       
@@ -168,29 +167,97 @@ const EmployeesPage = () => {
 
   useEffect(() => {
     // Fetch employees with ACTIVE status on initial load
-    fetchEmployees(1, undefined, undefined, { status: 'ACTIVE' });
+    fetchEmployees(1, undefined, 'ASC', { status: 'ACTIVE' }, 10);
   }, []);
+
+  const handleQuickSearchChange = (name: 'company' | 'department' | 'jobTitle', value: string) => {
+    setQuickSearchParams(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const getQuickSearchFilters = () => {
+    const quickFilters: Record<string, string> = {};
+
+    if (quickSearchParams.company.trim()) {
+      const companyValue = quickSearchParams.company.trim();
+      quickFilters.company = companyValue;
+      quickFilters.company_name = companyValue;
+    }
+
+    if (quickSearchParams.department.trim()) {
+      const departmentValue = quickSearchParams.department.trim();
+      quickFilters.department = departmentValue;
+      quickFilters.department_name = departmentValue;
+    }
+
+    if (quickSearchParams.jobTitle.trim()) {
+      const jobTitleValue = quickSearchParams.jobTitle.trim();
+      quickFilters.jobTitle = jobTitleValue;
+      quickFilters.job_title = jobTitleValue;
+    }
+
+    return quickFilters;
+  };
+
+  useEffect(() => {
+    if (!isQuickSearchInitialized.current) {
+      isQuickSearchInitialized.current = true;
+      return;
+    }
+
+    if (skipNextAutoFilter.current) {
+      skipNextAutoFilter.current = false;
+      return;
+    }
+
+    // Debounce all filter changes for instant filtering without excessive API calls.
+    const timer = setTimeout(() => {
+      const activeFilters = Object.entries(filterParams).reduce((acc, [key, value]) => {
+        if (key === 'department_ids') {
+          if (Array.isArray(value) && value.length > 0) {
+            acc['department_ids'] = value.join(',');
+          }
+        } else if (value && value.toString().trim() !== '') {
+          acc[key] = value;
+        }
+        return acc;
+      }, {} as any);
+
+      if (statusFilter) {
+        activeFilters['status'] = statusFilter;
+      }
+
+      const quickFilters = getQuickSearchFilters();
+
+      fetchEmployees(1, sortConfig.key || undefined, sortConfig.direction, {
+        ...activeFilters,
+        ...quickFilters
+      }, itemsPerPage);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [
+    quickSearchParams.company,
+    quickSearchParams.department,
+    quickSearchParams.jobTitle,
+    filterParams.first_name,
+    filterParams.email,
+    filterParams.department_ids,
+    filterParams.manager,
+    filterParams.identity_no,
+    filterParams.gender,
+    filterParams.marital_status,
+    filterParams.grade_id,
+    statusFilter
+  ]);
 
   const handleFilterChange = (name: string, value: string | string[]) => {
     setFilterParams(prev => ({
       ...prev,
       [name]: value
     }));
-  };
-
-  // Handle multiple department selection
-  const handleDepartmentChange = (departmentId: string) => {
-    setFilterParams(prev => {
-      const currentIds = prev.department_ids || [];
-      const newIds = currentIds.includes(departmentId)
-        ? currentIds.filter(id => id !== departmentId)
-        : [...currentIds, departmentId];
-      
-      return {
-        ...prev,
-        department_ids: newIds
-      };
-    });
   };
 
   const applyFilters = () => {
@@ -211,15 +278,19 @@ const EmployeesPage = () => {
       activeFilters['status'] = statusFilter;
     }
 
-    fetchEmployees(1, sortConfig.key || undefined, sortConfig.direction, activeFilters, itemsPerPage);
+    const quickFilters = getQuickSearchFilters();
+
+    fetchEmployees(1, sortConfig.key || undefined, sortConfig.direction, {
+      ...activeFilters,
+      ...quickFilters
+    }, itemsPerPage);
   };
 
   const clearFilters = () => {
+    skipNextAutoFilter.current = true;
     setFilterParams({
-      id: '',
       first_name: '',
       email: '',
-      company_id: '',
       department_ids: [], // Reset to empty array
       manager: '',
       identity_no: '',
@@ -227,8 +298,13 @@ const EmployeesPage = () => {
       marital_status: '',
       grade_id: ''
     });
+    setQuickSearchParams({
+      company: '',
+      department: '',
+      jobTitle: ''
+    });
     setStatusFilter('ACTIVE'); // Reset to ACTIVE
-    fetchEmployees(1, sortConfig.key || undefined, sortConfig.direction, { status: 'ACTIVE' }, itemsPerPage);
+    fetchEmployees(1, undefined, 'ASC', { status: 'ACTIVE' }, 10);
   };
 
   const handleSort = (key: 'first_name' | 'last_name') => {
@@ -254,7 +330,12 @@ const EmployeesPage = () => {
       activeFilters['status'] = statusFilter;
     }
 
-    fetchEmployees(1, key, direction, activeFilters, itemsPerPage);
+    const quickFilters = getQuickSearchFilters();
+
+    fetchEmployees(1, key, direction, {
+      ...activeFilters,
+      ...quickFilters
+    }, itemsPerPage);
   };
 
   const getSortIcon = (columnKey: 'first_name' | 'last_name') => {
@@ -286,7 +367,27 @@ const EmployeesPage = () => {
       try {
         await employeeService.delete(selectedEmployee.id);
         toast.success('Çalışan başarıyla silindi');
-        fetchEmployees(currentPage, sortConfig.key || undefined, sortConfig.direction, filterParams, itemsPerPage);
+        const activeFilters = Object.entries(filterParams).reduce((acc, [key, value]) => {
+          if (key === 'department_ids') {
+            if (Array.isArray(value) && value.length > 0) {
+              acc['department_ids'] = value.join(',');
+            }
+          } else if (value && value.toString().trim() !== '') {
+            acc[key] = value;
+          }
+          return acc;
+        }, {} as any);
+
+        if (statusFilter) {
+          activeFilters['status'] = statusFilter;
+        }
+
+        const quickFilters = getQuickSearchFilters();
+
+        fetchEmployees(currentPage, sortConfig.key || undefined, sortConfig.direction, {
+          ...activeFilters,
+          ...quickFilters
+        }, itemsPerPage);
         setShowDeleteModal(false);
         setSelectedEmployee(null);
       } catch (error: any) {
@@ -329,7 +430,12 @@ const EmployeesPage = () => {
       activeFilters['status'] = statusFilter;
     }
 
-    fetchEmployees(currentPage, sortConfig.key || undefined, sortConfig.direction, activeFilters, itemsPerPage);
+    const quickFilters = getQuickSearchFilters();
+
+    fetchEmployees(currentPage, sortConfig.key || undefined, sortConfig.direction, {
+      ...activeFilters,
+      ...quickFilters
+    }, itemsPerPage);
   };
 
   const handleCloseModal = () => {
@@ -360,7 +466,12 @@ const EmployeesPage = () => {
       activeFilters['status'] = statusFilter;
     }
 
-    fetchEmployees(newPage, sortConfig.key || undefined, sortConfig.direction, activeFilters, itemsPerPage);
+    const quickFilters = getQuickSearchFilters();
+
+    fetchEmployees(newPage, sortConfig.key || undefined, sortConfig.direction, {
+      ...activeFilters,
+      ...quickFilters
+    }, itemsPerPage);
   };
 
   const handlePageSizeChange = (newPageSize: number) => {
@@ -383,7 +494,12 @@ const EmployeesPage = () => {
       activeFilters['status'] = statusFilter;
     }
 
-    fetchEmployees(1, sortConfig.key || undefined, sortConfig.direction, activeFilters, newPageSize);
+    const quickFilters = getQuickSearchFilters();
+
+    fetchEmployees(1, sortConfig.key || undefined, sortConfig.direction, {
+      ...activeFilters,
+      ...quickFilters
+    }, newPageSize);
   };
 
   return (
@@ -409,15 +525,50 @@ const EmployeesPage = () => {
                 <Card.Body>
                   <Row className="g-3">
                     <Col lg={3} md={6} sm={12}>
-                      <FormTextField
-                        controlId="filter-id"
-                        label="ID"
-                        name="id"
-                        type="number"
-                        value={filterParams.id}
-                        onChange={(name, value) => handleFilterChange(name, value)}
-                        placeholder="ID giriniz"
-                      />
+                      <FormSelectField
+                        label="Şirket"
+                        name="quick-company"
+                        value={quickSearchParams.company}
+                        onChange={(e) => handleQuickSearchChange('company', e.target.value)}
+                        disabled={companiesLoading}
+                      >
+                        <option value="">Şirket seçiniz</option>
+                        {companies.map((company) => (
+                          <option key={company.id} value={company.name}>
+                            {company.name}
+                          </option>
+                        ))}
+                      </FormSelectField>
+                    </Col>
+                    <Col lg={3} md={6} sm={12}>
+                      <FormSelectField
+                        label="Departman"
+                        name="quick-department"
+                        value={quickSearchParams.department}
+                        onChange={(e) => handleQuickSearchChange('department', e.target.value)}
+                      >
+                        <option value="">Departman seçiniz</option>
+                        {allDepartments.map((department) => (
+                          <option key={department.id} value={department.name}>
+                            {department.name}
+                          </option>
+                        ))}
+                      </FormSelectField>
+                    </Col>
+                    <Col lg={3} md={6} sm={12}>
+                      <FormSelectField
+                        label="Unvan"
+                        name="quick-job-title"
+                        value={quickSearchParams.jobTitle}
+                        onChange={(e) => handleQuickSearchChange('jobTitle', e.target.value)}
+                      >
+                        <option value="">Unvan seçiniz</option>
+                        {jobPositions.map((position) => (
+                          <option key={position.id} value={position.title}>
+                            {position.title}
+                          </option>
+                        ))}
+                      </FormSelectField>
                     </Col>
                     <Col lg={3} md={6} sm={12}>
                       <FormTextField
@@ -440,36 +591,6 @@ const EmployeesPage = () => {
                         onChange={(name, value) => handleFilterChange(name, value)}
                         placeholder="Email giriniz"
                       />
-                    </Col>
-                    <Col lg={3} md={6} sm={12}>
-                      <FormSelectField
-                        label="Şirket"
-                        name="company_id"
-                        value={filterParams.company_id}
-                        onChange={(e) => handleFilterChange('company_id', e.target.value)}
-                        disabled={companiesLoading}
-                      >
-                        <option value="">Şirket Seçiniz</option>
-                        {companies.map((company) => (
-                          <option key={company.id} value={String(company.id)}>
-                            {company.name}
-                          </option>
-                        ))}
-                      </FormSelectField>
-                    </Col>
-                    <Col lg={3} md={6} sm={12}>
-                      <Form.Group>
-                        <Form.Label>Departman</Form.Label>
-                        <MultiSelectField
-                          name="department_ids"
-                          value={filterParams.department_ids}
-                          onChange={(values: string[]) => handleFilterChange('department_ids', values)}
-                          disabled={departmentsLoading || !filterParams.company_id}
-                          placeholder={!filterParams.company_id ? "Önce şirket seçiniz" : "Departman seçiniz"}
-                          options={departments.map(dept => ({ value: String(dept.id), label: dept.name }))}
-                          loading={departmentsLoading}
-                        />
-                      </Form.Group>
                     </Col>
                     <Col lg={3} md={6} sm={12}>
                       <FormTextField
