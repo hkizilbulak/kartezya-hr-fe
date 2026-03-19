@@ -201,6 +201,31 @@ const EmployeesPage = () => {
     return quickFilters;
   };
 
+  const getActiveFilters = () => {
+    const activeFilters = Object.entries(filterParams).reduce((acc, [key, value]) => {
+      if (key === 'department_ids') {
+        if (Array.isArray(value) && value.length > 0) {
+          acc['department_ids'] = value.join(',');
+        }
+      } else if (value && value.toString().trim() !== '') {
+        const strValue = value.toString().trim();
+        // Minimum 3 characters rule for text-based real-time filters
+        if ((key === 'first_name' || key === 'manager') && strValue.length > 0 && strValue.length < 3) {
+          // Ignore filter if less than 3 characters
+        } else {
+          acc[key] = strValue;
+        }
+      }
+      return acc;
+    }, {} as Record<string, any>);
+    
+    if (statusFilter) {
+      activeFilters['status'] = statusFilter;
+    }
+    
+    return activeFilters;
+  };
+
   useEffect(() => {
     if (!isQuickSearchInitialized.current) {
       isQuickSearchInitialized.current = true;
@@ -212,22 +237,17 @@ const EmployeesPage = () => {
       return;
     }
 
-    // Debounce all filter changes for instant filtering without excessive API calls.
+    // Store last API payload to prevent redundant calls on < 3 char typing
     const timer = setTimeout(() => {
-      const activeFilters = Object.entries(filterParams).reduce((acc, [key, value]) => {
-        if (key === 'department_ids') {
-          if (Array.isArray(value) && value.length > 0) {
-            acc['department_ids'] = value.join(',');
-          }
-        } else if (value && value.toString().trim() !== '') {
-          acc[key] = value;
-        }
-        return acc;
-      }, {} as any);
-
-      if (statusFilter) {
-        activeFilters['status'] = statusFilter;
+      // 1-2 karakter girildiğinde hiç istek atmaması için erken dönüş (block)
+      const firstNameLen = filterParams.first_name?.trim().length || 0;
+      const managerLen = filterParams.manager?.trim().length || 0;
+      
+      if ((firstNameLen > 0 && firstNameLen < 3) || (managerLen > 0 && managerLen < 3)) {
+        return;
       }
+
+      const activeFilters = getActiveFilters();
 
       const quickFilters = getQuickSearchFilters();
 
@@ -261,22 +281,7 @@ const EmployeesPage = () => {
   };
 
   const applyFilters = () => {
-    // Filter out empty values
-    const activeFilters = Object.entries(filterParams).reduce((acc, [key, value]) => {
-      if (key === 'department_ids') {
-        // Handle department_ids as array
-        if (Array.isArray(value) && value.length > 0) {
-          acc['department_ids'] = value.join(','); // Convert array to comma-separated string for API
-        }
-      } else if (value && value.toString().trim() !== '') {
-        acc[key] = value;
-      }
-      return acc;
-    }, {} as any);
-
-    if (statusFilter) {
-      activeFilters['status'] = statusFilter;
-    }
+    const activeFilters = getActiveFilters();
 
     const quickFilters = getQuickSearchFilters();
 
@@ -315,20 +320,7 @@ const EmployeesPage = () => {
     setSortConfig({ key, direction });
     
     // Apply filters when sorting
-    const activeFilters = Object.entries(filterParams).reduce((acc, [key, value]) => {
-      if (key === 'department_ids') {
-        if (Array.isArray(value) && value.length > 0) {
-          acc['department_ids'] = value.join(',');
-        }
-      } else if (value && value.toString().trim() !== '') {
-        acc[key] = value;
-      }
-      return acc;
-    }, {} as any);
-
-    if (statusFilter) {
-      activeFilters['status'] = statusFilter;
-    }
+    const activeFilters = getActiveFilters();
 
     const quickFilters = getQuickSearchFilters();
 
@@ -367,20 +359,7 @@ const EmployeesPage = () => {
       try {
         await employeeService.delete(selectedEmployee.id);
         toast.success('Çalışan başarıyla silindi');
-        const activeFilters = Object.entries(filterParams).reduce((acc, [key, value]) => {
-          if (key === 'department_ids') {
-            if (Array.isArray(value) && value.length > 0) {
-              acc['department_ids'] = value.join(',');
-            }
-          } else if (value && value.toString().trim() !== '') {
-            acc[key] = value;
-          }
-          return acc;
-        }, {} as any);
-
-        if (statusFilter) {
-          activeFilters['status'] = statusFilter;
-        }
+        const activeFilters = getActiveFilters();
 
         const quickFilters = getQuickSearchFilters();
 
@@ -415,20 +394,7 @@ const EmployeesPage = () => {
 
   const handleModalSave = () => {
     // Apply current filters when refreshing after modal save
-    const activeFilters = Object.entries(filterParams).reduce((acc, [key, value]) => {
-      if (key === 'department_ids') {
-        if (Array.isArray(value) && value.length > 0) {
-          acc['department_ids'] = value.join(',');
-        }
-      } else if (value && value.toString().trim() !== '') {
-        acc[key] = value;
-      }
-      return acc;
-    }, {} as any);
-
-    if (statusFilter) {
-      activeFilters['status'] = statusFilter;
-    }
+    const activeFilters = getActiveFilters();
 
     const quickFilters = getQuickSearchFilters();
 
@@ -450,21 +416,7 @@ const EmployeesPage = () => {
 
   const handlePageChange = (newPage: number) => {
     // Apply current filters when changing pages
-    const activeFilters = Object.entries(filterParams).reduce((acc, [key, value]) => {
-      if (key === 'department_ids') {
-        // Handle department_ids as array
-        if (Array.isArray(value) && value.length > 0) {
-          acc['department_ids'] = value.join(','); // Convert array to comma-separated string for API
-        }
-      } else if (value && value.toString().trim() !== '') {
-        acc[key] = value;
-      }
-      return acc;
-    }, {} as any);
-
-    if (statusFilter) {
-      activeFilters['status'] = statusFilter;
-    }
+    const activeFilters = getActiveFilters();
 
     const quickFilters = getQuickSearchFilters();
 
@@ -479,20 +431,7 @@ const EmployeesPage = () => {
     setCurrentPage(1);
     
     // Apply current filters with new page size
-    const activeFilters = Object.entries(filterParams).reduce((acc, [key, value]) => {
-      if (key === 'department_ids') {
-        if (Array.isArray(value) && value.length > 0) {
-          acc['department_ids'] = value.join(',');
-        }
-      } else if (value && value.toString().trim() !== '') {
-        acc[key] = value;
-      }
-      return acc;
-    }, {} as any);
-
-    if (statusFilter) {
-      activeFilters['status'] = statusFilter;
-    }
+    const activeFilters = getActiveFilters();
 
     const quickFilters = getQuickSearchFilters();
 
@@ -526,6 +465,17 @@ const EmployeesPage = () => {
               <Card.Body>
                 <Row className="g-3 align-items-end">
                   <Col lg={3} md={6} sm={12}>
+                    <FormTextField
+                      controlId="filter-first-name"
+                      label="Ad Soyad"
+                      name="first_name"
+                      type="text"
+                      value={filterParams.first_name}
+                      onChange={(name, value) => handleFilterChange(name, value)}
+                      placeholder="Ad soyad giriniz"
+                    />
+                  </Col>
+                  <Col lg={3} md={6} sm={12}>
                     <FormSelectField
                       label="Şirket"
                       name="quick-company"
@@ -535,9 +485,9 @@ const EmployeesPage = () => {
                     >
                       <option value="">Şirket seçiniz</option>
                       {companies.map((company) => (
-                        <option key={company.id} value={company.name}>
-                          {company.name}
-                        </option>
+                         <option key={company.id} value={company.name}>
+                           {company.name}
+                         </option>
                       ))}
                     </FormSelectField>
                   </Col>
@@ -550,9 +500,9 @@ const EmployeesPage = () => {
                     >
                       <option value="">Departman seçiniz</option>
                       {allDepartments.map((department) => (
-                        <option key={department.id} value={department.name}>
-                          {department.name}
-                        </option>
+                         <option key={department.id} value={department.name}>
+                           {department.name}
+                         </option>
                       ))}
                     </FormSelectField>
                   </Col>
@@ -565,22 +515,11 @@ const EmployeesPage = () => {
                     >
                       <option value="">Unvan seçiniz</option>
                       {jobPositions.map((position) => (
-                        <option key={position.id} value={position.title}>
-                          {position.title}
-                        </option>
+                         <option key={position.id} value={position.title}>
+                           {position.title}
+                         </option>
                       ))}
                     </FormSelectField>
-                  </Col>
-                  <Col lg={3} md={6} sm={12}>
-                    <FormTextField
-                      controlId="filter-first-name"
-                      label="Ad Soyad"
-                      name="first_name"
-                      type="text"
-                      value={filterParams.first_name}
-                      onChange={(name, value) => handleFilterChange(name, value)}
-                      placeholder="Ad soyad giriniz"
-                    />
                   </Col>
                   <Col lg={12} md={12} sm={12} className="text-end">
                     <Button variant="secondary" size="sm" onClick={clearFilters}>
