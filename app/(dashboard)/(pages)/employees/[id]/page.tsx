@@ -487,6 +487,31 @@ const EmployeeDetailPage = () => {
     }
   };
 
+  const getWorkInfoField = (field: 'job_title' | 'company_name' | 'department_name' | 'manager'): string => {
+    // 1. Try to get from lazily loaded workInformations array if available
+    if (workInformations.length > 0) {
+      const wi = workInformations[0];
+      switch (field) {
+        case 'job_title': return wi.job_position?.title || '-';
+        case 'company_name': return wi.company?.name || '-';
+        case 'department_name': return wi.department?.name || '-';
+        case 'manager': return wi.department?.manager || '-';
+      }
+    }
+    
+    // 2. Try to get from employee detail API response (which returns work_information as an array)
+    if (Array.isArray(employee.work_information) && employee.work_information.length > 0) {
+      return employee.work_information[0][field] || '-';
+    }
+    
+    // 3. Try to get from employee list API response style (which returns object)
+    if (employee.work_information && !Array.isArray(employee.work_information)) {
+      return (employee.work_information as any)[field] || '-';
+    }
+    
+    return '-';
+  };
+
   return (
     <Container fluid className="page-container">
       <div style={{ display: 'none' }} className="d-none d-lg-block">
@@ -497,11 +522,11 @@ const EmployeeDetailPage = () => {
           <EmployeeHeaderProfile
             employee={{
               name: `${employee.first_name} ${employee.last_name}`,
-              jobTitle: workInformations.length > 0 ? (workInformations[0].job_position?.title || '-') : (employee.work_information?.job_title || '-'),
+              jobTitle: getWorkInfoField('job_title'),
               initials: getInitials(employee.first_name, employee.last_name),
-              company: workInformations.length > 0 ? (workInformations[0].company?.name || '-') : (employee.work_information?.company_name || '-'),
-              department: workInformations.length > 0 ? (workInformations[0].department?.name || '-') : (employee.work_information?.department_name || '-'),
-              manager: workInformations.length > 0 ? (workInformations[0].department?.manager || '-') : (employee.work_information?.manager || '-'),
+              company: getWorkInfoField('company_name'),
+              department: getWorkInfoField('department_name'),
+              manager: getWorkInfoField('manager'),
               email: employee.email,
               phone: employee.phone || '-',
               address: employee.address || '-',
@@ -511,7 +536,7 @@ const EmployeeDetailPage = () => {
 
           <div className="d-lg-none mb-4 pt-3">
             <h3 className="mb-0">{employee.first_name} {employee.last_name}</h3>
-            <p className="text-muted mb-0">{workInformations.length > 0 ? (workInformations[0].job_position?.title) : (employee.work_information?.job_title)}</p>
+            <p className="text-muted mb-0">{getWorkInfoField('job_title')}</p>
           </div>
 
           <Tab.Container id="employee-tabs" activeKey={activeTab} onSelect={(k) => setActiveTab(k || 'employee-info')}>
