@@ -1,8 +1,8 @@
 'use client'
 import { Fragment, useState, useEffect } from "react";
 import { Container, Row, Col, Card, Spinner } from "react-bootstrap";
-import { dashboardService, DashboardData, GenderChartData, PositionChartData, CompanyDepartmentChartData } from "@/services/dashboard.service";
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { dashboardService, DashboardData, GenderChartData, PositionChartData, CompanyDepartmentChartData, GradeChartData } from "@/services/dashboard.service";
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LabelList } from 'recharts';
 import { useAuth } from "@/hooks/useAuth";
 import { leaveRequestService } from "@/services/leave-request.service";
 import { leaveBalanceService } from "@/services/leave-balance.service";
@@ -54,6 +54,7 @@ const Home = () => {
     const [genderData, setGenderData] = useState<GenderChartData[]>([]);
     const [positionData, setPositionData] = useState<PositionChartData[]>([]);
     const [companyDeptData, setCompanyDeptData] = useState<CompanyDepartmentChartData[]>([]);
+    const [gradeData, setGradeData] = useState<GradeChartData[]>([]);
 
     // Employee state
     const [myLeaveRequests, setMyLeaveRequests] = useState<LeaveRequest[]>([]);
@@ -67,6 +68,7 @@ const Home = () => {
     const [loadingGenderData, setLoadingGenderData] = useState(false);
     const [loadingPositionData, setLoadingPositionData] = useState(false);
     const [loadingCompanyDeptData, setLoadingCompanyDeptData] = useState(false);
+    const [loadingGradeData, setLoadingGradeData] = useState(false);
     const [loadingLeaveRequests, setLoadingLeaveRequests] = useState(false);
     const [loadingLeaveBalance, setLoadingLeaveBalance] = useState(false);
     const [loadingEmployeeProfile, setLoadingEmployeeProfile] = useState(false);
@@ -134,7 +136,41 @@ const Home = () => {
             try {
                 const positionResponse = await dashboardService.getEmployeesByPosition();
                 if (positionResponse.success && positionResponse.data) {
-                    setPositionData(positionResponse.data);
+                    const grouped: Record<string, number> = {};
+
+                    positionResponse.data.forEach(item => {
+                        const title = item.position_title;
+                        let groupName = 'Diğer';
+
+                        if (/\b(fe|frontend|front\s?end)\b/i.test(title) || /fe\s/i.test(title)) {
+                            groupName = 'Fe Dev.';
+                        } else if (/android|ios|mobile/i.test(title)) {
+                            groupName = 'Mobile Dev.';
+                        } else if (/analyst|product owner/i.test(title)) {
+                            groupName = 'Analyst';
+                        } else if (/intern|stajyer/i.test(title)) {
+                            groupName = 'Intern';
+                        } else if (/\b(hr|ik)\b|insan/i.test(title) || /hr\s/i.test(title)) {
+                            groupName = 'Hr';
+                        } else if (/manager|lead/i.test(title)) {
+                            groupName = 'Manager';
+                        } else if (/qa/i.test(title)) {
+                            groupName = 'QA';
+                        } else if (/designer/i.test(title)) {
+                            groupName = 'Designer';
+                        } else if (/developer|engineer|architect/i.test(title)) {
+                            groupName = 'Developer';
+                        }
+
+                        grouped[groupName] = (grouped[groupName] || 0) + item.count;
+                    });
+
+                    const groupedData = Object.keys(grouped).map(key => ({
+                        position_title: key,
+                        count: grouped[key]
+                    })).sort((a, b) => b.count - a.count);
+
+                    setPositionData(groupedData);
                 }
             } catch (error) {
                 console.error('Error fetching position data:', error);
@@ -152,6 +188,18 @@ const Home = () => {
                 console.error('Error fetching company-department data:', error);
             } finally {
                 setLoadingCompanyDeptData(false);
+            }
+
+            setLoadingGradeData(true);
+            try {
+                const gradeResponse = await dashboardService.getEmployeesByGrade();
+                if (gradeResponse.success && gradeResponse.data) {
+                    setGradeData(gradeResponse.data);
+                }
+            } catch (error) {
+                console.error('Error fetching grade data:', error);
+            } finally {
+                setLoadingGradeData(false);
             }
         } catch (error: any) {
             console.error('Dashboard veri yükleme hatası:', error);
@@ -700,11 +748,85 @@ const Home = () => {
 
                 {/* Charts Row */}
                 <Row className="mt-4">
-                    {/* Gender Chart */}
+                    {/* Position Chart (Moved to first place) */}
                     <Col lg={4} md={12} xs={12} className="mb-6">
                         <Card className="border-0">
                             <Card.Header>
-                                <h5 className="mb-0">Cinsiyete Göre Çalışan Sayısı</h5>
+                                <h5 className="mb-0">Çalışanların Pozisyon Dağılımı</h5>
+                            </Card.Header>
+                            <Card.Body>
+                                {loadingPositionData ? (
+                                    <div className="d-flex justify-content-center align-items-center py-5" style={{ minHeight: '300px' }}>
+                                        <Spinner animation="border" role="status" size="sm">
+                                            <span className="visually-hidden">Yükleniyor...</span>
+                                        </Spinner>
+                                    </div>
+                                ) : positionData.length > 0 ? (
+                                    <ResponsiveContainer width="100%" height={300}>
+                                        <BarChart data={positionData}>
+                                            <CartesianGrid strokeDasharray="3 3" />
+                                            <XAxis dataKey="position_title" angle={-45} textAnchor="end" height={80} />
+                                            <YAxis />
+                                            <Tooltip />
+                                            <Bar dataKey="count">
+                                                <LabelList dataKey="count" position="top" fill="#666" fontSize={12} fontWeight={600} />
+                                                {positionData.map((entry, index) => (
+                                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                                ))}
+                                            </Bar>
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                ) : (
+                                    <div className="d-flex justify-content-center align-items-center py-5" style={{ minHeight: '300px' }}>
+                                        <span className="text-muted">Veri bulunamadı</span>
+                                    </div>
+                                )}
+                            </Card.Body>
+                        </Card>
+                    </Col>
+
+                    {/* Grade Chart (Moved next to Position) */}
+                    <Col lg={4} md={12} xs={12} className="mb-6">
+                        <Card className="border-0">
+                            <Card.Header>
+                                <h5 className="mb-0">Çalışanların Grade Dağılımı</h5>
+                            </Card.Header>
+                            <Card.Body>
+                                {loadingGradeData ? (
+                                    <div className="d-flex justify-content-center align-items-center py-5" style={{ minHeight: '300px' }}>
+                                        <Spinner animation="border" role="status" size="sm">
+                                            <span className="visually-hidden">Yükleniyor...</span>
+                                        </Spinner>
+                                    </div>
+                                ) : gradeData.length > 0 ? (
+                                    <ResponsiveContainer width="100%" height={300}>
+                                        <BarChart data={gradeData}>
+                                            <CartesianGrid strokeDasharray="3 3" />
+                                            <XAxis dataKey="grade_name" angle={-45} textAnchor="end" height={80} />
+                                            <YAxis />
+                                            <Tooltip />
+                                            <Bar dataKey="count">
+                                                <LabelList dataKey="count" position="top" fill="#666" fontSize={12} fontWeight={600} />
+                                                {gradeData.map((entry, index) => (
+                                                    <Cell key={`cell-${index}`} fill={COLORS[(index + 3) % COLORS.length]} />
+                                                ))}
+                                            </Bar>
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                ) : (
+                                    <div className="d-flex justify-content-center align-items-center py-5" style={{ minHeight: '300px' }}>
+                                        <span className="text-muted">Veri bulunamadı</span>
+                                    </div>
+                                )}
+                            </Card.Body>
+                        </Card>
+                    </Col>
+
+                    {/* Gender Chart (Moved to second place) */}
+                    <Col lg={4} md={12} xs={12} className="mb-6">
+                        <Card className="border-0">
+                            <Card.Header>
+                                <h5 className="mb-0">Çalışanların Cinsiyet Dağılımı</h5>
                             </Card.Header>
                             <Card.Body>
                                 {loadingGenderData ? (
@@ -732,38 +854,6 @@ const Home = () => {
                                             </Pie>
                                             <Tooltip />
                                         </PieChart>
-                                    </ResponsiveContainer>
-                                ) : (
-                                    <div className="d-flex justify-content-center align-items-center py-5" style={{ minHeight: '300px' }}>
-                                        <span className="text-muted">Veri bulunamadı</span>
-                                    </div>
-                                )}
-                            </Card.Body>
-                        </Card>
-                    </Col>
-
-                    {/* Position Chart */}
-                    <Col lg={4} md={12} xs={12} className="mb-6">
-                        <Card className="border-0">
-                            <Card.Header>
-                                <h5 className="mb-0">Pozisyona Göre Çalışan Sayısı</h5>
-                            </Card.Header>
-                            <Card.Body>
-                                {loadingPositionData ? (
-                                    <div className="d-flex justify-content-center align-items-center py-5" style={{ minHeight: '300px' }}>
-                                        <Spinner animation="border" role="status" size="sm">
-                                            <span className="visually-hidden">Yükleniyor...</span>
-                                        </Spinner>
-                                    </div>
-                                ) : positionData.length > 0 ? (
-                                    <ResponsiveContainer width="100%" height={300}>
-                                        <BarChart data={positionData}>
-                                            <CartesianGrid strokeDasharray="3 3" />
-                                            <XAxis dataKey="position_title" angle={-45} textAnchor="end" height={80} />
-                                            <YAxis />
-                                            <Tooltip />
-                                            <Bar dataKey="count" fill="#8884d8" />
-                                        </BarChart>
                                     </ResponsiveContainer>
                                 ) : (
                                     <div className="d-flex justify-content-center align-items-center py-5" style={{ minHeight: '300px' }}>
