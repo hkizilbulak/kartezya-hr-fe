@@ -90,7 +90,7 @@ const EmployeesPage = () => {
           lookupService.getGradesLookup(),
           lookupService.getJobPositionsLookup()
         ]);
-        
+
         if (companiesRes.success && companiesRes.data) {
           setCompanies(companiesRes.data);
         }
@@ -119,7 +119,7 @@ const EmployeesPage = () => {
       setIsLoading(true);
 
       const rawParams: any = {
-        page, 
+        page,
         limit: perPage || itemsPerPage,
         sort: sortKey,
         direction: sortDir,
@@ -150,7 +150,7 @@ const EmployeesPage = () => {
       console.log(`[Employees API] /api/v1/employees?${query.toString()}`);
 
       const response = await employeeService.getAll(params);
-      
+
       if (response.data) {
         setEmployees(response.data);
         setTotalPages(response.page?.total_pages || 1);
@@ -218,11 +218,11 @@ const EmployeesPage = () => {
       }
       return acc;
     }, {} as Record<string, any>);
-    
+
     if (statusFilter) {
       activeFilters['status'] = statusFilter;
     }
-    
+
     return activeFilters;
   };
 
@@ -242,7 +242,7 @@ const EmployeesPage = () => {
       // 1-2 karakter girildiğinde hiç istek atmaması için erken dönüş (block)
       const firstNameLen = filterParams.first_name?.trim().length || 0;
       const managerLen = filterParams.manager?.trim().length || 0;
-      
+
       if ((firstNameLen > 0 && firstNameLen < 3) || (managerLen > 0 && managerLen < 3)) {
         return;
       }
@@ -318,7 +318,7 @@ const EmployeesPage = () => {
       direction = 'DESC';
     }
     setSortConfig({ key, direction });
-    
+
     // Apply filters when sorting
     const activeFilters = getActiveFilters();
 
@@ -371,7 +371,7 @@ const EmployeesPage = () => {
         setSelectedEmployee(null);
       } catch (error: any) {
         let errorMessage = '';
-        
+
         if (error.response?.data?.message) {
           errorMessage = error.response.data.message;
         } else if (error.response?.data?.error) {
@@ -383,7 +383,7 @@ const EmployeesPage = () => {
         } else {
           errorMessage = 'Silme işlemi sırasında bir hata oluştu';
         }
-        
+
         const translatedError = translateErrorMessage(errorMessage);
         toast.error(translatedError);
       } finally {
@@ -429,7 +429,7 @@ const EmployeesPage = () => {
   const handlePageSizeChange = (newPageSize: number) => {
     setItemsPerPage(newPageSize);
     setCurrentPage(1);
-    
+
     // Apply current filters with new page size
     const activeFilters = getActiveFilters();
 
@@ -445,25 +445,24 @@ const EmployeesPage = () => {
     <>
       <Container fluid className="page-container">
         <LoadingOverlay show={isLoading} message="Çalışanlar yükleniyor..." />
-        
+
         <div className="page-heading-wrapper">
-          <PageHeading 
+          <PageHeading
             heading="Çalışanlar"
             showCreateButton={true}
-            showFilterButton={true}
+            showFilterButton={false}
             createButtonText="Yeni Çalışan"
-            filterButtonText={showFilters ? 'Filtreleri Gizle' : 'Gelişmiş Filtreler'}
             onCreate={handleAddNew}
-            onToggleFilter={() => setShowFilters(!showFilters)}
           />
         </div>
 
-        {/* Her zaman görünen hızlı filtreler */}
+        {/* Tüm Filtreler Tek Kartta */}
         <Row className="mb-3">
           <Col lg={12} md={12} sm={12}>
             <Card className="border-0 shadow-sm">
               <Card.Body>
-                <Row className="g-3 align-items-end">
+                {/* Hızlı Filtreler */}
+                <Row className="g-3 align-items-end mb-3">
                   <Col lg={3} md={6} sm={12}>
                     <FormTextField
                       controlId="filter-first-name"
@@ -485,9 +484,9 @@ const EmployeesPage = () => {
                     >
                       <option value="">Şirket seçiniz</option>
                       {companies.map((company) => (
-                         <option key={company.id} value={company.name}>
-                           {company.name}
-                         </option>
+                        <option key={company.id} value={company.name}>
+                          {company.name}
+                        </option>
                       ))}
                     </FormSelectField>
                   </Col>
@@ -500,9 +499,9 @@ const EmployeesPage = () => {
                     >
                       <option value="">Departman seçiniz</option>
                       {allDepartments.map((department) => (
-                         <option key={department.id} value={department.name}>
-                           {department.name}
-                         </option>
+                        <option key={department.id} value={department.name}>
+                          {department.name}
+                        </option>
                       ))}
                     </FormSelectField>
                   </Col>
@@ -515,15 +514,131 @@ const EmployeesPage = () => {
                     >
                       <option value="">Unvan seçiniz</option>
                       {jobPositions.map((position) => (
-                         <option key={position.id} value={position.title}>
-                           {position.title}
-                         </option>
+                        <option key={position.id} value={position.title}>
+                          {position.title}
+                        </option>
                       ))}
                     </FormSelectField>
                   </Col>
+                </Row>
+
+                {/* Gelişmiş filtreler - butona basınca açılır */}
+                {showFilters && (
+                  <>
+                    <hr className="my-3 text-muted opacity-25" />
+                    <Row className="g-3 align-items-end mb-3">
+                      <Col lg={3} md={6} sm={12}>
+                        <FormTextField
+                          controlId="filter-email"
+                          label="Email"
+                          name="email"
+                          type="email"
+                          value={filterParams.email}
+                          onChange={(name, value) => handleFilterChange(name, value)}
+                          placeholder="Email giriniz"
+                        />
+                      </Col>
+                      <Col lg={3} md={6} sm={12}>
+                        <FormTextField
+                          controlId="filter-manager"
+                          label="Manager"
+                          name="manager"
+                          type="text"
+                          value={filterParams.manager}
+                          onChange={(name, value) => handleFilterChange(name, value)}
+                          placeholder="Manager giriniz"
+                        />
+                      </Col>
+                      <Col lg={3} md={6} sm={12}>
+                        <FormTextField
+                          controlId="filter-identity-no"
+                          label="Kimlik No"
+                          name="identity_no"
+                          type="text"
+                          value={filterParams.identity_no}
+                          onChange={(name, value) => handleFilterChange(name, value)}
+                          placeholder="Kimlik no giriniz"
+                        />
+                      </Col>
+                      <Col lg={3} md={6} sm={12}>
+                        <FormSelectField
+                          label="Cinsiyet"
+                          name="gender"
+                          value={filterParams.gender}
+                          onChange={(e) => handleFilterChange('gender', e.target.value)}
+                        >
+                          <option value="">Cinsiyet seçiniz</option>
+                          {genderOptions.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </FormSelectField>
+                      </Col>
+                      <Col lg={3} md={6} sm={12}>
+                        <FormSelectField
+                          label="Medeni Durum"
+                          name="marital_status"
+                          value={filterParams.marital_status}
+                          onChange={(e) => handleFilterChange('marital_status', e.target.value)}
+                        >
+                          <option value="">Medeni durum seçiniz</option>
+                          {maritalStatusOptions.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </FormSelectField>
+                      </Col>
+                      <Col lg={3} md={6} sm={12}>
+                        <FormSelectField
+                          label="Grade"
+                          name="grade_id"
+                          value={filterParams.grade_id}
+                          onChange={(e) => handleFilterChange('grade_id', e.target.value)}
+                        >
+                          <option value="">Grade seçiniz</option>
+                          {grades.map((grade) => (
+                            <option key={grade.id} value={String(grade.id)}>
+                              {grade.name}
+                            </option>
+                          ))}
+                        </FormSelectField>
+                      </Col>
+                      <Col lg={3} md={6} sm={12}>
+                        <Form.Group>
+                          <Form.Label>Statü</Form.Label>
+                          <FormSelectField
+                            name="statusFilter"
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                          >
+                            <option value="">Statü Seçiniz</option>
+                            {statusOptions.map((option) => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </FormSelectField>
+                        </Form.Group>
+                      </Col>
+                    </Row>
+                  </>
+                )}
+
+                {/* Butonlar */}
+                <Row>
                   <Col lg={12} md={12} sm={12} className="text-end">
+                    <Button
+                      variant={showFilters ? "primary" : "outline-primary"}
+                      size="sm"
+                      className="me-2"
+                      onClick={() => setShowFilters(!showFilters)}
+                    >
+                      {showFilters ? 'Gelişmiş Filtreleri Gizle' : 'Gelişmiş Filtreler'}
+                    </Button>
                     <Button variant="secondary" size="sm" onClick={clearFilters}>
-                      Filtreleri Temizle
+                      Temizle
                     </Button>
                   </Col>
                 </Row>
@@ -532,118 +647,9 @@ const EmployeesPage = () => {
           </Col>
         </Row>
 
-        {/* Gelişmiş filtreler - butona basınca açılır */}
-        {showFilters && (
-          <Row className="mb-4">
-            <Col lg={12} md={12} sm={12}>
-              <Card className="border-0 shadow-sm">
-                <Card.Body>
-                  <Row className="g-3">
-                    <Col lg={3} md={6} sm={12}>
-                      <FormTextField
-                        controlId="filter-email"
-                        label="Email"
-                        name="email"
-                        type="email"
-                        value={filterParams.email}
-                        onChange={(name, value) => handleFilterChange(name, value)}
-                        placeholder="Email giriniz"
-                      />
-                    </Col>
-                    <Col lg={3} md={6} sm={12}>
-                      <FormTextField
-                        controlId="filter-manager"
-                        label="Manager"
-                        name="manager"
-                        type="text"
-                        value={filterParams.manager}
-                        onChange={(name, value) => handleFilterChange(name, value)}
-                        placeholder="Manager giriniz"
-                      />
-                    </Col>
-                    <Col lg={3} md={6} sm={12}>
-                      <FormTextField
-                        controlId="filter-identity-no"
-                        label="Kimlik No"
-                        name="identity_no"
-                        type="text"
-                        value={filterParams.identity_no}
-                        onChange={(name, value) => handleFilterChange(name, value)}
-                        placeholder="Kimlik no giriniz"
-                      />
-                    </Col>
-                    <Col lg={3} md={6} sm={12}>
-                      <FormSelectField
-                        label="Cinsiyet"
-                        name="gender"
-                        value={filterParams.gender}
-                        onChange={(e) => handleFilterChange('gender', e.target.value)}
-                      >
-                        <option value="">Cinsiyet seçiniz</option>
-                        {genderOptions.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </FormSelectField>
-                    </Col>
-                    <Col lg={3} md={6} sm={12}>
-                      <FormSelectField
-                        label="Medeni Durum"
-                        name="marital_status"
-                        value={filterParams.marital_status}
-                        onChange={(e) => handleFilterChange('marital_status', e.target.value)}
-                      >
-                        <option value="">Medeni durum seçiniz</option>
-                        {maritalStatusOptions.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </FormSelectField>
-                    </Col>
-                    <Col lg={3} md={6} sm={12}>
-                      <FormSelectField
-                        label="Grade"
-                        name="grade_id"
-                        value={filterParams.grade_id}
-                        onChange={(e) => handleFilterChange('grade_id', e.target.value)}
-                      >
-                        <option value="">Grade seçiniz</option>
-                        {grades.map((grade) => (
-                          <option key={grade.id} value={String(grade.id)}>
-                            {grade.name}
-                          </option>
-                        ))}
-                      </FormSelectField>
-                    </Col>
-                    <Col lg={3} md={6} sm={12}>
-                      <Form.Group>
-                        <Form.Label>Statü</Form.Label>
-                        <FormSelectField
-                          name="statusFilter"
-                          value={statusFilter}
-                          onChange={(e) => setStatusFilter(e.target.value)}
-                        >
-                          <option value="">Statü Seçiniz</option>
-                          {statusOptions.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </FormSelectField>
-                      </Form.Group>
-                    </Col>
-                  </Row>
-                </Card.Body>
-              </Card>
-            </Col>
-          </Row>
-        )}
-
         <Row>
           <Col lg={12} md={12} sm={12}>
-            
+
             <div className="table-wrapper">
               <Card className="border-0 shadow-sm position-relative">
                 <Card.Body className="p-0">
@@ -653,7 +659,7 @@ const EmployeesPage = () => {
                         <thead>
                           <tr>
                             <th>ID</th>
-                            <th 
+                            <th
                               onClick={() => handleSort('first_name')}
                               className="sortable-header"
                             >
@@ -698,12 +704,12 @@ const EmployeesPage = () => {
                               </tr>
                             ))
                           ) : (
-                              <tr>
-                                <td colSpan={7} className="text-center py-4">
-                                  Veri bulunamadı
-                                </td>
-                              </tr>
-                            
+                            <tr>
+                              <td colSpan={7} className="text-center py-4">
+                                Veri bulunamadı
+                              </td>
+                            </tr>
+
                           )}
                         </tbody>
                       </Table>
