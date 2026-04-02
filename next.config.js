@@ -1,7 +1,16 @@
+const path = require('path');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     typescript: {
         ignoreBuildErrors: true,
+    },
+    sassOptions: {
+        includePaths: [
+            path.join(__dirname, 'styles'),
+            path.join(__dirname, 'node_modules'),
+            path.join(__dirname, 'node_modules', 'bootstrap', 'scss'),
+        ],
     },
     turbopack: {},
     webpack: (config, { isServer }) => {

@@ -1,11 +1,13 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import { Container, Row, Col, Card, Button, Form, Table } from 'react-bootstrap';
 import { reportService, lookupService } from '@/services';
 import { GradeReportResponse, GradeReportRow } from '@/models/hr/report.model';
+import { OrderedColumnItem } from '@/services/report.service';
 import { CompanyLookup, DepartmentLookup } from '@/services/lookup.service';
 import { PageHeading } from '@/widgets';
 import FormSelectField from '@/components/FormSelectField';
+import MultiSelectField from '@/components/MultiSelectField';
 import LoadingOverlay from '@/components/LoadingOverlay';
 import Pagination from '@/components/Pagination';
 import { Download as DownloadIcon, ChevronUp, ChevronDown } from 'react-feather';
@@ -14,6 +16,96 @@ import { translateErrorMessage } from '@/helpers/ErrorUtils';
 import * as ExcelUtils from '@/helpers/excelExport';
 import '@/styles/table-list.scss';
 import '@/styles/components/table-common.scss';
+
+type SortKey = 'first_name' | 'company_name' | 'department_name' | 'current_grade' | 'expected_grade';
+
+type GradeGridColumn = {
+  key: string;
+  label: string;
+  visible: boolean;
+  sortable?: SortKey;
+  className?: string;
+  render: (row: GradeReportRow) => ReactNode;
+  exportValue: (row: GradeReportRow, index: number) => string | number;
+};
+
+const initialColumnsConfig: GradeGridColumn[] = [
+  {
+    key: 'full_name',
+    label: 'AD SOYAD',
+    sortable: 'first_name',
+    visible: true,
+    render: (row) => `${row.first_name} ${row.last_name}`,
+    exportValue: (row) => `${row.first_name} ${row.last_name}`
+  },
+  {
+    key: 'hire_date',
+    label: 'İŞE GİRİŞ',
+    visible: true,
+    render: (row) => row.hire_date ? new Date(row.hire_date).toLocaleDateString('tr-TR') : '-',
+    exportValue: (row) => row.hire_date ? new Date(row.hire_date).toLocaleDateString('tr-TR') : '-'
+  },
+  {
+    key: 'team_start_date',
+    label: 'TAKIMA BAŞLANGIÇ',
+    visible: true,
+    render: (row) => row.team_start_date ? new Date(row.team_start_date).toLocaleDateString('tr-TR') : '-',
+    exportValue: (row) => row.team_start_date ? new Date(row.team_start_date).toLocaleDateString('tr-TR') : '-'
+  },
+  {
+    key: 'profession_start_date',
+    label: 'MESLEĞE BAŞLANGIÇ',
+    visible: true,
+    render: (row) => row.profession_start_date ? new Date(row.profession_start_date).toLocaleDateString('tr-TR') : '-',
+    exportValue: (row) => row.profession_start_date ? new Date(row.profession_start_date).toLocaleDateString('tr-TR') : '-'
+  },
+  {
+    key: 'total_experience_text',
+    label: 'TOPLAM DENEYİM',
+    visible: true,
+    render: (row) => row.total_experience_text || '-',
+    exportValue: (row) => row.total_experience_text || '-'
+  },
+  {
+    key: 'current_grade',
+    label: 'MEVCUT GRADE',
+    sortable: 'current_grade',
+    visible: true,
+    render: (row) => row.current_grade || '-',
+    exportValue: (row) => row.current_grade || '-'
+  },
+  {
+    key: 'expected_grade',
+    label: 'BEKLENEN GRADE',
+    sortable: 'expected_grade',
+    visible: true,
+    render: (row) => row.expected_grade || '-',
+    exportValue: (row) => row.expected_grade || '-'
+  },
+  {
+    key: 'company_name',
+    label: 'ŞİRKET',
+    sortable: 'company_name',
+    visible: true,
+    render: (row) => row.company_name,
+    exportValue: (row) => row.company_name
+  },
+  {
+    key: 'department_name',
+    label: 'DEPARTMAN',
+    sortable: 'department_name',
+    visible: true,
+    render: (row) => row.department_name,
+    exportValue: (row) => row.department_name
+  },
+  {
+    key: 'manager',
+    label: 'YÖNETİCİ',
+    visible: true,
+    render: (row) => row.manager || '-',
+    exportValue: (row) => row.manager || '-'
+  }
+];
 
 const GradeReportPage = () => {
   const [reportData, setReportData] = useState<GradeReportResponse | null>(null);
@@ -24,21 +116,29 @@ const GradeReportPage = () => {
   const [companies, setCompanies] = useState<CompanyLookup[]>([]);
   const [departments, setDepartments] = useState<DepartmentLookup[]>([]);
   const [selectedCompany, setSelectedCompany] = useState<string>('');
-  const [selectedDepartment, setSelectedDepartment] = useState<string>('');
+  const [selectedDepartmentIds, setSelectedDepartmentIds] = useState<string[]>([]);
   const [companiesLoading, setCompaniesLoading] = useState(false);
   const [departmentsLoading, setDepartmentsLoading] = useState(false);
   const [allDepartments, setAllDepartments] = useState<DepartmentLookup[]>([]);
+  const [columnsConfig, setColumnsConfig] = useState<GradeGridColumn[]>(initialColumnsConfig);
+  const [draggedColumnKey, setDraggedColumnKey] = useState<string | null>(null);
 
   // Pagination and sorting state
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [sortConfig, setSortConfig] = useState<{
-    key: 'first_name' | 'last_name' | 'company_name' | 'department_name' | 'total_gap' | 'current_grade' | 'expected_grade' | null;
+    key: SortKey | null;
     direction: 'ASC' | 'DESC';
   }>({
     key: null,
     direction: 'ASC'
   });
+
+  const activeColumns = columnsConfig.filter((column) => column.visible);
+
+  const getOrderedColumnsForExport = (): OrderedColumnItem[] => {
+    return activeColumns.map((column) => ({ key: column.key, label: column.label }));
+  };
 
   // Fetch companies and all departments on mount
   useEffect(() => {
@@ -92,10 +192,10 @@ const GradeReportPage = () => {
       };
 
       loadDepartmentsByCompany();
-      setSelectedDepartment('');
+      setSelectedDepartmentIds([]);
     } else {
       setDepartments([]);
-      setSelectedDepartment('');
+      setSelectedDepartmentIds([]);
     }
   }, [selectedCompany, allDepartments]);
 
@@ -106,7 +206,7 @@ const GradeReportPage = () => {
 
       const response = await reportService.getGradeReport(
         selectedCompany ? parseInt(selectedCompany) : undefined,
-        selectedDepartment ? parseInt(selectedDepartment) : undefined
+        selectedDepartmentIds
       );
 
       setReportData(response);
@@ -127,14 +227,30 @@ const GradeReportPage = () => {
     }
 
     try {
-      await ExcelUtils.exportGradeToExcel(reportData);
+      const orderedColumns = getOrderedColumnsForExport();
+      const selectedDeptNumbers = selectedDepartmentIds.map((id) => parseInt(id)).filter((id) => !Number.isNaN(id));
+
+      await reportService.requestGradeReportExport({
+        companyId: selectedCompany ? parseInt(selectedCompany) : undefined,
+        departmentIds: selectedDeptNumbers,
+        orderedColumns,
+      });
+
+      await ExcelUtils.exportGradeToExcel(
+        reportData,
+        activeColumns.map((column) => ({
+          key: column.key,
+          label: column.label,
+          exportValue: (row: GradeReportRow, index: number) => column.exportValue(row, index),
+        }))
+      );
       toast.success('Rapor Excel\'e başarıyla aktarıldı');
     } catch (error: any) {
       toast.error('Excel export sırasında hata oluştu');
     }
   };
 
-  const handleSort = (key: 'first_name' | 'last_name' | 'company_name' | 'department_name' | 'total_gap' | 'current_grade' | 'expected_grade') => {
+  const handleSort = (key: SortKey) => {
     let direction: 'ASC' | 'DESC' = 'ASC';
     if (sortConfig.key === key && sortConfig.direction === 'ASC') {
       direction = 'DESC';
@@ -143,7 +259,7 @@ const GradeReportPage = () => {
     setCurrentPage(1);
   };
 
-  const getSortIcon = (columnKey: 'first_name' | 'last_name' | 'company_name' | 'department_name' | 'total_gap' | 'current_grade' | 'expected_grade') => {
+  const getSortIcon = (columnKey: SortKey) => {
     if (sortConfig.key !== columnKey) {
       return null;
     }
@@ -200,6 +316,47 @@ const GradeReportPage = () => {
     setCurrentPage(1);
   };
 
+  const handleColumnVisibilityChange = (columnKey: string, isVisible: boolean) => {
+    setColumnsConfig((prevColumns) => {
+      if (!isVisible && prevColumns.filter((column) => column.visible).length <= 1) {
+        return prevColumns;
+      }
+
+      return prevColumns.map((column) => (
+        column.key === columnKey
+          ? { ...column, visible: isVisible }
+          : column
+      ));
+    });
+  };
+
+  const handleColumnDrop = (targetKey: string) => {
+    if (!draggedColumnKey || draggedColumnKey === targetKey) {
+      return;
+    }
+
+    setColumnsConfig((prevColumns) => {
+      const fromIndex = prevColumns.findIndex((column) => column.key === draggedColumnKey);
+      const toIndex = prevColumns.findIndex((column) => column.key === targetKey);
+
+      if (fromIndex < 0 || toIndex < 0) {
+        return prevColumns;
+      }
+
+      const nextColumns = [...prevColumns];
+      const [movedColumn] = nextColumns.splice(fromIndex, 1);
+      nextColumns.splice(toIndex, 0, movedColumn);
+      return nextColumns;
+    });
+
+    setDraggedColumnKey(null);
+  };
+
+  const departmentOptions = departments.map((dept) => ({
+    value: String(dept.id),
+    label: dept.name,
+  }));
+
   return (
     <>
       <Container fluid className="page-container">
@@ -240,23 +397,39 @@ const GradeReportPage = () => {
                       </Form.Group>
                     </Col>
 
-                    {/* Department Select */}
+                    {/* Department Multi Select */}
                     <Col md={6} lg={4}>
                       <Form.Group>
                         <Form.Label className="fw-500">Departman</Form.Label>
-                        <FormSelectField
-                          name="selectedDepartment"
-                          value={selectedDepartment}
-                          onChange={(e) => setSelectedDepartment(e.target.value)}
+                        <MultiSelectField
+                          name="selectedDepartmentIds"
+                          value={selectedDepartmentIds}
+                          onChange={setSelectedDepartmentIds}
+                          options={departmentOptions}
                           disabled={departmentsLoading || !selectedCompany}
-                        >
-                          <option value="">Tüm Departmanlar</option>
-                          {departments.map((dept) => (
-                            <option key={dept.id} value={String(dept.id)}>
-                              {dept.name}
-                            </option>
+                          loading={departmentsLoading}
+                          placeholder="Departman seçiniz"
+                        />
+                      </Form.Group>
+                    </Col>
+
+                    {/* Columns */}
+                    <Col xs={12}>
+                      <Form.Group>
+                        <Form.Label className="fw-500">Kolonlar</Form.Label>
+                        <div className="d-flex flex-wrap gap-3">
+                          {columnsConfig.map((column) => (
+                            <Form.Check
+                              key={column.key}
+                              type="checkbox"
+                              id={`column-${column.key}`}
+                              label={column.label}
+                              checked={column.visible}
+                              onChange={(e) => handleColumnVisibilityChange(column.key, e.target.checked)}
+                            />
                           ))}
-                        </FormSelectField>
+                        </div>
+                        <small className="text-muted">Kolonları sürükleyip bırakarak sıralamayı değiştirebilirsiniz.</small>
                       </Form.Group>
                     </Col>
 
@@ -296,41 +469,19 @@ const GradeReportPage = () => {
                           <Table hover className="mb-0">
                             <thead>
                               <tr>
-                                <th
-                                  onClick={() => handleSort('first_name')}
-                                  className="sortable-header"
-                                >
-                                  AD SOYAD {getSortIcon('first_name')}
-                                </th>
-                                <th>İŞE GİRİŞ</th>
-                                <th>TAKIMA BAŞLANGIÇ</th>
-                                <th>MESLEĞE BAŞLANGIÇ</th>
-                                <th>TOPLAM DENEYİM</th>
-                                <th
-                                  onClick={() => handleSort('current_grade')}
-                                  className="sortable-header"
-                                >
-                                  MEVCUT GRADE {getSortIcon('current_grade')}
-                                </th>
-                                <th
-                                  onClick={() => handleSort('expected_grade')}
-                                  className="sortable-header"
-                                >
-                                  BEKLENEN GRADE {getSortIcon('expected_grade')}
-                                </th>
-                                <th
-                                  onClick={() => handleSort('company_name')}
-                                  className="sortable-header"
-                                >
-                                  ŞİRKET {getSortIcon('company_name')}
-                                </th>
-                                <th
-                                  onClick={() => handleSort('department_name')}
-                                  className="sortable-header"
-                                >
-                                  DEPARTMAN {getSortIcon('department_name')}
-                                </th>
-                                <th>YÖNETİCİ</th>
+                                {activeColumns.map((column) => (
+                                  <th
+                                    key={column.key}
+                                    draggable
+                                    onDragStart={() => setDraggedColumnKey(column.key)}
+                                    onDragOver={(e) => e.preventDefault()}
+                                    onDrop={() => handleColumnDrop(column.key)}
+                                    onClick={column.sortable ? () => handleSort(column.sortable as SortKey) : undefined}
+                                    className={column.sortable ? 'sortable-header' : ''}
+                                  >
+                                    {column.label} {column.sortable ? getSortIcon(column.sortable as SortKey) : null}
+                                  </th>
+                                ))}
                               </tr>
                             </thead>
                             <tbody>
@@ -339,22 +490,15 @@ const GradeReportPage = () => {
                                   const hasGap = row.total_gap > 0;
                                   return (
                                     <tr key={row.id} style={hasGap ? { backgroundColor: '#fff3cd' } : undefined}>
-                                      <td>{row.first_name} {row.last_name}</td>
-                                      <td>{row.hire_date ? new Date(row.hire_date).toLocaleDateString('tr-TR') : '-'}</td>
-                                      <td>{row.team_start_date ? new Date(row.team_start_date).toLocaleDateString('tr-TR') : '-'}</td>
-                                      <td>{row.profession_start_date ? new Date(row.profession_start_date).toLocaleDateString('tr-TR') : '-'}</td>
-                                      <td>{row.total_experience_text || '-'}</td>
-                                      <td>{row.current_grade || '-'}</td>
-                                      <td>{row.expected_grade || '-'}</td>
-                                      <td>{row.company_name}</td>
-                                      <td>{row.department_name}</td>
-                                      <td>{row.manager || '-'}</td>
+                                      {activeColumns.map((column) => (
+                                        <td key={`${row.id}-${column.key}`}>{column.render(row)}</td>
+                                      ))}
                                     </tr>
                                   );
                                 })
                               ) : (
                                 <tr>
-                                  <td colSpan={11} className="text-center py-4">
+                                  <td colSpan={Math.max(activeColumns.length, 1)} className="text-center py-4">
                                     Veri bulunamadı
                                   </td>
                                 </tr>
