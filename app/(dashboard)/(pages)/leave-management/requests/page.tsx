@@ -1,13 +1,14 @@
 "use client";
 import { useState, useEffect } from 'react';
-import { Row, Col, Card, Table, Button, Modal, Form, Container } from 'react-bootstrap';
+import { Row, Col, Card, Table, Button, Modal, Form, Container, Badge } from 'react-bootstrap';
 import { leaveRequestService } from '@/services/leave-request.service';
 import { Employee, LeaveRequest } from '@/models/hr/hr-models';
 import { PageHeading } from '@/widgets';
 import LeaveRequestModal from '@/components/modals/LeaveRequestModal';
+import LeaveDocumentModal from '@/components/leave/LeaveDocumentModal';
 import Pagination from '@/components/Pagination';
 import LoadingOverlay from '@/components/LoadingOverlay';
-import { Check, X, Edit, ChevronUp, ChevronDown } from 'react-feather';
+import { Check, X, Edit, ChevronUp, ChevronDown, FileText } from 'react-feather';
 import { toast } from 'react-toastify';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
 import '@/styles/table-list.scss';
@@ -26,6 +27,8 @@ const LeaveRequestsPage = () => {
   const [cancelRequest, setCancelRequest] = useState<LeaveRequest | null>(null);
   const [showApproveWarningModal, setShowApproveWarningModal] = useState(false);
   const [approveWarningRequest, setApproveWarningRequest] = useState<LeaveRequest | null>(null);
+  const [showDocumentModal, setShowDocumentModal] = useState(false);
+  const [selectedDocumentRequest, setSelectedDocumentRequest] = useState<LeaveRequest | null>(null);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -128,6 +131,18 @@ const LeaveRequestsPage = () => {
     return sortConfig.direction === 'ASC' ?
       <ChevronUp size={16} className="ms-1" style={{ display: 'inline' }} /> :
       <ChevronDown size={16} className="ms-1" style={{ display: 'inline' }} />;
+  };
+
+  const handleShowDocuments = (request: LeaveRequest) => {
+    setSelectedDocumentRequest(request);
+    setShowDocumentModal(true);
+  };
+
+  const handleCloseDocumentModal = () => {
+    setShowDocumentModal(false);
+    setSelectedDocumentRequest(null);
+    // Refresh data to update document count
+    fetchLeaveRequests(currentPage, sortConfig.key, sortConfig.direction);
   };
 
   const handleApprove = async (request: LeaveRequest) => {
@@ -364,39 +379,55 @@ const LeaveRequestsPage = () => {
                                     <td className="text-center">{requestedDays || '-'}</td>
                                     <td>{getStatusBadge(request.status)}</td>
                                     <td>
-                                      <div className="d-flex gap-2">
-                                        {request.status === 'PENDING' ? (
-                                          <>
+                                      <div className="d-flex justify-content-end w-100">
+                                        <div className="d-flex gap-2">
+                                          <Button
+                                            variant="outline-secondary"
+                                            size="sm"
+                                            onClick={() => handleShowDocuments(request)}
+                                            title="Dökümanlar"
+                                            className="position-relative"
+                                          >
+                                            <FileText size={14} />
+                                            {request.leave_type?.is_required_document && (!request.document_count || request.document_count === 0) && (
+                                              <Badge bg="warning" className="position-absolute top-0 start-100 translate-middle rounded-circle p-1" style={{ fontSize: '0.6em' }}>
+                                                !
+                                              </Badge>
+                                            )}
+                                          </Button>
+                                          {request.status === 'PENDING' ? (
+                                            <>
+                                              <Button
+                                                variant="outline-success"
+                                                size="sm"
+                                                title="Onayla"
+                                                onClick={() => handleApprove(request)}
+                                                disabled={isLoading || actionLoading}
+                                              >
+                                                <Check size={14} />
+                                              </Button>
+                                              <Button
+                                                variant="outline-danger"
+                                                size="sm"
+                                                title="Reddet"
+                                                onClick={() => handleRejectClick(request)}
+                                                disabled={isLoading || actionLoading}
+                                              >
+                                                <X size={14} />
+                                              </Button>
+                                            </>
+                                          ) : canCancelRequest(request) ? (
                                             <Button
-                                              variant="outline-success"
+                                              variant="outline-warning"
                                               size="sm"
-                                              title="Onayla"
-                                              onClick={() => handleApprove(request)}
-                                              disabled={isLoading || actionLoading}
-                                            >
-                                              <Check size={14} />
-                                            </Button>
-                                            <Button
-                                              variant="outline-danger"
-                                              size="sm"
-                                              title="Reddet"
-                                              onClick={() => handleRejectClick(request)}
+                                              title="İptal Et"
+                                              onClick={() => handleCancelClick(request)}
                                               disabled={isLoading || actionLoading}
                                             >
                                               <X size={14} />
                                             </Button>
-                                          </>
-                                        ) : canCancelRequest(request) ? (
-                                          <Button
-                                            variant="outline-warning"
-                                            size="sm"
-                                            title="İptal Et"
-                                            onClick={() => handleCancelClick(request)}
-                                            disabled={isLoading || actionLoading}
-                                          >
-                                            <X size={14} />
-                                          </Button>
-                                        ) : null}
+                                          ) : null}
+                                        </div>
                                       </div>
                                     </td>
                                   </tr>
@@ -450,6 +481,7 @@ const LeaveRequestsPage = () => {
                               <th>Bitiş Tarihi</th>
                               <th className="text-center">Kullanılan Gün</th>
                               <th>Durum</th>
+                              <th>İşlemler</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -471,12 +503,31 @@ const LeaveRequestsPage = () => {
                                     <td>{formatDate(endDate)}</td>
                                     <td className="text-center">{requestedDays || '-'}</td>
                                     <td>{getStatusBadge(request.status)}</td>
+                                    <td className="text-end">
+                                      <Button
+                                        variant="outline-secondary"
+                                        size="sm"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleShowDocuments(request);
+                                        }}
+                                        title="Dökümanlar"
+                                        className="position-relative"
+                                      >
+                                        <FileText size={14} />
+                                        {request.leave_type?.is_required_document && (!request.document_count || request.document_count === 0) && (
+                                          <Badge bg="warning" className="position-absolute top-0 start-100 translate-middle rounded-circle p-1" style={{ fontSize: '0.6em' }}>
+                                            !
+                                          </Badge>
+                                        )}
+                                      </Button>
+                                    </td>
                                   </tr>
                                 );
                               })
                             ) : (
                               <tr>
-                                <td colSpan={7} className="text-center py-4">
+                                <td colSpan={8} className="text-center py-4">
                                   Tamamlanmış talep bulunamadı
                                 </td>
                               </tr>
@@ -605,6 +656,14 @@ const LeaveRequestsPage = () => {
           onSave={handleModalSave}
           leaveRequest={selectedRequest}
           isEdit={isEdit}
+        />
+
+        <LeaveDocumentModal
+          show={showDocumentModal}
+          onHide={handleCloseDocumentModal}
+          leaveRequestId={selectedDocumentRequest?.id || 0}
+          leaveTypeName={selectedDocumentRequest?.leave_type?.name || ''}
+          canEdit={true} // Admin can always upload/delete documents
         />
     </>
   );

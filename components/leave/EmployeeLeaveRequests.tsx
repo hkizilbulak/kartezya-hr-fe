@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { Row, Col, Card, Table, Button, Container } from 'react-bootstrap';
+import { Row, Col, Card, Table, Button, Container, Badge } from 'react-bootstrap';
 import { leaveRequestService } from '@/services/leave-request.service';
 import { leaveBalanceService } from '@/services/leave-balance.service';
 import { Employee, LeaveRequest, LeaveBalance } from '@/models/hr/hr-models';
@@ -8,7 +8,8 @@ import { PageHeading } from '@/widgets';
 import LeaveRequestModal from '@/components/modals/LeaveRequestModal';
 import DeleteModal from '@/components/DeleteModal';
 import LoadingOverlay from '@/components/LoadingOverlay';
-import { Edit, Plus, ChevronUp, ChevronDown } from 'react-feather';
+import LeaveDocumentModal from '@/components/leave/LeaveDocumentModal';
+import { Edit, Plus, ChevronUp, ChevronDown, FileText } from 'react-feather';
 import { toast } from 'react-toastify';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
 import '@/styles/table-list.scss';
@@ -23,6 +24,7 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [showDocumentModal, setShowDocumentModal] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<LeaveRequest | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
@@ -218,6 +220,23 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
     setIsEdit(false);
   };
 
+  const handleShowDocuments = (request: LeaveRequest) => {
+    setSelectedRequest(request);
+    setShowDocumentModal(true);
+  };
+
+  const handleDocumentModalClose = (updatedCount?: number) => {
+    setShowDocumentModal(false);
+    if (updatedCount !== undefined && selectedRequest) {
+      setLeaveRequests(prev => 
+        prev.map(req => req.id === selectedRequest.id 
+          ? { ...req, document_count: updatedCount } 
+          : req
+        )
+      );
+    }
+  };
+
   const handleModalSave = () => {
     fetchLeaveRequests(currentPage, sortConfig.key || undefined, sortConfig.direction);
   };
@@ -394,6 +413,20 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
                                           <Edit size={14} />
                                         </Button>
                                       )}
+                                      <Button
+                                        variant="outline-secondary"
+                                        size="sm"
+                                        title="Dökümanlar"
+                                        onClick={() => handleShowDocuments(request)}
+                                        className="position-relative"
+                                      >
+                                        <FileText size={14} />
+                                        {request.leave_type?.is_required_document && (!request.document_count || request.document_count === 0) && (
+                                          <Badge bg="warning" className="position-absolute top-0 start-100 translate-middle rounded-circle p-1" style={{ fontSize: '0.6em' }}>
+                                            !
+                                          </Badge>
+                                        )}
+                                      </Button>
                                       {!employeeId && (
                                         <Button
                                           variant="outline-danger"
@@ -503,6 +536,16 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
           confirmLabel="İptal Et"
           loadingLabel="İptal Ediliyor"
           variant="danger"
+        />
+      )}
+
+      {selectedRequest && showDocumentModal && (
+        <LeaveDocumentModal
+          show={showDocumentModal}
+          onHide={handleDocumentModalClose}
+          leaveRequestId={selectedRequest.id}
+          leaveTypeName={selectedRequest.leave_type?.name || 'İzin'}
+          canEdit={true}
         />
       )}
     </>
