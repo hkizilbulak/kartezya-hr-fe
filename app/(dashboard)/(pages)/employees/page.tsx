@@ -79,6 +79,8 @@ const EmployeesPage = () => {
   const isInitialLoad = useRef(true);
   const isLookupsFetched = useRef(false);
 
+  const isReady = useRef(false);
+
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -294,6 +296,11 @@ const EmployeesPage = () => {
         allFilters,
         urlData.limit
       );
+
+      // Allow autoFilter to start capturing changes after initial render cascade is complete
+      setTimeout(() => {
+        isReady.current = true;
+      }, 300);
     }
   }, []);
 
@@ -353,7 +360,13 @@ const EmployeesPage = () => {
     return activeFilters;
   };
 
+  const departmentIdsStr = filterParams.department_ids?.join(',') || '';
+
   useEffect(() => {
+    if (!isReady.current) {
+      return;
+    }
+
     if (skipNextAutoFilter.current) {
       skipNextAutoFilter.current = false;
       return;
@@ -391,7 +404,7 @@ const EmployeesPage = () => {
     quickSearchParams.jobTitle,
     filterParams.first_name,
     filterParams.email,
-    filterParams.department_ids,
+    departmentIdsStr,
     filterParams.manager,
     filterParams.identity_no,
     filterParams.gender,
