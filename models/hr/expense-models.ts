@@ -24,6 +24,9 @@ export interface ExpenseRequest {
   employee?: Employee;
   expense_type?: ExpenseType;
   approver?: UserInfo;
+  
+  // Computed fields
+  document_count?: number; // Number of attached documents
 }
 
 // Expense Type Interface

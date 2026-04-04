@@ -4,8 +4,9 @@ import { Card, Table, Button, Badge, Form, Row, Col, Modal } from 'react-bootstr
 import expenseService from '@/services/expense.service';
 import { ExpenseRequest } from '@/models/hr/expense-models';
 import { PageHeading } from '@/widgets';
+import ExpenseDocumentModal from '@/components/expense/ExpenseDocumentModal';
 import LoadingOverlay from '@/components/LoadingOverlay';
-import { Check, X, DollarSign } from 'react-feather';
+import { Check, X, DollarSign, FileText } from 'react-feather';
 import { toast } from 'react-toastify';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
 import '@/styles/table-list.scss';
@@ -25,6 +26,7 @@ const AdminExpenseRequests: React.FC = () => {
   const [showApproveModal, setShowApproveModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [showPaidModal, setShowPaidModal] = useState(false);
+  const [showDocumentModal, setShowDocumentModal] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<ExpenseRequest | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [paymentReference, setPaymentReference] = useState('');
@@ -128,6 +130,16 @@ const AdminExpenseRequests: React.FC = () => {
     }
   };
 
+  const handleShowDocuments = (request: ExpenseRequest) => {
+    setSelectedRequest(request);
+    setShowDocumentModal(true);
+  };
+
+  const handleCloseDocumentModal = () => {
+    setShowDocumentModal(false);
+    setSelectedRequest(null);
+  };
+
   const getStatusBadge = (status: string) => {
     const statusMap: Record<string, { variant: string; text: string }> = {
       'PENDING': { variant: 'warning', text: 'Beklemede' },
@@ -218,6 +230,18 @@ const AdminExpenseRequests: React.FC = () => {
                       <td>{getStatusBadge(request.status)}</td>
                       <td>{formatDate(request.created_at)}</td>
                       <td className="text-end">
+                        <Button
+                          variant="outline-secondary"
+                          size="sm"
+                          onClick={() => handleShowDocuments(request)}
+                          className="me-2"
+                          title="Dökümanlar"
+                        >
+                          <FileText size={16} />
+                          {request.expense_type?.requires_receipt && (!request.document_count || request.document_count === 0) && (
+                            <Badge bg="warning" className="ms-1" style={{ fontSize: '0.6em' }}>!</Badge>
+                          )}
+                        </Button>
                         {request.status === 'PENDING' && (
                           <>
                             <Button
@@ -225,7 +249,12 @@ const AdminExpenseRequests: React.FC = () => {
                               size="sm"
                               onClick={() => handleApproveClick(request)}
                               className="me-2"
-                              title="Onayla"
+                              title={
+                                request.expense_type?.requires_receipt && (!request.document_count || request.document_count === 0)
+                                  ? 'Döküman zorunludur. Lütfen önce döküman yükleyin.'
+                                  : 'Onayla'
+                              }
+                              disabled={request.expense_type?.requires_receipt && (!request.document_count || request.document_count === 0)}
                             >
                               <Check size={16} />
                             </Button>
@@ -386,6 +415,18 @@ const AdminExpenseRequests: React.FC = () => {
           </Button>
         </Modal.Footer>
       </Modal>
+
+      {/* Document Modal */}
+      {selectedRequest && (
+        <ExpenseDocumentModal
+          show={showDocumentModal}
+          onHide={handleCloseDocumentModal}
+          expenseRequestId={selectedRequest.id}
+          expenseAmount={selectedRequest.amount}
+          requiresReceipt={selectedRequest.expense_type?.requires_receipt || false}
+          isPending={selectedRequest.status === 'PENDING'}
+        />
+      )}
     </>
   );
 };

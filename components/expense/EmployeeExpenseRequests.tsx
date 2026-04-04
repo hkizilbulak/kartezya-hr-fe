@@ -5,9 +5,10 @@ import expenseService from '@/services/expense.service';
 import { ExpenseRequest } from '@/models/hr/expense-models';
 import { PageHeading } from '@/widgets';
 import ExpenseRequestModal from '@/components/modals/ExpenseRequestModal';
+import ExpenseDocumentModal from '@/components/expense/ExpenseDocumentModal';
 import DeleteModal from '@/components/DeleteModal';
 import LoadingOverlay from '@/components/LoadingOverlay';
-import { Edit, Plus, Trash2 } from 'react-feather';
+import { Edit, Plus, Trash2, FileText } from 'react-feather';
 import { toast } from 'react-toastify';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
 import '@/styles/table-list.scss';
@@ -28,6 +29,7 @@ const EmployeeExpenseRequests: React.FC<EmployeeExpenseRequestsProps> = ({
   const [selectedRequest, setSelectedRequest] = useState<ExpenseRequest | null>(null);
   const [isEdit, setIsEdit] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showDocumentModal, setShowDocumentModal] = useState(false);
 
   const itemsPerPage = 10;
   const [currentPage, setCurrentPage] = useState(1);
@@ -112,6 +114,16 @@ const EmployeeExpenseRequests: React.FC<EmployeeExpenseRequestsProps> = ({
     }
   };
 
+  const handleShowDocuments = (request: ExpenseRequest) => {
+    setSelectedRequest(request);
+    setShowDocumentModal(true);
+  };
+
+  const handleCloseDocumentModal = () => {
+    setShowDocumentModal(false);
+    setSelectedRequest(null);
+  };
+
   const getStatusBadge = (status: string) => {
     const statusMap: Record<string, { variant: string; text: string }> = {
       'PENDING': { variant: 'warning', text: 'Beklemede' },
@@ -190,12 +202,25 @@ const EmployeeExpenseRequests: React.FC<EmployeeExpenseRequestsProps> = ({
                       <td>{getStatusBadge(request.status)}</td>
                       <td>{formatDate(request.created_at)}</td>
                       <td className="text-end">
+                        <Button
+                          variant="outline-secondary"
+                          size="sm"
+                          onClick={() => handleShowDocuments(request)}
+                          className="me-2"
+                          title="Dökümanlar"
+                        >
+                          <FileText size={16} />
+                          {request.expense_type?.requires_receipt && (!request.document_count || request.document_count === 0) && (
+                            <Badge bg="warning" className="ms-1" style={{ fontSize: '0.6em' }}>!</Badge>
+                          )}
+                        </Button>
                         {canEdit(request) && (
                           <Button
                             variant="link"
                             size="sm"
                             onClick={() => handleShowModal(request)}
                             className="p-1 me-2"
+                            title="Düzenle"
                           >
                             <Edit size={16} />
                           </Button>
@@ -205,6 +230,7 @@ const EmployeeExpenseRequests: React.FC<EmployeeExpenseRequestsProps> = ({
                             variant="link"
                             size="sm"
                             className="p-1 text-danger"
+                            title="Sil"
                             onClick={() => {
                               setSelectedRequest(request);
                               setShowDeleteConfirm(true);
@@ -259,6 +285,17 @@ const EmployeeExpenseRequests: React.FC<EmployeeExpenseRequestsProps> = ({
         expenseRequest={selectedRequest}
         isEdit={isEdit}
       />
+
+      {selectedRequest && (
+        <ExpenseDocumentModal
+          show={showDocumentModal}
+          onHide={handleCloseDocumentModal}
+          expenseRequestId={selectedRequest.id}
+          expenseAmount={selectedRequest.amount}
+          requiresReceipt={selectedRequest.expense_type?.requires_receipt || false}
+          isPending={selectedRequest.status === 'PENDING'}
+        />
+      )}
 
       {showDeleteConfirm && (
         <DeleteModal

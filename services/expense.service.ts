@@ -235,6 +235,74 @@ class ExpenseService extends BaseService<ExpenseRequest> {
       throw error;
     }
   }
+
+  // ==================== Document Methods ====================
+
+  /**
+   * Upload document for expense request
+   */
+  async uploadExpenseDocument(
+    expenseRequestId: number,
+    file: File
+  ): Promise<APIResponse<any>> {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await axiosInstance.post(
+        `/expense/requests/${expenseRequestId}/documents`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Get documents for expense request
+   */
+  async getExpenseDocuments(expenseRequestId: number): Promise<APIResponse<any[]>> {
+    try {
+      const response = await axiosInstance.get(
+        `/expense/requests/${expenseRequestId}/documents`
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Delete expense document
+   */
+  async deleteExpenseDocument(documentId: string): Promise<APIResponse<void>> {
+    try {
+      const response = await axiosInstance.delete(`/expense/documents/${documentId}`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Get download URL for expense document
+   */
+  async downloadExpenseDocument(documentId: string): Promise<APIResponse<{ url: string }>> {
+    try {
+      const response = await axiosInstance.get(
+        `/expense/documents/${documentId}/download`
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  }
 }
 
 export default new ExpenseService();
