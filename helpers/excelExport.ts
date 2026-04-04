@@ -1,5 +1,12 @@
 import ExcelJS from 'exceljs';
-import { WorkDayReportResponse, GradeReportResponse } from '@/models/hr/report.model';
+import { WorkDayReportResponse, GradeReportResponse, GradeReportRow } from '@/models/hr/report.model';
+
+export interface GradeExcelColumnConfig {
+  key: string;
+  label: string;
+  width?: number;
+  exportValue: (row: GradeReportRow, index: number) => string | number;
+}
 
 export const exportToExcel = async (reportData: WorkDayReportResponse) => {
   try {
@@ -197,7 +204,10 @@ export const exportToExcel = async (reportData: WorkDayReportResponse) => {
   }
 };
 
-export const exportGradeToExcel = async (reportData: GradeReportResponse) => {
+export const exportGradeToExcel = async (
+  reportData: GradeReportResponse,
+  columnsConfig?: GradeExcelColumnConfig[]
+) => {
   try {
     // Create a new workbook
     const wb = new ExcelJS.Workbook();
@@ -222,21 +232,73 @@ export const exportGradeToExcel = async (reportData: GradeReportResponse) => {
     ws.addRow([]);
     rowNum++;
 
+    const defaultColumnsConfig: GradeExcelColumnConfig[] = [
+      {
+        key: 'full_name',
+        label: 'AD SOYAD',
+        width: 25,
+        exportValue: (row) => row.first_name + ' ' + row.last_name
+      },
+      {
+        key: 'hire_date',
+        label: 'İŞE GİR. TAR.',
+        width: 15,
+        exportValue: (row) => row.hire_date ? new Date(row.hire_date).toLocaleDateString('tr-TR') : '-'
+      },
+      {
+        key: 'profession_start_date',
+        label: 'MESLEĞE BAŞ. TAR.',
+        width: 20,
+        exportValue: (row) => row.profession_start_date ? new Date(row.profession_start_date).toLocaleDateString('tr-TR') : '-'
+      },
+      {
+        key: 'total_experience_text',
+        label: 'TOPLAM DENEYIM',
+        width: 20,
+        exportValue: (row) => row.total_experience_text || '-'
+      },
+      {
+        key: 'current_grade',
+        label: 'MEVCUT GRADE',
+        width: 15,
+        exportValue: (row) => row.current_grade || '-'
+      },
+      {
+        key: 'expected_grade',
+        label: 'BEKLENEN GRADE',
+        width: 15,
+        exportValue: (row) => row.expected_grade || '-'
+      },
+      {
+        key: 'company_name',
+        label: 'ŞİRKET',
+        width: 20,
+        exportValue: (row) => row.company_name
+      },
+      {
+        key: 'department_name',
+        label: 'DEPARTMAN',
+        width: 20,
+        exportValue: (row) => row.department_name
+      },
+      {
+        key: 'manager',
+        label: 'YÖNETİCİ',
+        width: 20,
+        exportValue: (row) => row.manager || '-'
+      },
+      {
+        key: 'team_start_date',
+        label: 'TAKIMA BAŞ. TAR.',
+        width: 20,
+        exportValue: (row) => row.team_start_date ? new Date(row.team_start_date).toLocaleDateString('tr-TR') : '-'
+      }
+    ];
+
+    const activeColumns = columnsConfig && columnsConfig.length > 0 ? columnsConfig : defaultColumnsConfig;
+
     // Row 6: Headers
-    const headerRow = ws.addRow([
-      'SIRA NO',
-      'ID',
-      'AD SOYAD',
-      'İŞE GİR. TAR.',
-      'MESLEĞE BAŞ. TAR.',
-      'TOPLAM DENEYIM',
-      'MEVCUT GRADE',
-      'BEKLENEN GRADE',
-      'ŞİRKET',
-      'DEPARTMAN',
-      'YÖNETİCİ',
-      'TAKIMA BAŞ. TAR.'
-    ]);
+    const headerRow = ws.addRow(activeColumns.map((column) => column.label));
     headerRow.height = 20;
     
     // Style header cells
@@ -263,20 +325,7 @@ export const exportGradeToExcel = async (reportData: GradeReportResponse) => {
       });
 
       sortedRows.forEach((row, index) => {
-        const dataRow = ws.addRow([
-          index + 1,
-          row.id,
-          row.first_name + ' ' + row.last_name,
-          row.hire_date ? new Date(row.hire_date).toLocaleDateString('tr-TR') : '-',
-          row.profession_start_date ? new Date(row.profession_start_date).toLocaleDateString('tr-TR') : '-',
-          row.total_experience_text || '-',
-          row.current_grade || '-',
-          row.expected_grade || '-',
-          row.company_name,
-          row.department_name,
-          row.manager || '-',
-          row.team_start_date ? new Date(row.team_start_date).toLocaleDateString('tr-TR') : '-'
-        ]);
+        const dataRow = ws.addRow(activeColumns.map((column) => column.exportValue(row, index)));
         
         // Check if there's a gap for yellow highlighting
         const isYellowRow = row.current_grade !== row.expected_grade;
@@ -300,20 +349,7 @@ export const exportGradeToExcel = async (reportData: GradeReportResponse) => {
     }
 
     // Set column widths
-    ws.columns = [
-      { width: 10 },  // SIRA NO
-      { width: 8 },   // ID
-      { width: 25 },  // AD SOYAD
-      { width: 15 },  // İŞE GİRİŞ TARİHİ
-      { width: 20 },  // MESLEĞE BAŞLANGIÇ
-      { width: 20 },  // TOPLAM DENEYIM
-      { width: 15 },  // MEVCUT GRADE
-      { width: 15 },  // BEKLENEN GRADE
-      { width: 20 },  // ŞİRKET
-      { width: 20 },  // DEPARTMAN
-      { width: 20 },  // YÖNETİCİ
-      { width: 20 },  // TAKIMA BAŞLANGIÇ
-    ];
+    ws.columns = activeColumns.map((column) => ({ width: column.width || 20 }));
 
     // Generate filename
     const today = new Date().toLocaleDateString('tr-TR').replace(/\//g, '-');

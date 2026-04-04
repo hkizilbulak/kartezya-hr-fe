@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Row, Col, Card, Table, Button, Container, Form } from 'react-bootstrap';
 import { employeeService, lookupService } from '@/services';
 import { Employee } from '@/models/hr/hr-models';
@@ -76,9 +76,11 @@ const EmployeesPage = () => {
   });
   const isQuickSearchInitialized = useRef(false);
   const skipNextAutoFilter = useRef(false);
+  const isInitialLoad = useRef(true);
   const isLookupsFetched = useRef(false);
 
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   // Fetch lookups on mount
   useEffect(() => {
@@ -117,6 +119,77 @@ const EmployeesPage = () => {
 
     fetchLookups();
   }, []);
+
+  // Helper function to update URL with current filters
+  const updateURL = (filters: any, page: number, sortKey?: string, sortDir?: string, perPage?: number) => {
+    const params = new URLSearchParams();
+    
+    // Add all filter parameters
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== null && value !== undefined && value !== '') {
+        if (Array.isArray(value) && value.length > 0) {
+          params.set(key, value.join(','));
+        } else {
+          params.set(key, String(value));
+        }
+      }
+    });
+
+    // Add pagination, sorting, and limit
+    if (page > 1) params.set('page', String(page));
+    if (sortKey) params.set('sort', sortKey);
+    if (sortDir) params.set('direction', sortDir);
+    if (perPage && perPage !== 10) params.set('limit', String(perPage));
+
+    const queryString = params.toString();
+    const newUrl = queryString ? `?${queryString}` : '/employees';
+    router.push(newUrl, { scroll: false });
+  };
+
+  // Helper function to load filters from URL
+  const loadFiltersFromURL = () => {
+    const urlFilters: any = {};
+    const urlPage = parseInt(searchParams.get('page') || '1');
+    const urlSort = searchParams.get('sort') || null;
+    const urlDirection = searchParams.get('direction') as 'ASC' | 'DESC' || 'ASC';
+    const urlLimit = parseInt(searchParams.get('limit') || '10');
+
+    // Load all filter parameters
+    const firstName = searchParams.get('first_name');
+    const email = searchParams.get('email');
+    const departmentIds = searchParams.get('department_ids');
+    const manager = searchParams.get('manager');
+    const identityNo = searchParams.get('identity_no');
+    const gender = searchParams.get('gender');
+    const maritalStatus = searchParams.get('marital_status');
+    const gradeId = searchParams.get('grade_id');
+    const status = searchParams.get('status');
+    const company = searchParams.get('company');
+    const department = searchParams.get('department');
+    const jobTitle = searchParams.get('jobTitle');
+
+    // Set filter states
+    if (firstName) urlFilters.first_name = firstName;
+    if (email) urlFilters.email = email;
+    if (departmentIds) urlFilters.department_ids = departmentIds.split(',');
+    if (manager) urlFilters.manager = manager;
+    if (identityNo) urlFilters.identity_no = identityNo;
+    if (gender) urlFilters.gender = gender;
+    if (maritalStatus) urlFilters.marital_status = maritalStatus;
+    if (gradeId) urlFilters.grade_id = gradeId;
+
+    return {
+      filters: urlFilters,
+      page: urlPage,
+      sort: urlSort,
+      direction: urlDirection,
+      limit: urlLimit,
+      status: status || 'ACTIVE',
+      company: company || '',
+      department: department || '',
+      jobTitle: jobTitle || ''
+    };
+  };
 
   const fetchEmployees = async (page: number = 1, sortKey?: string, sortDir?: 'ASC' | 'DESC', filters?: any, perPage?: number) => {
     try {
@@ -168,6 +241,61 @@ const EmployeesPage = () => {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    // Load filters from URL on initial mount
+    if (isInitialLoad.current) {
+      isInitialLoad.current = false;
+      
+      const urlData = loadFiltersFromURL();
+      
+      // Set all states from URL
+      setFilterParams({
+        first_name: urlData.filters.first_name || '',
+        email: urlData.filters.email || '',
+        department_ids: urlData.filters.department_ids || [],
+        manager: urlData.filters.manager || '',
+        identity_no: urlData.filters.identity_no || '',
+        gender: urlData.filters.gender || '',
+        marital_status: urlData.filters.marital_status || '',
+        grade_id: urlData.filters.grade_id || ''
+      });
+      
+      setQuickSearchParams({
+        company: urlData.company,
+        department: urlData.department,
+        jobTitle: urlData.jobTitle
+      });
+      
+      setStatusFilter(urlData.status);
+      setItemsPerPage(urlData.limit);
+      
+      if (urlData.sort) {
+        setSortConfig({
+          key: urlData.sort as 'first_name' | 'last_name',
+          direction: urlData.direction
+        });
+      }
+
+      // Fetch with URL parameters
+      const allFilters = {
+        ...urlData.filters,
+        status: urlData.status
+      };
+      
+      if (urlData.company) allFilters.company = urlData.company;
+      if (urlData.department) allFilters.department = urlData.department;
+      if (urlData.jobTitle) allFilters.jobTitle = urlData.jobTitle;
+
+      fetchEmployees(
+        urlData.page,
+        urlData.sort || undefined,
+        urlData.direction,
+        allFilters,
+        urlData.limit
+      );
+    }
+  }, []);
 
   const handleQuickSearchChange = (name: 'company' | 'department' | 'jobTitle', value: string) => {
     setQuickSearchParams(prev => ({
@@ -245,10 +373,15 @@ const EmployeesPage = () => {
 
       const quickFilters = getQuickSearchFilters();
 
-      fetchEmployees(1, sortConfig.key || undefined, sortConfig.direction, {
+      const allFilters = {
         ...activeFilters,
         ...quickFilters
-      }, itemsPerPage);
+      };
+
+      // Update URL with current filters
+      updateURL(allFilters, 1, sortConfig.key || undefined, sortConfig.direction, itemsPerPage);
+
+      fetchEmployees(1, sortConfig.key || undefined, sortConfig.direction, allFilters, itemsPerPage);
     }, 300);
 
     return () => clearTimeout(timer);
@@ -279,10 +412,15 @@ const EmployeesPage = () => {
 
     const quickFilters = getQuickSearchFilters();
 
-    fetchEmployees(1, sortConfig.key || undefined, sortConfig.direction, {
+    const allFilters = {
       ...activeFilters,
       ...quickFilters
-    }, itemsPerPage);
+    };
+
+    // Update URL with current filters
+    updateURL(allFilters, 1, sortConfig.key || undefined, sortConfig.direction, itemsPerPage);
+
+    fetchEmployees(1, sortConfig.key || undefined, sortConfig.direction, allFilters, itemsPerPage);
   };
 
   const clearFilters = () => {
@@ -303,6 +441,12 @@ const EmployeesPage = () => {
       jobTitle: ''
     });
     setStatusFilter('ACTIVE'); // Reset to ACTIVE
+    setSortConfig({ key: null, direction: 'ASC' });
+    setItemsPerPage(10);
+    
+    // Update URL to only have status=ACTIVE
+    updateURL({ status: 'ACTIVE' }, 1, undefined, 'ASC', 10);
+    
     fetchEmployees(1, undefined, 'ASC', { status: 'ACTIVE' }, 10);
   };
 
@@ -318,10 +462,15 @@ const EmployeesPage = () => {
 
     const quickFilters = getQuickSearchFilters();
 
-    fetchEmployees(1, key, direction, {
+    const allFilters = {
       ...activeFilters,
       ...quickFilters
-    }, itemsPerPage);
+    };
+
+    // Update URL with current filters and sorting
+    updateURL(allFilters, 1, key, direction, itemsPerPage);
+
+    fetchEmployees(1, key, direction, allFilters, itemsPerPage);
   };
 
   const getSortIcon = (columnKey: 'first_name' | 'last_name') => {
@@ -414,10 +563,15 @@ const EmployeesPage = () => {
 
     const quickFilters = getQuickSearchFilters();
 
-    fetchEmployees(newPage, sortConfig.key || undefined, sortConfig.direction, {
+    const allFilters = {
       ...activeFilters,
       ...quickFilters
-    }, itemsPerPage);
+    };
+
+    // Update URL with current page
+    updateURL(allFilters, newPage, sortConfig.key || undefined, sortConfig.direction, itemsPerPage);
+
+    fetchEmployees(newPage, sortConfig.key || undefined, sortConfig.direction, allFilters, itemsPerPage);
   };
 
   const handlePageSizeChange = (newPageSize: number) => {
@@ -429,10 +583,15 @@ const EmployeesPage = () => {
 
     const quickFilters = getQuickSearchFilters();
 
-    fetchEmployees(1, sortConfig.key || undefined, sortConfig.direction, {
+    const allFilters = {
       ...activeFilters,
       ...quickFilters
-    }, newPageSize);
+    };
+
+    // Update URL with new page size
+    updateURL(allFilters, 1, sortConfig.key || undefined, sortConfig.direction, newPageSize);
+
+    fetchEmployees(1, sortConfig.key || undefined, sortConfig.direction, allFilters, newPageSize);
   };
 
   return (

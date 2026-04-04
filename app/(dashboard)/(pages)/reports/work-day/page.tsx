@@ -7,6 +7,7 @@ import { CompanyLookup, DepartmentLookup } from '@/services/lookup.service';
 import { PageHeading } from '@/widgets';
 import FormDateField from '@/components/FormDateField';
 import FormSelectField from '@/components/FormSelectField';
+import MultiSelectField from '@/components/MultiSelectField';
 import LoadingOverlay from '@/components/LoadingOverlay';
 import Pagination from '@/components/Pagination';
 import { Download as DownloadIcon, ChevronUp, ChevronDown } from 'react-feather';
@@ -27,7 +28,7 @@ const WorkDayReportPage = () => {
   const [companies, setCompanies] = useState<CompanyLookup[]>([]);
   const [departments, setDepartments] = useState<DepartmentLookup[]>([]);
   const [selectedCompany, setSelectedCompany] = useState<string>('');
-  const [selectedDepartment, setSelectedDepartment] = useState<string>('');
+  const [selectedDepartmentIds, setSelectedDepartmentIds] = useState<string[]>([]);
   const [isActive, setIsActive] = useState(true);
   const [companiesLoading, setCompaniesLoading] = useState(false);
   const [departmentsLoading, setDepartmentsLoading] = useState(false);
@@ -113,10 +114,10 @@ const WorkDayReportPage = () => {
       };
 
       loadDepartmentsByCompany();
-      setSelectedDepartment('');
+      setSelectedDepartmentIds([]);
     } else {
       setDepartments([]);
-      setSelectedDepartment('');
+      setSelectedDepartmentIds([]);
     }
   }, [selectedCompany, allDepartments]);
 
@@ -134,7 +135,7 @@ const WorkDayReportPage = () => {
         startDate,
         endDate,
         selectedCompany ? parseInt(selectedCompany) : undefined,
-        selectedDepartment ? parseInt(selectedDepartment) : undefined,
+        selectedDepartmentIds,
         isActive
       );
 
@@ -229,6 +230,11 @@ const WorkDayReportPage = () => {
     setCurrentPage(1); // Reset to first page when changing page size
   };
 
+  const departmentOptions = departments.map((dept) => ({
+    value: String(dept.id),
+    label: dept.name,
+  }));
+
   return (
     <>
       <Container fluid className="page-container">
@@ -289,23 +295,19 @@ const WorkDayReportPage = () => {
                       </Form.Group>
                     </Col>
 
-                    {/* Department Select */}
+                    {/* Department Multi Select */}
                     <Col md={6} lg={3}>
                       <Form.Group>
                         <Form.Label className="fw-500">Departman</Form.Label>
-                        <FormSelectField
-                          name="selectedDepartment"
-                          value={selectedDepartment}
-                          onChange={(e) => setSelectedDepartment(e.target.value)}
+                        <MultiSelectField
+                          name="selectedDepartmentIds"
+                          value={selectedDepartmentIds}
+                          onChange={setSelectedDepartmentIds}
+                          options={departmentOptions}
                           disabled={departmentsLoading}
-                        >
-                          <option value="">Departman Seçiniz</option>
-                          {departments.map((dept) => (
-                            <option key={dept.id} value={String(dept.id)}>
-                              {dept.name}
-                            </option>
-                          ))}
-                        </FormSelectField>
+                          loading={departmentsLoading}
+                          placeholder="Departman seçiniz"
+                        />
                       </Form.Group>
                     </Col>
 

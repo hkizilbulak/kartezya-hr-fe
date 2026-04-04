@@ -160,7 +160,7 @@ const MultiSelectField: React.FC<MultiSelectFieldProps> = ({
   }, [options, searchQuery]);
 
   const renderSelectedTags = () => {
-    if (value.length <= 1) return null;
+    if (value.length === 0) return null;
     
     return (
       <div className="selected-tags mt-1">
