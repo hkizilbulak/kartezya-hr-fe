@@ -244,7 +244,7 @@ const EmployeeExpenseRequests: React.FC<EmployeeExpenseRequestsProps> = ({
             </Col>
             <Col md={3}>
               <Form.Group>
-                <Form.Label className="mb-1" style={{ fontSize: '13px' }}>Başlangıç Tarihi</Form.Label>
+                <Form.Label className="mb-1" style={{ fontSize: '13px' }}>Masraf Başlangıç Tarihi</Form.Label>
                 <Form.Control 
                   type="date" 
                   size="sm"
@@ -255,7 +255,7 @@ const EmployeeExpenseRequests: React.FC<EmployeeExpenseRequestsProps> = ({
             </Col>
             <Col md={3}>
               <Form.Group>
-                <Form.Label className="mb-1" style={{ fontSize: '13px' }}>Bitiş Tarihi</Form.Label>
+                <Form.Label className="mb-1" style={{ fontSize: '13px' }}>Masraf Bitiş Tarihi</Form.Label>
                 <Form.Control 
                   type="date" 
                   size="sm"
