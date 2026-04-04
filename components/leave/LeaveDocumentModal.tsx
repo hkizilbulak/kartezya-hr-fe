@@ -158,10 +158,6 @@ const LeaveDocumentModal: React.FC<LeaveDocumentModalProps> = ({
   };
 
   const handleDelete = async (documentId: string) => {
-    if (!window.confirm('Bu dökümanı silmek istediğinizden emin misiniz?')) {
-      return;
-    }
-
     setError('');
     setSuccess('');
 

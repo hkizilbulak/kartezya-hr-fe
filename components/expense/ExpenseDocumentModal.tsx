@@ -199,10 +199,6 @@ const ExpenseDocumentModal: React.FC<ExpenseDocumentModalProps> = ({
   };
 
   const handleDelete = async (documentId: string) => {
-    if (!window.confirm('Bu dökümanı silmek istediğinizden emin misiniz?')) {
-      return;
-    }
-
     setError('');
     setSuccess('');
 
