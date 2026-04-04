@@ -1,14 +1,17 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { Row, Col, Card, Table, Button, Container, Badge } from 'react-bootstrap';
+import { Row, Col, Card, Table, Button, Container, Badge, Form } from 'react-bootstrap';
 import { leaveRequestService } from '@/services/leave-request.service';
 import { leaveBalanceService } from '@/services/leave-balance.service';
 import { Employee, LeaveRequest, LeaveBalance } from '@/models/hr/hr-models';
 import { PageHeading } from '@/widgets';
 import LeaveRequestModal from '@/components/modals/LeaveRequestModal';
-import DeleteModal from '@/components/DeleteModal';
-import LoadingOverlay from '@/components/LoadingOverlay';
 import LeaveDocumentModal from '@/components/leave/LeaveDocumentModal';
+import { leaveTypeService } from '@/services/leave-type.service';
+import { lookupService } from '@/services/lookup.service';
+import DeleteModal from '@/components/DeleteModal';
+import Pagination from '@/components/Pagination';
+import LoadingOverlay from '@/components/LoadingOverlay';
 import { Edit, Plus, ChevronUp, ChevronDown, FileText, X } from 'react-feather';
 import { toast } from 'react-toastify';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
@@ -37,6 +40,12 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
+  const [filterStatus, setFilterStatus] = useState<string>('');
+  const [filterLeaveTypeId, setFilterLeaveTypeId] = useState<string>('');
+  const [filterStartDate, setFilterStartDate] = useState<string>('');
+  const [filterEndDate, setFilterEndDate] = useState<string>('');
+  const [leaveTypes, setLeaveTypes] = useState<any[]>([]);
+
   // Default sort: created_at DESC (en yeni talepleri göster)
   const [sortConfig, setSortConfig] = useState<{
     key: string;
@@ -50,12 +59,17 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
     try {
       setIsLoading(true);
 
-      const params = { 
+      const params: any = { 
         page, 
         limit: itemsPerPage,
         sort: sortKey,
         direction: sortDir
       };
+
+      if (filterStatus) params.status = filterStatus;
+      if (filterLeaveTypeId) params.leave_type_id = filterLeaveTypeId;
+      if (filterStartDate) params.start_date = filterStartDate;
+      if (filterEndDate) params.end_date = filterEndDate;
 
       let response;
       if (employeeId) {
@@ -68,6 +82,11 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
         setLeaveRequests(response.data);
         setTotalPages(response.page?.total_pages || 1);
         setTotalItems(response.page?.total || 0);
+        setCurrentPage(page);
+      } else {
+        setLeaveRequests([]);
+        setTotalPages(1);
+        setTotalItems(0);
         setCurrentPage(page);
       }
     } catch (error: any) {
@@ -96,18 +115,26 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
     }
   };
 
-  const lastFetchedId = React.useRef<string | null>(null);
+  const fetchLeaveTypes = async () => {
+    try {
+      const res = await lookupService.getLeaveTypesLookup();
+      if (res?.data) {
+        setLeaveTypes(res.data);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   useEffect(() => {
-    const currentId = employeeId || 'me';
-    if (lastFetchedId.current === currentId) {
-      return;
-    }
-    lastFetchedId.current = currentId;
-    
     fetchLeaveRequests(1, sortConfig.key, sortConfig.direction);
     fetchLeaveBalance();
+    fetchLeaveTypes();
   }, [employeeId]);
+
+  useEffect(() => {
+    fetchLeaveRequests(1, sortConfig.key, sortConfig.direction);
+  }, [filterStatus, filterLeaveTypeId, filterStartDate, filterEndDate]);
 
   const handleSort = (key: 'name') => {
     let direction: 'ASC' | 'DESC' = 'ASC';
@@ -462,9 +489,70 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
 
             {/* Tamamlanmış Talepler */}
             <div>
-              <h6 className="mb-3" style={{ fontWeight: 700, fontSize: '16px' }}>{employeeId ? 'Tamamlanmış Talepler' : 'Tamamlanmış Taleplerim'}</h6>
-              <Card className="border-0 shadow-sm position-relative">
+              <div className="d-flex justify-content-between align-items-center mb-3">
+                <h6 className="mb-0" style={{ fontWeight: 700, fontSize: '16px' }}>{employeeId ? 'Tamamlanmış Talepler' : 'Tamamlanmış Taleplerim'}</h6>
+              </div>
+              
+              <Card className="border-0 shadow-sm mb-3">
+                <Card.Body className="py-2 px-3">
+                  <Row className="g-2 align-items-end">
+                    <Col md={3}>
+                      <Form.Group>
+                        <Form.Label className="mb-1" style={{ fontSize: '13px' }}>Durum</Form.Label>
+                        <Form.Select 
+                          size="sm" 
+                          value={filterStatus}
+                          onChange={(e) => setFilterStatus(e.target.value)}
+                        >
+                          <option value="">Tümü</option>
+                          <option value="APPROVED">Onaylandı</option>
+                          <option value="REJECTED">Reddedildi</option>
+                          <option value="CANCELLED">İptal Edildi</option>
+                        </Form.Select>
+                      </Form.Group>
+                    </Col>
+                    <Col md={3}>
+                      <Form.Group>
+                        <Form.Label className="mb-1" style={{ fontSize: '13px' }}>İzin Türü</Form.Label>
+                        <Form.Select 
+                          size="sm"
+                          value={filterLeaveTypeId}
+                          onChange={(e) => setFilterLeaveTypeId(e.target.value)}
+                        >
+                          <option value="">Tümü</option>
+                          {leaveTypes.map(lt => (
+                            <option key={lt.id} value={lt.id}>{lt.name}</option>
+                          ))}
+                        </Form.Select>
+                      </Form.Group>
+                    </Col>
+                    <Col md={3}>
+                      <Form.Group>
+                        <Form.Label className="mb-1" style={{ fontSize: '13px' }}>Başlangıç Tarihi</Form.Label>
+                        <Form.Control 
+                          type="date" 
+                          size="sm"
+                          value={filterStartDate}
+                          onChange={(e) => setFilterStartDate(e.target.value)}
+                        />
+                      </Form.Group>
+                    </Col>
+                    <Col md={3}>
+                      <Form.Group>
+                        <Form.Label className="mb-1" style={{ fontSize: '13px' }}>Bitiş Tarihi</Form.Label>
+                        <Form.Control 
+                          type="date" 
+                          size="sm"
+                          value={filterEndDate}
+                          onChange={(e) => setFilterEndDate(e.target.value)}
+                        />
+                      </Form.Group>
+                    </Col>
+                  </Row>
+                </Card.Body>
+              </Card>
 
+              <Card className="border-0 shadow-sm position-relative">
                 <Card.Body className="p-0">
                   <div className="table-box">
                     <div className="table-responsive">

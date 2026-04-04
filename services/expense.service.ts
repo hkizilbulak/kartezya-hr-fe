@@ -22,21 +22,25 @@ class ExpenseService extends BaseService<ExpenseRequest> {
     limit: number = 10,
     status?: string,
     sortBy?: string,
-    sortOrder: 'asc' | 'desc' = 'desc'
+    sortOrder: 'asc' | 'desc' = 'desc',
+    expenseTypeId?: string,
+    startDate?: string,
+    endDate?: string
   ): Promise<PaginatedResponse<ExpenseRequest>> {
     const params = new URLSearchParams({
       page: page.toString(),
       limit: limit.toString(),
-      sort_by: sortBy || 'created_at',
-      sort_order: sortOrder,
+      direction: sortOrder === 'desc' ? 'DESC' : 'ASC',
+      sort: sortBy || 'created_at',
     });
 
-    if (status) {
-      params.append('status', status);
-    }
+    if (status) params.append('status', status);
+    if (expenseTypeId) params.append('expense_type_id', expenseTypeId);
+    if (startDate) params.append('start_date', startDate);
+    if (endDate) params.append('end_date', endDate);
 
     try {
-      const response = await axiosInstance.get(`/expense/requests/me?${params.toString()}`);
+      const response = await axiosInstance.get(`${this.baseUrl}/me`, { params });
       return response.data;
     } catch (error) {
       throw error;
@@ -52,24 +56,26 @@ class ExpenseService extends BaseService<ExpenseRequest> {
     employeeId?: number,
     status?: string,
     sortBy?: string,
-    sortOrder: 'asc' | 'desc' = 'desc'
+    sortOrder: 'asc' | 'desc' = 'desc',
+    expenseTypeId?: string,
+    startDate?: string,
+    endDate?: string
   ): Promise<PaginatedResponse<ExpenseRequest>> {
     const params = new URLSearchParams({
       page: page.toString(),
       limit: limit.toString(),
-      sort_by: sortBy || 'created_at',
-      sort_order: sortOrder,
+      direction: sortOrder === 'desc' ? 'DESC' : 'ASC',
+      sort: sortBy || 'created_at',
     });
 
-    if (employeeId) {
-      params.append('employee_id', employeeId.toString());
-    }
-    if (status) {
-      params.append('status', status);
-    }
+    if (employeeId) params.append('employee_id', employeeId.toString());
+    if (status) params.append('status', status);
+    if (expenseTypeId) params.append('expense_type_id', expenseTypeId);
+    if (startDate) params.append('start_date', startDate);
+    if (endDate) params.append('end_date', endDate);
 
     try {
-      const response = await axiosInstance.get(`/expense/requests?${params.toString()}`);
+      const response = await axiosInstance.get(this.baseUrl, { params });
       return response.data;
     } catch (error) {
       throw error;

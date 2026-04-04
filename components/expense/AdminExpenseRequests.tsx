@@ -22,6 +22,12 @@ const AdminExpenseRequests: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
+  // Add new filters
+  const [filterExpenseTypeId, setFilterExpenseTypeId] = useState<string>('');
+  const [filterStartDate, setFilterStartDate] = useState<string>('');
+  const [filterEndDate, setFilterEndDate] = useState<string>('');
+  const [expenseTypes, setExpenseTypes] = useState<any[]>([]);
+
   // Modal states
   const [showApproveModal, setShowApproveModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
@@ -31,6 +37,17 @@ const AdminExpenseRequests: React.FC = () => {
   const [rejectionReason, setRejectionReason] = useState('');
   const [paymentReference, setPaymentReference] = useState('');
 
+  const fetchExpenseTypes = async () => {
+    try {
+      const response = await expenseService.getExpenseTypes();
+      if (response.data) {
+        setExpenseTypes(response.data);
+      }
+    } catch (error) {
+      console.error('Masraf tipleri yüklenirken hata:', error);
+    }
+  };
+
   const fetchExpenseRequests = async (page: number = 1, status?: string) => {
     try {
       setIsLoading(true);
@@ -39,13 +56,23 @@ const AdminExpenseRequests: React.FC = () => {
         page, 
         itemsPerPage, 
         undefined,
-        status || undefined
+        status || undefined,
+        undefined,
+        'desc',
+        filterExpenseTypeId,
+        filterStartDate,
+        filterEndDate
       );
       
       if (response.data) {
         setExpenseRequests(response.data);
         setTotalPages(response.page?.total_pages || 1);
         setTotalItems(response.page?.total || 0);
+        setCurrentPage(page);
+      } else {
+        setExpenseRequests([]);
+        setTotalPages(1);
+        setTotalItems(0);
         setCurrentPage(page);
       }
     } catch (error: any) {
@@ -57,8 +84,12 @@ const AdminExpenseRequests: React.FC = () => {
   };
 
   useEffect(() => {
+    fetchExpenseTypes();
+  }, []);
+
+  useEffect(() => {
     fetchExpenseRequests(1, statusFilter);
-  }, [statusFilter]);
+  }, [statusFilter, filterExpenseTypeId, filterStartDate, filterEndDate]);
 
   const handleApproveClick = (request: ExpenseRequest) => {
     setSelectedRequest(request);
@@ -191,6 +222,40 @@ const AdminExpenseRequests: React.FC = () => {
               <option value="REJECTED">Reddedildi</option>
               <option value="PAID">Ödendi</option>
             </Form.Select>
+          </Form.Group>
+        </Col>
+        <Col md={3}>
+          <Form.Group>
+            <Form.Label>Masraf Türü</Form.Label>
+            <Form.Select 
+              value={filterExpenseTypeId}
+              onChange={(e) => setFilterExpenseTypeId(e.target.value)}
+            >
+              <option value="">Tümü</option>
+              {expenseTypes.map(type => (
+                <option key={type.id} value={type.id.toString()}>{type.name}</option>
+              ))}
+            </Form.Select>
+          </Form.Group>
+        </Col>
+        <Col md={3}>
+          <Form.Group>
+            <Form.Label>Başlangıç Tarihi</Form.Label>
+            <Form.Control
+              type="date"
+              value={filterStartDate}
+              onChange={(e) => setFilterStartDate(e.target.value)}
+            />
+          </Form.Group>
+        </Col>
+        <Col md={3}>
+          <Form.Group>
+            <Form.Label>Bitiş Tarihi</Form.Label>
+            <Form.Control
+              type="date"
+              value={filterEndDate}
+              onChange={(e) => setFilterEndDate(e.target.value)}
+            />
           </Form.Group>
         </Col>
       </Row>

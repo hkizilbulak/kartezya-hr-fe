@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { Row, Col, Card, Table, Button, Badge } from 'react-bootstrap';
+import { Row, Col, Card, Table, Button, Badge, Form } from 'react-bootstrap';
 import expenseService from '@/services/expense.service';
 import { ExpenseRequest } from '@/models/hr/expense-models';
 import { PageHeading } from '@/widgets';
@@ -36,21 +36,32 @@ const EmployeeExpenseRequests: React.FC<EmployeeExpenseRequestsProps> = ({
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
+  const [filterStatus, setFilterStatus] = useState<string>('');
+  const [filterExpenseTypeId, setFilterExpenseTypeId] = useState<string>('');
+  const [filterStartDate, setFilterStartDate] = useState<string>('');
+  const [filterEndDate, setFilterEndDate] = useState<string>('');
+  const [expenseTypes, setExpenseTypes] = useState<any[]>([]);
+
   const fetchExpenseRequests = async (page: number = 1) => {
     try {
       setIsLoading(true);
       
       let response;
       if (employeeId) {
-        response = await expenseService.getAllExpenseRequests(page, itemsPerPage, parseInt(employeeId));
+        response = await expenseService.getAllExpenseRequests(page, itemsPerPage, parseInt(employeeId), filterStatus, undefined, 'desc', filterExpenseTypeId, filterStartDate, filterEndDate);
       } else {
-        response = await expenseService.getMyExpenseRequests(page, itemsPerPage);
+        response = await expenseService.getMyExpenseRequests(page, itemsPerPage, filterStatus, undefined, 'desc', filterExpenseTypeId, filterStartDate, filterEndDate);
       }
       
       if (response.data) {
         setExpenseRequests(response.data);
         setTotalPages(response.page?.total_pages || 1);
         setTotalItems(response.page?.total || 0);
+        setCurrentPage(page);
+      } else {
+        setExpenseRequests([]);
+        setTotalPages(1);
+        setTotalItems(0);
         setCurrentPage(page);
       }
     } catch (error: any) {
@@ -61,17 +72,35 @@ const EmployeeExpenseRequests: React.FC<EmployeeExpenseRequestsProps> = ({
     }
   };
 
+  const fetchExpenseTypes = async () => {
+    try {
+      const res: any = await expenseService.getActiveExpenseTypes();
+      if (res?.data) {
+        setExpenseTypes(res.data);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const lastFetchedId = React.useRef<string | null>(null);
 
   useEffect(() => {
-    const currentId = employeeId || 'me';
-    if (lastFetchedId.current === currentId) {
-      return;
+    if (employeeId) {
+      // Tab mount guard for Strict Mode
+      if (lastFetchedId.current === employeeId) return;
+      lastFetchedId.current = employeeId;
+      fetchExpenseRequests(currentPage);
+      fetchExpenseTypes();
+    } else {
+      fetchExpenseRequests(currentPage);
+      fetchExpenseTypes();
     }
-    lastFetchedId.current = currentId;
-    
-    fetchExpenseRequests();
   }, [employeeId]);
+
+  useEffect(() => {
+    fetchExpenseRequests(1);
+  }, [filterStatus, filterExpenseTypeId, filterStartDate, filterEndDate]);
 
   const handleShowModal = (request?: ExpenseRequest) => {
     if (request) {
@@ -178,6 +207,66 @@ const EmployeeExpenseRequests: React.FC<EmployeeExpenseRequestsProps> = ({
         createButtonText="Yeni Masraf Talebi"
         onCreate={() => handleShowModal()}
       />
+
+      <Card className="border-0 shadow-sm mb-3">
+        <Card.Body className="py-2 px-3">
+          <Row className="g-2 align-items-end">
+            <Col md={3}>
+              <Form.Group>
+                <Form.Label className="mb-1" style={{ fontSize: '13px' }}>Durum</Form.Label>
+                <Form.Select 
+                  size="sm" 
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                >
+                  <option value="">Tümü</option>
+                  <option value="PENDING">Beklemede</option>
+                  <option value="APPROVED">Onaylandı</option>
+                  <option value="REJECTED">Reddedildi</option>
+                  <option value="CANCELLED">İptal Edildi</option>
+                </Form.Select>
+              </Form.Group>
+            </Col>
+            <Col md={3}>
+              <Form.Group>
+                <Form.Label className="mb-1" style={{ fontSize: '13px' }}>Masraf Türü</Form.Label>
+                <Form.Select 
+                  size="sm"
+                  value={filterExpenseTypeId}
+                  onChange={(e) => setFilterExpenseTypeId(e.target.value)}
+                >
+                  <option value="">Tümü</option>
+                  {expenseTypes.map(et => (
+                    <option key={et.id} value={et.id}>{et.name}</option>
+                  ))}
+                </Form.Select>
+              </Form.Group>
+            </Col>
+            <Col md={3}>
+              <Form.Group>
+                <Form.Label className="mb-1" style={{ fontSize: '13px' }}>Başlangıç Tarihi</Form.Label>
+                <Form.Control 
+                  type="date" 
+                  size="sm"
+                  value={filterStartDate}
+                  onChange={(e) => setFilterStartDate(e.target.value)}
+                />
+              </Form.Group>
+            </Col>
+            <Col md={3}>
+              <Form.Group>
+                <Form.Label className="mb-1" style={{ fontSize: '13px' }}>Bitiş Tarihi</Form.Label>
+                <Form.Control 
+                  type="date" 
+                  size="sm"
+                  value={filterEndDate}
+                  onChange={(e) => setFilterEndDate(e.target.value)}
+                />
+              </Form.Group>
+            </Col>
+          </Row>
+        </Card.Body>
+      </Card>
 
       <Card>
         <Card.Body>

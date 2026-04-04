@@ -13,6 +13,7 @@ import { toast } from 'react-toastify';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
 import '@/styles/table-list.scss';
 import '@/styles/components/table-common.scss';
+import { leaveTypeService } from '@/services/leave-type.service';
 
 const LeaveRequestsPage = () => {
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
@@ -37,6 +38,12 @@ const LeaveRequestsPage = () => {
   const [pendingPage, setPendingPage] = useState(1);
   const [completedPage, setCompletedPage] = useState(1);
 
+  const [filterStatus, setFilterStatus] = useState<string>('');
+  const [filterLeaveTypeId, setFilterLeaveTypeId] = useState<string>('');
+  const [filterStartDate, setFilterStartDate] = useState<string>('');
+  const [filterEndDate, setFilterEndDate] = useState<string>('');
+  const [leaveTypes, setLeaveTypes] = useState<any[]>([]);
+
   const [sortConfig, setSortConfig] = useState<{
     key: string;
     direction: 'ASC' | 'DESC';
@@ -49,17 +56,29 @@ const LeaveRequestsPage = () => {
     try {
       setIsLoading(true);
 
-      const response = await leaveRequestService.getAll({ 
+      const params: any = { 
         page, 
         limit: 100, // Tüm verileri çek (frontend'de pagination yapacağız)
         sort: sortKey,
         direction: sortDir
-      });
+      };
+
+      if (filterStatus) params.status = filterStatus;
+      if (filterLeaveTypeId) params.leave_type_id = filterLeaveTypeId;
+      if (filterStartDate) params.start_date = filterStartDate;
+      if (filterEndDate) params.end_date = filterEndDate;
+
+      const response = await leaveRequestService.getAll(params);
       
       if (response.data) {
         setLeaveRequests(response.data);
         setTotalPages(response.page?.total_pages || 1);
         setTotalItems(response.page?.total || 0);
+        setCurrentPage(page);
+      } else {
+        setLeaveRequests([]);
+        setTotalPages(1);
+        setTotalItems(0);
         setCurrentPage(page);
       }
     } catch (error: any) {
@@ -70,9 +89,21 @@ const LeaveRequestsPage = () => {
     }
   };
 
+  const fetchLeaveTypes = async () => {
+    try {
+      const response = await leaveTypeService.getAll();
+      if (response.data) {
+        setLeaveTypes(response.data);
+      }
+    } catch (error) {
+      console.error('İzin tipleri yüklenirken hata:', error);
+    }
+  };
+
   useEffect(() => {
     fetchLeaveRequests(1, sortConfig.key, sortConfig.direction);
-  }, []);
+    fetchLeaveTypes();
+  }, [filterStatus, filterLeaveTypeId, filterStartDate, filterEndDate]);
 
   // İptal butonunun gösterilip gösterilmeyeceğini kontrol et
   const canCancelRequest = (request: LeaveRequest): boolean => {
@@ -464,7 +495,69 @@ const LeaveRequestsPage = () => {
 
             {/* Tamamlanmış Talepler */}
             <div className="mb-4">
-              <h6 className="mb-3" style={{ fontWeight: 700, fontSize: '16px' }}>Tamamlanmış Talepler</h6>
+              <div className="d-flex justify-content-between align-items-center mb-3">
+                <h6 className="mb-0" style={{ fontWeight: 700, fontSize: '16px' }}>Tamamlanmış Talepler</h6>
+              </div>
+              
+              <Card className="border-0 shadow-sm mb-3">
+                <Card.Body className="py-2 px-3">
+                  <Row className="g-2 align-items-end">
+                    <Col md={3}>
+                      <Form.Group>
+                        <Form.Label className="mb-1" style={{ fontSize: '13px' }}>Durum</Form.Label>
+                        <Form.Select 
+                          size="sm"
+                          value={filterStatus}
+                          onChange={(e) => setFilterStatus(e.target.value)}
+                        >
+                          <option value="">Tümü (Tamamlananlar)</option>
+                          <option value="APPROVED">Onaylandı</option>
+                          <option value="REJECTED">Reddedildi</option>
+                          <option value="CANCELLED">İptal Edildi</option>
+                        </Form.Select>
+                      </Form.Group>
+                    </Col>
+                    <Col md={3}>
+                      <Form.Group>
+                        <Form.Label className="mb-1" style={{ fontSize: '13px' }}>İzin Türü</Form.Label>
+                        <Form.Select 
+                          size="sm"
+                          value={filterLeaveTypeId}
+                          onChange={(e) => setFilterLeaveTypeId(e.target.value)}
+                        >
+                          <option value="">Tümü</option>
+                          {leaveTypes.map(type => (
+                            <option key={type.id} value={type.id.toString()}>{type.name}</option>
+                          ))}
+                        </Form.Select>
+                      </Form.Group>
+                    </Col>
+                    <Col md={3}>
+                      <Form.Group>
+                        <Form.Label className="mb-1" style={{ fontSize: '13px' }}>Başlangıç Tarihi</Form.Label>
+                        <Form.Control
+                          type="date"
+                          size="sm"
+                          value={filterStartDate}
+                          onChange={(e) => setFilterStartDate(e.target.value)}
+                        />
+                      </Form.Group>
+                    </Col>
+                    <Col md={3}>
+                      <Form.Group>
+                        <Form.Label className="mb-1" style={{ fontSize: '13px' }}>Bitiş Tarihi</Form.Label>
+                        <Form.Control
+                          type="date"
+                          size="sm"
+                          value={filterEndDate}
+                          onChange={(e) => setFilterEndDate(e.target.value)}
+                        />
+                      </Form.Group>
+                    </Col>
+                  </Row>
+                </Card.Body>
+              </Card>
+
               <div className="table-wrapper">
                 <Card className="border-0 shadow-sm position-relative">
                   <Card.Body className="p-0">
