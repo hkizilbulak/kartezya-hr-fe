@@ -240,7 +240,7 @@ const AdminExpenseRequests: React.FC = () => {
         </Col>
         <Col md={3}>
           <Form.Group>
-            <Form.Label>Başlangıç Tarihi</Form.Label>
+            <Form.Label>Masraf Başlangıç Tarihi</Form.Label>
             <Form.Control
               type="date"
               value={filterStartDate}
@@ -250,7 +250,7 @@ const AdminExpenseRequests: React.FC = () => {
         </Col>
         <Col md={3}>
           <Form.Group>
-            <Form.Label>Bitiş Tarihi</Form.Label>
+            <Form.Label>Masraf Bitiş Tarihi</Form.Label>
             <Form.Control
               type="date"
               value={filterEndDate}
