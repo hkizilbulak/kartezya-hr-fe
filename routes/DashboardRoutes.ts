@@ -33,6 +33,11 @@ export const DashboardMenu: IMenuProps[] = [
 				id: 'my-leave-requests',
 				link: '/my-requests/leave',
 				name: 'İzin Taleplerim'
+			},
+			{
+				id: 'my-expense-requests',
+				link: '/my-requests/expense',
+				name: 'Masraf Taleplerim'
 			}
 		]
 	},
@@ -44,14 +49,21 @@ export const DashboardMenu: IMenuProps[] = [
 		requiredRoles: ['ADMIN']
 	},
 	{
-		id: 'leave-management',
-		title: 'İzin Yönetimi',
-		icon: 'calendar',
+		id: 'request-management',
+		title: 'Talep Yönetimi',
+		icon: 'clipboard',
+		requiredRoles: ['ADMIN'],
 		children: [
 			{
 				id: 'leave-requests',
 				link: '/leave-management/requests',
 				name: 'İzin Talepleri',
+				requiredRoles: ['ADMIN']
+			},
+			{
+				id: 'expense-requests',
+				link: '/expense-management/requests',
+				name: 'Masraf Talepleri',
 				requiredRoles: ['ADMIN']
 			}
 		]
@@ -84,6 +96,12 @@ export const DashboardMenu: IMenuProps[] = [
 				id: 'leave-types',
 				name: 'İzin Türleri',
 				link: '/leave-management/types',
+				requiredRoles: ['ADMIN']
+			},
+			{
+				id: 'expense-types',
+				name: 'Masraf Türleri',
+				link: '/expense-management/types',
 				requiredRoles: ['ADMIN']
 			}
 		]
