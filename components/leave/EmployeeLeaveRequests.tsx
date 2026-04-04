@@ -9,7 +9,7 @@ import LeaveRequestModal from '@/components/modals/LeaveRequestModal';
 import DeleteModal from '@/components/DeleteModal';
 import LoadingOverlay from '@/components/LoadingOverlay';
 import LeaveDocumentModal from '@/components/leave/LeaveDocumentModal';
-import { Edit, Plus, ChevronUp, ChevronDown, FileText } from 'react-feather';
+import { Edit, Plus, ChevronUp, ChevronDown, FileText, X } from 'react-feather';
 import { toast } from 'react-toastify';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
 import '@/styles/table-list.scss';
@@ -225,9 +225,9 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
     setShowDocumentModal(true);
   };
 
-  const handleDocumentModalClose = (updatedCount?: number) => {
+  const handleDocumentModalClose = (updatedCount?: any) => {
     setShowDocumentModal(false);
-    if (updatedCount !== undefined && selectedRequest) {
+    if (typeof updatedCount === 'number' && selectedRequest) {
       setLeaveRequests(prev => 
         prev.map(req => req.id === selectedRequest.id 
           ? { ...req, document_count: updatedCount } 
@@ -382,7 +382,7 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
                             <th>Bitiş Tarihi</th>
                             <th>Kullanılan Gün</th>
                             <th>Durum</th>
-                            <th></th>
+                            <th>İşlemler</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -413,23 +413,22 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
                                           <Edit size={14} />
                                         </Button>
                                       )}
-                                      <Button
-                                        variant="outline-secondary"
-                                        size="sm"
-                                        title="Dökümanlar"
-                                        onClick={() => handleShowDocuments(request)}
-                                        className="position-relative"
-                                      >
-                                        <FileText size={14} />
-                                        {request.leave_type?.is_required_document && (!request.document_count || request.document_count === 0) && (
-                                          <Badge bg="warning" className="position-absolute top-0 start-100 translate-middle rounded-circle p-1" style={{ fontSize: '0.6em' }}>
-                                            !
-                                          </Badge>
-                                        )}
-                                      </Button>
+                                      {request.leave_type?.is_required_document && (
+                                        <Button
+                                          variant="outline-secondary"
+                                          size="sm"
+                                          title="Dökümanlar"
+                                          onClick={() => handleShowDocuments(request)}
+                                        >
+                                          <FileText size={16} />
+                                          {(!request.document_count || request.document_count === 0) && (
+                                            <Badge bg="warning" className="ms-1" style={{ fontSize: '0.6em' }}>!</Badge>
+                                          )}
+                                        </Button>
+                                      )}
                                       {!employeeId && (
                                         <Button
-                                          variant="outline-danger"
+                                          variant="outline-warning"
                                           size="sm"
                                           title="İptal Et"
                                           onClick={() => {
@@ -438,7 +437,7 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
                                           }}
                                           disabled={isLoading || actionLoading}
                                         >
-                                          İptal Et
+                                          <X size={14} />
                                         </Button>
                                       )}
                                     </div>
@@ -477,6 +476,7 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
                             <th>Bitiş Tarihi</th>
                             <th>Kullanılan Gün</th>
                             <th>Durum</th>
+                            <th>İşlemler</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -494,13 +494,30 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
                                   <td>{formatDate(endDate)}</td>
                                   <td>{requestedDays || '-'}</td>
                                   <td>{getStatusBadge(request.status)}</td>
+                                  <td>
+                                    <div className="d-flex gap-2">
+                                      {request.leave_type?.is_required_document && (
+                                        <Button
+                                          variant="outline-secondary"
+                                          size="sm"
+                                          title="Dökümanlar"
+                                          onClick={() => handleShowDocuments(request)}
+                                        >
+                                          <FileText size={16} />
+                                          {(!request.document_count || request.document_count === 0) && (
+                                            <Badge bg="warning" className="ms-1" style={{ fontSize: '0.6em' }}>!</Badge>
+                                          )}
+                                        </Button>
+                                      )}
+                                    </div>
+                                  </td>
                                 </tr>
                               );
                             })
                           ) : (
                             !isLoading && (
                               <tr>
-                                <td colSpan={5} className="text-center py-4">
+                                <td colSpan={6} className="text-center py-4">
                                   Tamamlanmış talep bulunamadı
                                 </td>
                               </tr>

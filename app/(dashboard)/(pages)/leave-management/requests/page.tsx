@@ -381,20 +381,19 @@ const LeaveRequestsPage = () => {
                                     <td>
                                       <div className="d-flex justify-content-end w-100">
                                         <div className="d-flex gap-2">
-                                          <Button
-                                            variant="outline-secondary"
-                                            size="sm"
-                                            onClick={() => handleShowDocuments(request)}
-                                            title="Dökümanlar"
-                                            className="position-relative"
-                                          >
-                                            <FileText size={14} />
-                                            {request.leave_type?.is_required_document && (!request.document_count || request.document_count === 0) && (
-                                              <Badge bg="warning" className="position-absolute top-0 start-100 translate-middle rounded-circle p-1" style={{ fontSize: '0.6em' }}>
-                                                !
-                                              </Badge>
-                                            )}
-                                          </Button>
+                                          {request.leave_type?.is_required_document && (
+                                            <Button
+                                              variant="outline-secondary"
+                                              size="sm"
+                                              onClick={() => handleShowDocuments(request)}
+                                              title="Dökümanlar"
+                                            >
+                                              <FileText size={16} />
+                                              {(!request.document_count || request.document_count === 0) && (
+                                                <Badge bg="warning" className="ms-1" style={{ fontSize: '0.6em' }}>!</Badge>
+                                              )}
+                                            </Button>
+                                          )}
                                           {request.status === 'PENDING' ? (
                                             <>
                                               <Button
@@ -504,23 +503,22 @@ const LeaveRequestsPage = () => {
                                     <td className="text-center">{requestedDays || '-'}</td>
                                     <td>{getStatusBadge(request.status)}</td>
                                     <td className="text-end">
-                                      <Button
-                                        variant="outline-secondary"
-                                        size="sm"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleShowDocuments(request);
-                                        }}
-                                        title="Dökümanlar"
-                                        className="position-relative"
-                                      >
-                                        <FileText size={14} />
-                                        {request.leave_type?.is_required_document && (!request.document_count || request.document_count === 0) && (
-                                          <Badge bg="warning" className="position-absolute top-0 start-100 translate-middle rounded-circle p-1" style={{ fontSize: '0.6em' }}>
-                                            !
-                                          </Badge>
-                                        )}
-                                      </Button>
+                                      {request.leave_type?.is_required_document && (
+                                        <Button
+                                          variant="outline-secondary"
+                                          size="sm"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleShowDocuments(request);
+                                          }}
+                                          title="Dökümanlar"
+                                        >
+                                          <FileText size={16} />
+                                          {(!request.document_count || request.document_count === 0) && (
+                                            <Badge bg="warning" className="ms-1" style={{ fontSize: '0.6em' }}>!</Badge>
+                                          )}
+                                        </Button>
+                                      )}
                                     </td>
                                   </tr>
                                 );

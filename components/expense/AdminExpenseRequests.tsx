@@ -146,6 +146,7 @@ const AdminExpenseRequests: React.FC = () => {
       'APPROVED': { variant: 'success', text: 'Onaylandı' },
       'REJECTED': { variant: 'danger', text: 'Reddedildi' },
       'PAID': { variant: 'info', text: 'Ödendi' },
+      'CANCELLED': { variant: 'secondary', text: 'İptal Edildi' },
     };
     const config = statusMap[status] || { variant: 'secondary', text: status };
     return <Badge bg={config.variant}>{config.text}</Badge>;

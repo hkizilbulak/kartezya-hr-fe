@@ -6,7 +6,7 @@ import { Attachment, formatFileSize, getFileIcon } from '@/models/common/attachm
 
 interface LeaveDocumentModalProps {
   show: boolean;
-  onHide: () => void;
+  onHide: (updatedCount?: number) => void;
   leaveRequestId: number;
   leaveTypeName: string;
   canEdit: boolean; // Can upload/delete documents
@@ -238,7 +238,7 @@ const LeaveDocumentModal: React.FC<LeaveDocumentModalProps> = ({
   };
 
   return (
-    <Modal show={show} onHide={onHide} size="lg">
+    <Modal show={show} onHide={() => onHide(documents.length)} size="lg">
       <Modal.Header closeButton>
         <Modal.Title>
           <FileText size={20} className="me-2" />
@@ -401,7 +401,7 @@ const LeaveDocumentModal: React.FC<LeaveDocumentModalProps> = ({
       </Modal.Body>
 
       <Modal.Footer>
-        <Button variant="secondary" onClick={onHide}>
+        <Button variant="secondary" onClick={() => onHide(documents.length)}>
           Kapat
         </Button>
       </Modal.Footer>

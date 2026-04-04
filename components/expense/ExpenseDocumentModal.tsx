@@ -266,7 +266,7 @@ const ExpenseDocumentModal: React.FC<ExpenseDocumentModalProps> = ({
         )}
 
         {/* Upload Section */}
-        {isPending ? (
+        {true ? (
           <div className="mb-4">
             <h6 className="mb-3">
               <Upload size={18} className="me-2" />
@@ -407,7 +407,7 @@ const ExpenseDocumentModal: React.FC<ExpenseDocumentModalProps> = ({
                     >
                       <Download size={16} />
                     </Button>
-                    {isPending && (
+                    {true && (
                       <Button
                         variant="outline-danger"
                         size="sm"

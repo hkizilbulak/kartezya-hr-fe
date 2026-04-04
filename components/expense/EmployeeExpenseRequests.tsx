@@ -8,7 +8,7 @@ import ExpenseRequestModal from '@/components/modals/ExpenseRequestModal';
 import ExpenseDocumentModal from '@/components/expense/ExpenseDocumentModal';
 import DeleteModal from '@/components/DeleteModal';
 import LoadingOverlay from '@/components/LoadingOverlay';
-import { Edit, Plus, Trash2, FileText } from 'react-feather';
+import { Edit, Plus, FileText, X } from 'react-feather';
 import { toast } from 'react-toastify';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
 import '@/styles/table-list.scss';
@@ -104,12 +104,12 @@ const EmployeeExpenseRequests: React.FC<EmployeeExpenseRequestsProps> = ({
 
     try {
       await expenseService.deleteExpenseRequest(selectedRequest.id);
-      toast.success('Masraf talebi başarıyla silindi');
+      toast.success('Masraf talebi başarıyla iptal edildi');
       fetchExpenseRequests(currentPage);
       setShowDeleteConfirm(false);
       setSelectedRequest(null);
     } catch (error: any) {
-      const errorMessage = error.response?.data?.error || error.message || 'Silme işlemi sırasında hata oluştu';
+      const errorMessage = error.response?.data?.error || error.message || 'İptal işlemi sırasında hata oluştu';
       toast.error(translateErrorMessage(errorMessage));
     }
   };
@@ -130,6 +130,7 @@ const EmployeeExpenseRequests: React.FC<EmployeeExpenseRequestsProps> = ({
       'APPROVED': { variant: 'success', text: 'Onaylandı' },
       'REJECTED': { variant: 'danger', text: 'Reddedildi' },
       'PAID': { variant: 'info', text: 'Ödendi' },
+      'CANCELLED': { variant: 'secondary', text: 'İptal Edildi' },
     };
     const config = statusMap[status] || { variant: 'secondary', text: status };
     return <Badge bg={config.variant}>{config.text}</Badge>;
@@ -202,43 +203,42 @@ const EmployeeExpenseRequests: React.FC<EmployeeExpenseRequestsProps> = ({
                       <td>{getStatusBadge(request.status)}</td>
                       <td>{formatDate(request.created_at)}</td>
                       <td className="text-end">
-                        <Button
-                          variant="outline-secondary"
-                          size="sm"
-                          onClick={() => handleShowDocuments(request)}
-                          className="me-2"
-                          title="Dökümanlar"
-                        >
-                          <FileText size={16} />
-                          {request.expense_type?.requires_receipt && (!request.document_count || request.document_count === 0) && (
-                            <Badge bg="warning" className="ms-1" style={{ fontSize: '0.6em' }}>!</Badge>
+                        <div className="d-flex justify-content-end gap-2">
+                          {canEdit(request) && (
+                            <Button
+                              variant="outline-primary"
+                              size="sm"
+                              title="Düzenle"
+                              onClick={() => handleShowModal(request)}
+                            >
+                              <Edit size={14} />
+                            </Button>
                           )}
-                        </Button>
-                        {canEdit(request) && (
                           <Button
-                            variant="link"
+                            variant="outline-secondary"
                             size="sm"
-                            onClick={() => handleShowModal(request)}
-                            className="p-1 me-2"
-                            title="Düzenle"
+                            title="Dökümanlar"
+                            onClick={() => handleShowDocuments(request)}
                           >
-                            <Edit size={16} />
+                            <FileText size={16} />
+                            {request.expense_type?.requires_receipt && (!request.document_count || request.document_count === 0) && (
+                              <Badge bg="warning" className="ms-1" style={{ fontSize: '0.6em' }}>!</Badge>
+                            )}
                           </Button>
-                        )}
-                        {canDelete(request) && (
-                          <Button
-                            variant="link"
-                            size="sm"
-                            className="p-1 text-danger"
-                            title="Sil"
-                            onClick={() => {
-                              setSelectedRequest(request);
-                              setShowDeleteConfirm(true);
-                            }}
-                          >
-                            <Trash2 size={16} />
-                          </Button>
-                        )}
+                          {canDelete(request) && (
+                            <Button
+                              variant="outline-warning"
+                              size="sm"
+                              title="İptal Et"
+                              onClick={() => {
+                                setSelectedRequest(request);
+                                setShowDeleteConfirm(true);
+                              }}
+                            >
+                              <X size={14} />
+                            </Button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -304,8 +304,8 @@ const EmployeeExpenseRequests: React.FC<EmployeeExpenseRequestsProps> = ({
             setSelectedRequest(null);
           }}
           onHandleDelete={handleDeleteRequest}
-          title="Masraf Talebini Sil"
-          message="Bu masraf talebini silmek istediğinizden emin misiniz?"
+          title="Masraf Talebini İptal Et"
+          message="Bu masraf talebini iptal etmek istediğinizden emin misiniz?"
         />
       )}
     </>
