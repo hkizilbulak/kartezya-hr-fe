@@ -382,7 +382,7 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
                             <th>Bitiş Tarihi</th>
                             <th>Kullanılan Gün</th>
                             <th>Durum</th>
-                            <th>İşlemler</th>
+                            <th className="text-end">İşlemler</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -400,8 +400,8 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
                                   <td>{formatDate(endDate)}</td>
                                   <td>{requestedDays || '-'}</td>
                                   <td>{getStatusBadge(request.status)}</td>
-                                  <td>
-                                    <div className="d-flex gap-2">
+                                  <td className="text-end">
+                                    <div className="d-flex justify-content-end gap-2">
                                       {request.status === 'PENDING' && !employeeId && (
                                         <Button
                                           variant="outline-primary"
@@ -476,7 +476,7 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
                             <th>Bitiş Tarihi</th>
                             <th>Kullanılan Gün</th>
                             <th>Durum</th>
-                            <th>İşlemler</th>
+                            <th className="text-end">İşlemler</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -494,8 +494,8 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
                                   <td>{formatDate(endDate)}</td>
                                   <td>{requestedDays || '-'}</td>
                                   <td>{getStatusBadge(request.status)}</td>
-                                  <td>
-                                    <div className="d-flex gap-2">
+                                  <td className="text-end">
+                                    <div className="d-flex justify-content-end gap-2">
                                       {request.leave_type?.is_required_document && (
                                         <Button
                                           variant="outline-secondary"

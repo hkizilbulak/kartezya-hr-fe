@@ -61,7 +61,15 @@ const EmployeeExpenseRequests: React.FC<EmployeeExpenseRequestsProps> = ({
     }
   };
 
+  const lastFetchedId = React.useRef<string | null>(null);
+
   useEffect(() => {
+    const currentId = employeeId || 'me';
+    if (lastFetchedId.current === currentId) {
+      return;
+    }
+    lastFetchedId.current = currentId;
+    
     fetchExpenseRequests();
   }, [employeeId]);
 
