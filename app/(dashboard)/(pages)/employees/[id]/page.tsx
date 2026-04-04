@@ -24,6 +24,9 @@ import { UserRole } from '@/models/enums/hr.enum';
 import LoadingOverlay from '@/components/LoadingOverlay';
 import '@/styles/table-list.scss';
 import '@/styles/components/table-common.scss';
+import { documentService } from '@/services/document.service';
+import { Download } from 'react-feather';
+import axiosInstance from '@/helpers/api/axiosInstance';
 
 const EmployeeDetailPage = () => {
   const router = useRouter();
@@ -34,6 +37,7 @@ const EmployeeDetailPage = () => {
   const [workInformations, setWorkInformations] = useState<EmployeeWorkInformation[]>([]);
   const [employeeGrades, setEmployeeGrades] = useState<any[]>([]);
   const [employeeContracts, setEmployeeContracts] = useState<any[]>([]);
+  const [employeeDocuments, setEmployeeDocuments] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showWorkInfoModal, setShowWorkInfoModal] = useState(false);
   const [showGradeModal, setShowGradeModal] = useState(false);
@@ -103,6 +107,8 @@ const EmployeeDetailPage = () => {
         fetchEmployeeGrades(employee.id);
       } else if (activeTab === 'contract-info') {
         fetchEmployeeContracts(employee.id);
+      } else if (activeTab === 'document-info') {
+        fetchEmployeeDocuments(employee.id);
       }
       fetchedTabs.current.add(activeTab);
     }
@@ -236,6 +242,29 @@ const EmployeeDetailPage = () => {
       }
     } catch (error) {
       setEmployeeContracts([]);
+    }
+  };
+
+  const fetchEmployeeDocuments = async (empId: number, page = 1, limit = 10, sort = 'created_at', direction = 'DESC') => {
+    try {
+      const response = await documentService.getUserDocuments(empId, {
+        page,
+        limit,
+        sort,
+        direction,
+      });
+      if (response?.data) {
+        // Handle pagination response structure or flat array
+        if (response.data.items) {
+          setEmployeeDocuments(response.data.items);
+        } else {
+          setEmployeeDocuments(response.data);
+        }
+      } else {
+        setEmployeeDocuments([]);
+      }
+    } catch (error) {
+      setEmployeeDocuments([]);
     }
   };
 
@@ -1019,11 +1048,91 @@ const EmployeeDetailPage = () => {
                   {/* Doküman Bilgileri Tab */}
                   <Tab.Pane eventKey="document-info">
                     <div className={styles.section}>
-                      <Card className="border-0 shadow-sm">
-                        <Card.Body className="py-5 text-center">
-                          <p className="text-muted mb-0">Doküman bilgisi kaydı bulunamadı</p>
-                        </Card.Body>
-                      </Card>
+                      {employeeDocuments.length > 0 ? (
+                        <Table responsive className="table-list">
+                          <thead>
+                            <tr>
+                              <th>Dosya Adı</th>
+                              <th>Tip</th>
+                              <th>Boyut</th>
+                              <th>Yüklenme Tarihi</th>
+                              <th></th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {employeeDocuments.map((doc: any) => (
+                              <tr key={doc.id}>
+                                <td>{doc.file_name || '-'}</td>
+                                <td>
+                                  {doc.type === 1
+                                    ? 'Masraf '
+                                    : doc.type === 2
+                                    ? 'İzin '
+                                    : doc.type === 3
+                                    ? 'Kullanıcı/Profil '
+                                    : doc.type === 4
+                                    ? 'Çalışan Özlük '
+                                    : doc.type === 5
+                                    ? 'Sözleşme '
+                                    : 'Diğer'
+                                  }
+                                </td>
+                                <td>
+                                  {doc.file_size
+                                    ? doc.file_size < 1024 * 1024
+                                      ? `${(doc.file_size / 1024).toFixed(2)} KB`
+                                      : `${(doc.file_size / (1024 * 1024)).toFixed(2)} MB`
+                                    : '-'}
+                                </td>
+                                <td>{doc.created_at ? formatDate(doc.created_at) : '-'}</td>
+                                <td>
+                                  <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                                    <Button
+                                      variant="outline-primary"
+                                      size="sm"
+                                      onClick={async () => {
+                                        try {
+                                          const response = await axiosInstance.get(`/documents/${doc.id}/download`);
+                                          if (response.data.success && response.data.data?.url) {
+                                            window.open(response.data.data.url, '_blank');
+                                          }
+                                        } catch (error) {
+                                          toast.error('Dosya indirilemedi');
+                                        }
+                                      }}
+                                      title="İndir"
+                                    >
+                                      <Download size={14} />
+                                    </Button>
+                                    <Button
+                                      variant="outline-danger"
+                                      size="sm"
+                                      onClick={async () => {
+                                        try {
+                                          await documentService.delete(doc.id);
+                                          toast.success('Doküman silindi');
+                                          fetchEmployeeDocuments(employee.id);
+                                        } catch (error) {
+                                          toast.error('Silme başarısız');
+                                        }
+                                      }}
+                                      title="Sil"
+                                    >
+                                      <Trash2 size={14} />
+                                    </Button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </Table>
+                      ) : (
+                        <Card className="border-0 shadow-sm">
+                          <Card.Body className="py-5 text-center">
+                            <p className="text-muted mb-0">Doküman bilgisi kaydı bulunamadı</p>
+                          </Card.Body>
+                        </Card>
+                      )}
                     </div>
                   </Tab.Pane>
 
