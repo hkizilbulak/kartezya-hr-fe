@@ -1,14 +1,18 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { Row, Col, Card, Table, Button, Container } from 'react-bootstrap';
+import { Row, Col, Card, Table, Button, Container, Badge, Form } from 'react-bootstrap';
 import { leaveRequestService } from '@/services/leave-request.service';
 import { leaveBalanceService } from '@/services/leave-balance.service';
 import { Employee, LeaveRequest, LeaveBalance } from '@/models/hr/hr-models';
 import { PageHeading } from '@/widgets';
 import LeaveRequestModal from '@/components/modals/LeaveRequestModal';
+import LeaveDocumentModal from '@/components/leave/LeaveDocumentModal';
+import { leaveTypeService } from '@/services/leave-type.service';
+import { lookupService } from '@/services/lookup.service';
 import DeleteModal from '@/components/DeleteModal';
+import Pagination from '@/components/Pagination';
 import LoadingOverlay from '@/components/LoadingOverlay';
-import { Edit, Plus, ChevronUp, ChevronDown } from 'react-feather';
+import { Edit, Plus, ChevronUp, ChevronDown, FileText, X } from 'react-feather';
 import { toast } from 'react-toastify';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
 import '@/styles/table-list.scss';
@@ -23,6 +27,7 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [showDocumentModal, setShowDocumentModal] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<LeaveRequest | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
@@ -34,6 +39,12 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
+
+  const [filterStatus, setFilterStatus] = useState<string>('');
+  const [filterLeaveTypeId, setFilterLeaveTypeId] = useState<string>('');
+  const [filterStartDate, setFilterStartDate] = useState<string>('');
+  const [filterEndDate, setFilterEndDate] = useState<string>('');
+  const [leaveTypes, setLeaveTypes] = useState<any[]>([]);
 
   // Default sort: created_at DESC (en yeni talepleri göster)
   const [sortConfig, setSortConfig] = useState<{
@@ -48,12 +59,17 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
     try {
       setIsLoading(true);
 
-      const params = { 
+      const params: any = { 
         page, 
         limit: itemsPerPage,
         sort: sortKey,
         direction: sortDir
       };
+
+      if (filterStatus) params.status = filterStatus;
+      if (filterLeaveTypeId) params.leave_type_id = filterLeaveTypeId;
+      if (filterStartDate) params.start_date = filterStartDate;
+      if (filterEndDate) params.end_date = filterEndDate;
 
       let response;
       if (employeeId) {
@@ -66,6 +82,11 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
         setLeaveRequests(response.data);
         setTotalPages(response.page?.total_pages || 1);
         setTotalItems(response.page?.total || 0);
+        setCurrentPage(page);
+      } else {
+        setLeaveRequests([]);
+        setTotalPages(1);
+        setTotalItems(0);
         setCurrentPage(page);
       }
     } catch (error: any) {
@@ -94,18 +115,26 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
     }
   };
 
-  const lastFetchedId = React.useRef<string | null>(null);
+  const fetchLeaveTypes = async () => {
+    try {
+      const res = await lookupService.getLeaveTypesLookup();
+      if (res?.data) {
+        setLeaveTypes(res.data);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   useEffect(() => {
-    const currentId = employeeId || 'me';
-    if (lastFetchedId.current === currentId) {
-      return;
-    }
-    lastFetchedId.current = currentId;
-    
     fetchLeaveRequests(1, sortConfig.key, sortConfig.direction);
     fetchLeaveBalance();
+    fetchLeaveTypes();
   }, [employeeId]);
+
+  useEffect(() => {
+    fetchLeaveRequests(1, sortConfig.key, sortConfig.direction);
+  }, [filterStatus, filterLeaveTypeId, filterStartDate, filterEndDate]);
 
   const handleSort = (key: 'name') => {
     let direction: 'ASC' | 'DESC' = 'ASC';
@@ -216,6 +245,23 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
     setShowModal(false);
     setSelectedRequest(null);
     setIsEdit(false);
+  };
+
+  const handleShowDocuments = (request: LeaveRequest) => {
+    setSelectedRequest(request);
+    setShowDocumentModal(true);
+  };
+
+  const handleDocumentModalClose = (updatedCount?: any) => {
+    setShowDocumentModal(false);
+    if (typeof updatedCount === 'number' && selectedRequest) {
+      setLeaveRequests(prev => 
+        prev.map(req => req.id === selectedRequest.id 
+          ? { ...req, document_count: updatedCount } 
+          : req
+        )
+      );
+    }
   };
 
   const handleModalSave = () => {
@@ -363,7 +409,7 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
                             <th>Bitiş Tarihi</th>
                             <th>Kullanılan Gün</th>
                             <th>Durum</th>
-                            <th></th>
+                            <th className="text-end">İşlemler</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -381,8 +427,8 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
                                   <td>{formatDate(endDate)}</td>
                                   <td>{requestedDays || '-'}</td>
                                   <td>{getStatusBadge(request.status)}</td>
-                                  <td>
-                                    <div className="d-flex gap-2">
+                                  <td className="text-end">
+                                    <div className="d-flex justify-content-end gap-2">
                                       {request.status === 'PENDING' && !employeeId && (
                                         <Button
                                           variant="outline-primary"
@@ -394,9 +440,22 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
                                           <Edit size={14} />
                                         </Button>
                                       )}
+                                      {request.leave_type?.is_required_document && (
+                                        <Button
+                                          variant="outline-secondary"
+                                          size="sm"
+                                          title="Dökümanlar"
+                                          onClick={() => handleShowDocuments(request)}
+                                        >
+                                          <FileText size={16} />
+                                          {(!request.document_count || request.document_count === 0) && (
+                                            <Badge bg="warning" className="ms-1" style={{ fontSize: '0.6em' }}>!</Badge>
+                                          )}
+                                        </Button>
+                                      )}
                                       {!employeeId && (
                                         <Button
-                                          variant="outline-danger"
+                                          variant="outline-warning"
                                           size="sm"
                                           title="İptal Et"
                                           onClick={() => {
@@ -405,7 +464,7 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
                                           }}
                                           disabled={isLoading || actionLoading}
                                         >
-                                          İptal Et
+                                          <X size={14} />
                                         </Button>
                                       )}
                                     </div>
@@ -430,9 +489,70 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
 
             {/* Tamamlanmış Talepler */}
             <div>
-              <h6 className="mb-3" style={{ fontWeight: 700, fontSize: '16px' }}>{employeeId ? 'Tamamlanmış Talepler' : 'Tamamlanmış Taleplerim'}</h6>
-              <Card className="border-0 shadow-sm position-relative">
+              <div className="d-flex justify-content-between align-items-center mb-3">
+                <h6 className="mb-0" style={{ fontWeight: 700, fontSize: '16px' }}>{employeeId ? 'Tamamlanmış Talepler' : 'Tamamlanmış Taleplerim'}</h6>
+              </div>
+              
+              <Card className="border-0 shadow-sm mb-3">
+                <Card.Body className="py-2 px-3">
+                  <Row className="g-2 align-items-end">
+                    <Col md={3}>
+                      <Form.Group>
+                        <Form.Label className="mb-1" style={{ fontSize: '13px' }}>Durum</Form.Label>
+                        <Form.Select 
+                          size="sm" 
+                          value={filterStatus}
+                          onChange={(e) => setFilterStatus(e.target.value)}
+                        >
+                          <option value="">Tümü</option>
+                          <option value="APPROVED">Onaylandı</option>
+                          <option value="REJECTED">Reddedildi</option>
+                          <option value="CANCELLED">İptal Edildi</option>
+                        </Form.Select>
+                      </Form.Group>
+                    </Col>
+                    <Col md={3}>
+                      <Form.Group>
+                        <Form.Label className="mb-1" style={{ fontSize: '13px' }}>İzin Türü</Form.Label>
+                        <Form.Select 
+                          size="sm"
+                          value={filterLeaveTypeId}
+                          onChange={(e) => setFilterLeaveTypeId(e.target.value)}
+                        >
+                          <option value="">Tümü</option>
+                          {leaveTypes.map(lt => (
+                            <option key={lt.id} value={lt.id}>{lt.name}</option>
+                          ))}
+                        </Form.Select>
+                      </Form.Group>
+                    </Col>
+                    <Col md={3}>
+                      <Form.Group>
+                        <Form.Label className="mb-1" style={{ fontSize: '13px' }}>Başlangıç Tarihi</Form.Label>
+                        <Form.Control 
+                          type="date" 
+                          size="sm"
+                          value={filterStartDate}
+                          onChange={(e) => setFilterStartDate(e.target.value)}
+                        />
+                      </Form.Group>
+                    </Col>
+                    <Col md={3}>
+                      <Form.Group>
+                        <Form.Label className="mb-1" style={{ fontSize: '13px' }}>Bitiş Tarihi</Form.Label>
+                        <Form.Control 
+                          type="date" 
+                          size="sm"
+                          value={filterEndDate}
+                          onChange={(e) => setFilterEndDate(e.target.value)}
+                        />
+                      </Form.Group>
+                    </Col>
+                  </Row>
+                </Card.Body>
+              </Card>
 
+              <Card className="border-0 shadow-sm position-relative">
                 <Card.Body className="p-0">
                   <div className="table-box">
                     <div className="table-responsive">
@@ -444,6 +564,7 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
                             <th>Bitiş Tarihi</th>
                             <th>Kullanılan Gün</th>
                             <th>Durum</th>
+                            <th className="text-end">İşlemler</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -461,13 +582,30 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
                                   <td>{formatDate(endDate)}</td>
                                   <td>{requestedDays || '-'}</td>
                                   <td>{getStatusBadge(request.status)}</td>
+                                  <td className="text-end">
+                                    <div className="d-flex justify-content-end gap-2">
+                                      {request.leave_type?.is_required_document && (
+                                        <Button
+                                          variant="outline-secondary"
+                                          size="sm"
+                                          title="Dökümanlar"
+                                          onClick={() => handleShowDocuments(request)}
+                                        >
+                                          <FileText size={16} />
+                                          {(!request.document_count || request.document_count === 0) && (
+                                            <Badge bg="warning" className="ms-1" style={{ fontSize: '0.6em' }}>!</Badge>
+                                          )}
+                                        </Button>
+                                      )}
+                                    </div>
+                                  </td>
                                 </tr>
                               );
                             })
                           ) : (
                             !isLoading && (
                               <tr>
-                                <td colSpan={5} className="text-center py-4">
+                                <td colSpan={6} className="text-center py-4">
                                   Tamamlanmış talep bulunamadı
                                 </td>
                               </tr>
@@ -503,6 +641,16 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
           confirmLabel="İptal Et"
           loadingLabel="İptal Ediliyor"
           variant="danger"
+        />
+      )}
+
+      {selectedRequest && showDocumentModal && (
+        <LeaveDocumentModal
+          show={showDocumentModal}
+          onHide={handleDocumentModalClose}
+          leaveRequestId={selectedRequest.id}
+          leaveTypeName={selectedRequest.leave_type?.name || 'İzin'}
+          canEdit={true}
         />
       )}
     </>

@@ -12,6 +12,7 @@ import WorkInformationModal from '@/components/modals/WorkInformationModal';
 import EmployeeGradeModal from '@/components/modals/EmployeeGradeModal';
 import EmployeeContractModal from '@/components/modals/EmployeeContractModal';
 import EmployeeLeaveRequests from '@/components/leave/EmployeeLeaveRequests';
+import EmployeeExpenseRequests from '@/components/expense/EmployeeExpenseRequests';
 import DeleteModal from '@/components/DeleteModal';
 import styles from './page.module.scss';
 import { genderOptions, maritalStatusOptions, emergencyContactRelationOptions, statusOptions } from '@/contants/options';
@@ -596,6 +597,13 @@ const EmployeeDetailPage = () => {
                       eventKey="leave-info"
                     >
                       İzin Bilgileri
+                    </Nav.Link>
+                  </Nav.Item>
+                  <Nav.Item style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>
+                    <Nav.Link
+                      eventKey="expense-info"
+                    >
+                      Masraf Bilgileri
                     </Nav.Link>
                   </Nav.Item>
                 </Nav>
@@ -1184,6 +1192,15 @@ const EmployeeDetailPage = () => {
                     <div className={styles.section}>
                       {activeTab === 'leave-info' && (
                         <EmployeeLeaveRequests employeeId={employeeId} hideCreateButton={true} />
+                      )}
+                    </div>
+                  </Tab.Pane>
+
+                  {/* Masraf Bilgileri Tab */}
+                  <Tab.Pane eventKey="expense-info">
+                    <div className={styles.section}>
+                      {activeTab === 'expense-info' && (
+                        <EmployeeExpenseRequests employeeId={employeeId} hideCreateButton={true} />
                       )}
                     </div>
                   </Tab.Pane>

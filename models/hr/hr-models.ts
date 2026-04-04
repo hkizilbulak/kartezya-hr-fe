@@ -164,6 +164,7 @@ export interface LeaveRequest {
   updated_at: string;
   employee: Employee;
   leave_type?: LeaveType;
+  document_count?: number; // Number of attached documents
   deleted: boolean;
   createdAt: string;
   updatedAt: string;

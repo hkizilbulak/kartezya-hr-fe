@@ -77,12 +77,16 @@ const EmployeesPage = () => {
   const isQuickSearchInitialized = useRef(false);
   const skipNextAutoFilter = useRef(false);
   const isInitialLoad = useRef(true);
+  const isLookupsFetched = useRef(false);
 
   const router = useRouter();
   const searchParams = useSearchParams();
 
   // Fetch lookups on mount
   useEffect(() => {
+    if (isLookupsFetched.current) return;
+    isLookupsFetched.current = true;
+
     const fetchLookups = async () => {
       try {
         setCompaniesLoading(true);
@@ -350,11 +354,6 @@ const EmployeesPage = () => {
   };
 
   useEffect(() => {
-    if (!isQuickSearchInitialized.current) {
-      isQuickSearchInitialized.current = true;
-      return;
-    }
-
     if (skipNextAutoFilter.current) {
       skipNextAutoFilter.current = false;
       return;

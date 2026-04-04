@@ -97,6 +97,74 @@ class LeaveRequestService extends BaseService<LeaveRequest> {
       throw error;
     }
   }
+
+  // ==================== Document Methods ====================
+
+  /**
+   * Upload document for leave request
+   */
+  async uploadLeaveDocument(
+    leaveRequestId: number,
+    file: File
+  ): Promise<APIResponse<any>> {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await axiosInstance.post(
+        `${this.baseUrl}/${leaveRequestId}/documents`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Get documents for leave request
+   */
+  async getLeaveDocuments(leaveRequestId: number): Promise<APIResponse<any[]>> {
+    try {
+      const response = await axiosInstance.get(
+        `${this.baseUrl}/${leaveRequestId}/documents`
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Delete leave document
+   */
+  async deleteLeaveDocument(documentId: string): Promise<APIResponse<void>> {
+    try {
+      const response = await axiosInstance.delete(`${HR_ENDPOINTS.LEAVE.BASE}/documents/${documentId}`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Get download URL for leave document
+   */
+  async downloadLeaveDocument(documentId: string): Promise<APIResponse<{ url: string }>> {
+    try {
+      const response = await axiosInstance.get(
+        `${HR_ENDPOINTS.LEAVE.BASE}/documents/${documentId}/download`
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  }
 }
 
 export const leaveRequestService = new LeaveRequestService();

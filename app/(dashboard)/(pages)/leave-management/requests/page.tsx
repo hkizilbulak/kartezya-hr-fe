@@ -1,17 +1,19 @@
 "use client";
 import { useState, useEffect } from 'react';
-import { Row, Col, Card, Table, Button, Modal, Form, Container } from 'react-bootstrap';
+import { Row, Col, Card, Table, Button, Modal, Form, Container, Badge } from 'react-bootstrap';
 import { leaveRequestService } from '@/services/leave-request.service';
 import { Employee, LeaveRequest } from '@/models/hr/hr-models';
 import { PageHeading } from '@/widgets';
 import LeaveRequestModal from '@/components/modals/LeaveRequestModal';
+import LeaveDocumentModal from '@/components/leave/LeaveDocumentModal';
 import Pagination from '@/components/Pagination';
 import LoadingOverlay from '@/components/LoadingOverlay';
-import { Check, X, Edit, ChevronUp, ChevronDown } from 'react-feather';
+import { Check, X, Edit, ChevronUp, ChevronDown, FileText } from 'react-feather';
 import { toast } from 'react-toastify';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
 import '@/styles/table-list.scss';
 import '@/styles/components/table-common.scss';
+import { leaveTypeService } from '@/services/leave-type.service';
 
 const LeaveRequestsPage = () => {
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
@@ -26,6 +28,8 @@ const LeaveRequestsPage = () => {
   const [cancelRequest, setCancelRequest] = useState<LeaveRequest | null>(null);
   const [showApproveWarningModal, setShowApproveWarningModal] = useState(false);
   const [approveWarningRequest, setApproveWarningRequest] = useState<LeaveRequest | null>(null);
+  const [showDocumentModal, setShowDocumentModal] = useState(false);
+  const [selectedDocumentRequest, setSelectedDocumentRequest] = useState<LeaveRequest | null>(null);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -33,6 +37,12 @@ const LeaveRequestsPage = () => {
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [pendingPage, setPendingPage] = useState(1);
   const [completedPage, setCompletedPage] = useState(1);
+
+  const [filterStatus, setFilterStatus] = useState<string>('');
+  const [filterLeaveTypeId, setFilterLeaveTypeId] = useState<string>('');
+  const [filterStartDate, setFilterStartDate] = useState<string>('');
+  const [filterEndDate, setFilterEndDate] = useState<string>('');
+  const [leaveTypes, setLeaveTypes] = useState<any[]>([]);
 
   const [sortConfig, setSortConfig] = useState<{
     key: string;
@@ -46,17 +56,29 @@ const LeaveRequestsPage = () => {
     try {
       setIsLoading(true);
 
-      const response = await leaveRequestService.getAll({ 
+      const params: any = { 
         page, 
         limit: 100, // Tüm verileri çek (frontend'de pagination yapacağız)
         sort: sortKey,
         direction: sortDir
-      });
+      };
+
+      if (filterStatus) params.status = filterStatus;
+      if (filterLeaveTypeId) params.leave_type_id = filterLeaveTypeId;
+      if (filterStartDate) params.start_date = filterStartDate;
+      if (filterEndDate) params.end_date = filterEndDate;
+
+      const response = await leaveRequestService.getAll(params);
       
       if (response.data) {
         setLeaveRequests(response.data);
         setTotalPages(response.page?.total_pages || 1);
         setTotalItems(response.page?.total || 0);
+        setCurrentPage(page);
+      } else {
+        setLeaveRequests([]);
+        setTotalPages(1);
+        setTotalItems(0);
         setCurrentPage(page);
       }
     } catch (error: any) {
@@ -67,9 +89,21 @@ const LeaveRequestsPage = () => {
     }
   };
 
+  const fetchLeaveTypes = async () => {
+    try {
+      const response = await leaveTypeService.getAll();
+      if (response.data) {
+        setLeaveTypes(response.data);
+      }
+    } catch (error) {
+      console.error('İzin tipleri yüklenirken hata:', error);
+    }
+  };
+
   useEffect(() => {
     fetchLeaveRequests(1, sortConfig.key, sortConfig.direction);
-  }, []);
+    fetchLeaveTypes();
+  }, [filterStatus, filterLeaveTypeId, filterStartDate, filterEndDate]);
 
   // İptal butonunun gösterilip gösterilmeyeceğini kontrol et
   const canCancelRequest = (request: LeaveRequest): boolean => {
@@ -128,6 +162,18 @@ const LeaveRequestsPage = () => {
     return sortConfig.direction === 'ASC' ?
       <ChevronUp size={16} className="ms-1" style={{ display: 'inline' }} /> :
       <ChevronDown size={16} className="ms-1" style={{ display: 'inline' }} />;
+  };
+
+  const handleShowDocuments = (request: LeaveRequest) => {
+    setSelectedDocumentRequest(request);
+    setShowDocumentModal(true);
+  };
+
+  const handleCloseDocumentModal = () => {
+    setShowDocumentModal(false);
+    setSelectedDocumentRequest(null);
+    // Refresh data to update document count
+    fetchLeaveRequests(currentPage, sortConfig.key, sortConfig.direction);
   };
 
   const handleApprove = async (request: LeaveRequest) => {
@@ -364,39 +410,54 @@ const LeaveRequestsPage = () => {
                                     <td className="text-center">{requestedDays || '-'}</td>
                                     <td>{getStatusBadge(request.status)}</td>
                                     <td>
-                                      <div className="d-flex gap-2">
-                                        {request.status === 'PENDING' ? (
-                                          <>
+                                      <div className="d-flex justify-content-end w-100">
+                                        <div className="d-flex gap-2">
+                                          {request.leave_type?.is_required_document && (
                                             <Button
-                                              variant="outline-success"
+                                              variant="outline-secondary"
                                               size="sm"
-                                              title="Onayla"
-                                              onClick={() => handleApprove(request)}
-                                              disabled={isLoading || actionLoading}
+                                              onClick={() => handleShowDocuments(request)}
+                                              title="Dökümanlar"
                                             >
-                                              <Check size={14} />
+                                              <FileText size={16} />
+                                              {(!request.document_count || request.document_count === 0) && (
+                                                <Badge bg="warning" className="ms-1" style={{ fontSize: '0.6em' }}>!</Badge>
+                                              )}
                                             </Button>
+                                          )}
+                                          {request.status === 'PENDING' ? (
+                                            <>
+                                              <Button
+                                                variant="outline-success"
+                                                size="sm"
+                                                title="Onayla"
+                                                onClick={() => handleApprove(request)}
+                                                disabled={isLoading || actionLoading}
+                                              >
+                                                <Check size={14} />
+                                              </Button>
+                                              <Button
+                                                variant="outline-danger"
+                                                size="sm"
+                                                title="Reddet"
+                                                onClick={() => handleRejectClick(request)}
+                                                disabled={isLoading || actionLoading}
+                                              >
+                                                <X size={14} />
+                                              </Button>
+                                            </>
+                                          ) : canCancelRequest(request) ? (
                                             <Button
-                                              variant="outline-danger"
+                                              variant="outline-warning"
                                               size="sm"
-                                              title="Reddet"
-                                              onClick={() => handleRejectClick(request)}
+                                              title="İptal Et"
+                                              onClick={() => handleCancelClick(request)}
                                               disabled={isLoading || actionLoading}
                                             >
                                               <X size={14} />
                                             </Button>
-                                          </>
-                                        ) : canCancelRequest(request) ? (
-                                          <Button
-                                            variant="outline-warning"
-                                            size="sm"
-                                            title="İptal Et"
-                                            onClick={() => handleCancelClick(request)}
-                                            disabled={isLoading || actionLoading}
-                                          >
-                                            <X size={14} />
-                                          </Button>
-                                        ) : null}
+                                          ) : null}
+                                        </div>
                                       </div>
                                     </td>
                                   </tr>
@@ -434,7 +495,69 @@ const LeaveRequestsPage = () => {
 
             {/* Tamamlanmış Talepler */}
             <div className="mb-4">
-              <h6 className="mb-3" style={{ fontWeight: 700, fontSize: '16px' }}>Tamamlanmış Talepler</h6>
+              <div className="d-flex justify-content-between align-items-center mb-3">
+                <h6 className="mb-0" style={{ fontWeight: 700, fontSize: '16px' }}>Tamamlanmış Talepler</h6>
+              </div>
+              
+              <Card className="border-0 shadow-sm mb-3">
+                <Card.Body className="py-2 px-3">
+                  <Row className="g-2 align-items-end">
+                    <Col md={3}>
+                      <Form.Group>
+                        <Form.Label className="mb-1" style={{ fontSize: '13px' }}>Durum</Form.Label>
+                        <Form.Select 
+                          size="sm"
+                          value={filterStatus}
+                          onChange={(e) => setFilterStatus(e.target.value)}
+                        >
+                          <option value="">Tümü (Tamamlananlar)</option>
+                          <option value="APPROVED">Onaylandı</option>
+                          <option value="REJECTED">Reddedildi</option>
+                          <option value="CANCELLED">İptal Edildi</option>
+                        </Form.Select>
+                      </Form.Group>
+                    </Col>
+                    <Col md={3}>
+                      <Form.Group>
+                        <Form.Label className="mb-1" style={{ fontSize: '13px' }}>İzin Türü</Form.Label>
+                        <Form.Select 
+                          size="sm"
+                          value={filterLeaveTypeId}
+                          onChange={(e) => setFilterLeaveTypeId(e.target.value)}
+                        >
+                          <option value="">Tümü</option>
+                          {leaveTypes.map(type => (
+                            <option key={type.id} value={type.id.toString()}>{type.name}</option>
+                          ))}
+                        </Form.Select>
+                      </Form.Group>
+                    </Col>
+                    <Col md={3}>
+                      <Form.Group>
+                        <Form.Label className="mb-1" style={{ fontSize: '13px' }}>Başlangıç Tarihi</Form.Label>
+                        <Form.Control
+                          type="date"
+                          size="sm"
+                          value={filterStartDate}
+                          onChange={(e) => setFilterStartDate(e.target.value)}
+                        />
+                      </Form.Group>
+                    </Col>
+                    <Col md={3}>
+                      <Form.Group>
+                        <Form.Label className="mb-1" style={{ fontSize: '13px' }}>Bitiş Tarihi</Form.Label>
+                        <Form.Control
+                          type="date"
+                          size="sm"
+                          value={filterEndDate}
+                          onChange={(e) => setFilterEndDate(e.target.value)}
+                        />
+                      </Form.Group>
+                    </Col>
+                  </Row>
+                </Card.Body>
+              </Card>
+
               <div className="table-wrapper">
                 <Card className="border-0 shadow-sm position-relative">
                   <Card.Body className="p-0">
@@ -450,6 +573,7 @@ const LeaveRequestsPage = () => {
                               <th>Bitiş Tarihi</th>
                               <th className="text-center">Kullanılan Gün</th>
                               <th>Durum</th>
+                              <th>İşlemler</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -471,12 +595,30 @@ const LeaveRequestsPage = () => {
                                     <td>{formatDate(endDate)}</td>
                                     <td className="text-center">{requestedDays || '-'}</td>
                                     <td>{getStatusBadge(request.status)}</td>
+                                    <td className="text-end">
+                                      {request.leave_type?.is_required_document && (
+                                        <Button
+                                          variant="outline-secondary"
+                                          size="sm"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleShowDocuments(request);
+                                          }}
+                                          title="Dökümanlar"
+                                        >
+                                          <FileText size={16} />
+                                          {(!request.document_count || request.document_count === 0) && (
+                                            <Badge bg="warning" className="ms-1" style={{ fontSize: '0.6em' }}>!</Badge>
+                                          )}
+                                        </Button>
+                                      )}
+                                    </td>
                                   </tr>
                                 );
                               })
                             ) : (
                               <tr>
-                                <td colSpan={7} className="text-center py-4">
+                                <td colSpan={8} className="text-center py-4">
                                   Tamamlanmış talep bulunamadı
                                 </td>
                               </tr>
@@ -605,6 +747,14 @@ const LeaveRequestsPage = () => {
           onSave={handleModalSave}
           leaveRequest={selectedRequest}
           isEdit={isEdit}
+        />
+
+        <LeaveDocumentModal
+          show={showDocumentModal}
+          onHide={handleCloseDocumentModal}
+          leaveRequestId={selectedDocumentRequest?.id || 0}
+          leaveTypeName={selectedDocumentRequest?.leave_type?.name || ''}
+          canEdit={true} // Admin can always upload/delete documents
         />
     </>
   );
