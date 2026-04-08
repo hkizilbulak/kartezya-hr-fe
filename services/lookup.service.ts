@@ -30,6 +30,11 @@ export interface GradeLookup {
   name: string;
 }
 
+export interface RoleLookup {
+  id: number;
+  name: string;
+}
+
 export const lookupService = {
   // Get companies lookup (public - no auth required)
   getCompaniesLookup: async (): Promise<APIResponse<CompanyLookup[]>> => {
@@ -87,6 +92,16 @@ export const lookupService = {
   getGradesLookup: async (): Promise<APIResponse<GradeLookup[]>> => {
     try {
       const response = await axiosInstance.get('/lookup/grades');
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Get roles lookup (admin - auth required)
+  getRolesLookup: async (): Promise<APIResponse<RoleLookup[]>> => {
+    try {
+      const response = await axiosInstance.get('/lookup/roles');
       return response.data;
     } catch (error) {
       throw error;

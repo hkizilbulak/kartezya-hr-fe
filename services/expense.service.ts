@@ -200,6 +200,7 @@ class ExpenseService extends BaseService<ExpenseRequest> {
     requires_receipt: boolean;
     max_amount?: number;
     active: boolean;
+    role_id?: number | null;
   }): Promise<APIResponse<ExpenseType>> {
     try {
       const response = await axiosInstance.post(`/expense/types`, data);
@@ -220,6 +221,7 @@ class ExpenseService extends BaseService<ExpenseRequest> {
       requires_receipt?: boolean;
       max_amount?: number;
       active?: boolean;
+      role_id?: number | null;
     }
   ): Promise<APIResponse<ExpenseType>> {
     try {

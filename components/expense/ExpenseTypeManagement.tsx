@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Table, Button, Badge, Modal, Form, Row, Col } from 'react-bootstrap';
 import expenseService from '@/services/expense.service';
+import { lookupService, RoleLookup } from '@/services/lookup.service';
 import { ExpenseType } from '@/models/hr/expense-models';
 import { PageHeading } from '@/widgets';
 import LoadingOverlay from '@/components/LoadingOverlay';
@@ -12,6 +13,7 @@ import { translateErrorMessage } from '@/helpers/ErrorUtils';
 
 const ExpenseTypeManagement: React.FC = () => {
   const [expenseTypes, setExpenseTypes] = useState<ExpenseType[]>([]);
+  const [roles, setRoles] = useState<RoleLookup[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -23,13 +25,15 @@ const ExpenseTypeManagement: React.FC = () => {
     description: '',
     requires_receipt: false,
     max_amount: '',
-    active: true
+    active: true,
+    role_id: '' as string | number
   });
 
   const [fieldErrors, setFieldErrors] = useState<{[key: string]: string}>({});
 
   useEffect(() => {
     fetchExpenseTypes();
+    fetchRoles();
   }, []);
 
   const fetchExpenseTypes = async () => {
@@ -47,6 +51,17 @@ const ExpenseTypeManagement: React.FC = () => {
     }
   };
 
+  const fetchRoles = async () => {
+    try {
+      const response = await lookupService.getRolesLookup();
+      if (response.data) {
+        setRoles(response.data);
+      }
+    } catch (error: any) {
+      // Roles lookup failure is non-critical, ignore silently
+    }
+  };
+
   const handleShowModal = (type?: ExpenseType) => {
     if (type) {
       setSelectedType(type);
@@ -55,7 +70,8 @@ const ExpenseTypeManagement: React.FC = () => {
         description: type.description,
         requires_receipt: type.requires_receipt,
         max_amount: type.max_amount?.toString() || '',
-        active: type.active
+        active: type.active,
+        role_id: type.role_id ?? ''
       });
       setIsEdit(true);
     } else {
@@ -65,7 +81,8 @@ const ExpenseTypeManagement: React.FC = () => {
         description: '',
         requires_receipt: false,
         max_amount: '',
-        active: true
+        active: true,
+        role_id: ''
       });
       setIsEdit(false);
     }
@@ -90,7 +107,7 @@ const ExpenseTypeManagement: React.FC = () => {
       errors.description = 'Açıklama giriniz';
     }
 
-    if (formData.max_amount && parseFloat(formData.max_amount) <= 0) {
+    if (formData.max_amount && parseFloat(formData.max_amount as string) <= 0) {
       errors.max_amount = 'Geçerli bir tutar giriniz';
     }
 
@@ -110,8 +127,9 @@ const ExpenseTypeManagement: React.FC = () => {
         name: formData.name,
         description: formData.description,
         requires_receipt: formData.requires_receipt,
-        max_amount: formData.max_amount ? parseFloat(formData.max_amount) : undefined,
-        active: formData.active
+        max_amount: formData.max_amount ? parseFloat(formData.max_amount as string) : undefined,
+        active: formData.active,
+        role_id: formData.role_id !== '' ? Number(formData.role_id) : null
       };
 
       if (isEdit && selectedType) {
@@ -150,6 +168,15 @@ const ExpenseTypeManagement: React.FC = () => {
     return `${amount.toFixed(2)} ₺`;
   };
 
+  const getRoleName = (type: ExpenseType): string => {
+    if (type.role) return type.role.name;
+    if (type.role_id) {
+      const found = roles.find(r => r.id === type.role_id);
+      return found ? found.name : `#${type.role_id}`;
+    }
+    return '-';
+  };
+
   return (
     <>
       <LoadingOverlay show={isLoading} />
@@ -172,6 +199,7 @@ const ExpenseTypeManagement: React.FC = () => {
                   <th>Açıklama</th>
                   <th>Maksimum Tutar</th>
                   <th>Makbuz Gerekli</th>
+                  <th>Rol</th>
                   <th>Durum</th>
                   <th className="text-end">İşlemler</th>
                 </tr>
@@ -179,7 +207,7 @@ const ExpenseTypeManagement: React.FC = () => {
               <tbody>
                 {expenseTypes.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="text-center py-4">
+                    <td colSpan={7} className="text-center py-4">
                       Masraf türü bulunamadı
                     </td>
                   </tr>
@@ -193,6 +221,13 @@ const ExpenseTypeManagement: React.FC = () => {
                         <Badge bg={type.requires_receipt ? 'success' : 'secondary'}>
                           {type.requires_receipt ? 'Evet' : 'Hayır'}
                         </Badge>
+                      </td>
+                      <td>
+                        {type.role_id ? (
+                          <Badge bg="info">{getRoleName(type)}</Badge>
+                        ) : (
+                          <span className="text-muted small">Tümü</span>
+                        )}
                       </td>
                       <td>
                         <Badge bg={type.active ? 'success' : 'danger'}>
@@ -274,22 +309,45 @@ const ExpenseTypeManagement: React.FC = () => {
               )}
             </Form.Group>
 
-            <Form.Group className="mb-3">
-              <Form.Label>Maksimum Tutar (TRY)</Form.Label>
-              <Form.Control
-                type="number"
-                step="0.01"
-                value={formData.max_amount}
-                onChange={(e) => setFormData({...formData, max_amount: e.target.value})}
-                isInvalid={!!fieldErrors.max_amount}
-                placeholder="Boş bırakılırsa limit yok"
-              />
-              {fieldErrors.max_amount && (
-                <Form.Control.Feedback type="invalid">
-                  {fieldErrors.max_amount}
-                </Form.Control.Feedback>
-              )}
-            </Form.Group>
+            <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Maksimum Tutar (TRY)</Form.Label>
+                  <Form.Control
+                    type="number"
+                    step="0.01"
+                    value={formData.max_amount}
+                    onChange={(e) => setFormData({...formData, max_amount: e.target.value})}
+                    isInvalid={!!fieldErrors.max_amount}
+                    placeholder="Boş bırakılırsa limit yok"
+                  />
+                  {fieldErrors.max_amount && (
+                    <Form.Control.Feedback type="invalid">
+                      {fieldErrors.max_amount}
+                    </Form.Control.Feedback>
+                  )}
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Rol Kısıtlaması</Form.Label>
+                  <Form.Select
+                    value={formData.role_id}
+                    onChange={(e) => setFormData({...formData, role_id: e.target.value})}
+                  >
+                    <option value="">Tüm roller görebilir</option>
+                    {roles.map((role) => (
+                      <option key={role.id} value={role.id}>
+                        {role.name}
+                      </option>
+                    ))}
+                  </Form.Select>
+                  <Form.Text className="text-muted">
+                    Seçilirse yalnızca bu role sahip kullanıcılar görebilir.
+                  </Form.Text>
+                </Form.Group>
+              </Col>
+            </Row>
 
             <Form.Group className="mb-3">
               <Form.Check

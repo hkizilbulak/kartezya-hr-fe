@@ -37,6 +37,11 @@ export interface ExpenseType {
   requires_receipt: boolean;
   max_amount?: number;
   active: boolean;
+  role_id?: number;
+  role?: {
+    id: number;
+    name: string;
+  };
   created_at: string;
   updated_at: string;
   deleted: boolean;
