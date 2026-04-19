@@ -6,6 +6,9 @@ import { ExpenseRequest } from '@/models/hr/expense-models';
 import { PageHeading } from '@/widgets';
 import ExpenseDocumentModal from '@/components/expense/ExpenseDocumentModal';
 import LoadingOverlay from '@/components/LoadingOverlay';
+import FormSelectField from '@/components/FormSelectField';
+import FormDateField from '@/components/FormDateField';
+import Pagination from '@/components/Pagination';
 import { Check, X, DollarSign, FileText } from 'react-feather';
 import { toast } from 'react-toastify';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
@@ -208,183 +211,180 @@ const AdminExpenseRequests: React.FC = () => {
         showFilterButton={false}
       />
 
-      <Row className="mb-3">
-        <Col md={3}>
-          <Form.Group>
-            <Form.Label>Durum Filtrele</Form.Label>
-            <Form.Select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-            >
-              <option value="">Tümü</option>
-              <option value="PENDING">Beklemede</option>
-              <option value="APPROVED">Onaylandı</option>
-              <option value="REJECTED">Reddedildi</option>
-              <option value="PAID">Ödendi</option>
-            </Form.Select>
-          </Form.Group>
-        </Col>
-        <Col md={3}>
-          <Form.Group>
-            <Form.Label>Masraf Türü</Form.Label>
-            <Form.Select 
-              value={filterExpenseTypeId}
-              onChange={(e) => setFilterExpenseTypeId(e.target.value)}
-            >
-              <option value="">Tümü</option>
-              {expenseTypes.map(type => (
-                <option key={type.id} value={type.id.toString()}>{type.name}</option>
-              ))}
-            </Form.Select>
-          </Form.Group>
-        </Col>
-        <Col md={3}>
-          <Form.Group>
-            <Form.Label>Masraf Başlangıç Tarihi</Form.Label>
-            <Form.Control
-              type="date"
-              value={filterStartDate}
-              onChange={(e) => setFilterStartDate(e.target.value)}
-            />
-          </Form.Group>
-        </Col>
-        <Col md={3}>
-          <Form.Group>
-            <Form.Label>Masraf Bitiş Tarihi</Form.Label>
-            <Form.Control
-              type="date"
-              value={filterEndDate}
-              onChange={(e) => setFilterEndDate(e.target.value)}
-            />
-          </Form.Group>
-        </Col>
-      </Row>
+      <div className="content-wrapper">
+        <div className="content-header">
+          {/* Admin sayfası, create butonu PageHeading'de yok */}
+        </div>
+        
+        <Card className="border-0 shadow-sm mb-3">
+          <Card.Body className="py-2 px-3">
+            <Row className="g-2 align-items-end">
+              <Col md={3}>
+                <Form.Group>
+                  <FormSelectField
+                    label="Durum Filtrele"
+                    name="statusFilter"
+                    value={statusFilter}
+                    onChange={(e: any) => setStatusFilter(e.target.value)}
+                  >
+                    <option value="">Tümü</option>
+                    <option value="PENDING">Beklemede</option>
+                    <option value="APPROVED">Onaylandı</option>
+                    <option value="REJECTED">Reddedildi</option>
+                    <option value="PAID">Ödendi</option>
+                  </FormSelectField>
+                </Form.Group>
+              </Col>
+              <Col md={3}>
+                <Form.Group>
+                  <FormSelectField
+                    label="Masraf Türü"
+                    name="filterExpenseTypeId"
+                    value={filterExpenseTypeId}
+                    onChange={(e: any) => setFilterExpenseTypeId(e.target.value)}
+                  >
+                    <option value="">Tümü</option>
+                    {expenseTypes.map(type => (
+                      <option key={type.id} value={type.id.toString()}>{type.name}</option>
+                    ))}
+                  </FormSelectField>
+                </Form.Group>
+              </Col>
+              <Col md={3}>
+                <Form.Group>
+                  <FormDateField
+                    label="Masraf Başlangıç Tarihi"
+                    name="filterStartDate"
+                    value={filterStartDate}
+                    onChange={(e: any) => setFilterStartDate(e.target.value)}
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={3}>
+                <Form.Group>
+                  <FormDateField
+                    label="Masraf Bitiş Tarihi"
+                    name="filterEndDate"
+                    value={filterEndDate}
+                    onChange={(e: any) => setFilterEndDate(e.target.value)}
+                  />
+                </Form.Group>
+              </Col>
+            </Row>
+          </Card.Body>
+        </Card>
 
-      <Card>
-        <Card.Body>
-          <div className="table-responsive">
-            <Table hover>
-              <thead>
-                <tr>
-                  <th>Çalışan</th>
-                  <th>Masraf Türü</th>
-                  <th>Açıklama</th>
-                  <th>Tutar</th>
-                  <th>Masraf Tarihi</th>
-                  <th>Durum</th>
-                  <th>Oluşturma Tarihi</th>
-                  <th className="text-end">İşlemler</th>
-                </tr>
-              </thead>
-              <tbody>
-                {expenseRequests.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} className="text-center py-4">
-                      Masraf talebi bulunamadı
-                    </td>
-                  </tr>
-                ) : (
-                  expenseRequests.map((request) => (
-                    <tr key={request.id}>
-                      <td>
-                        {request.employee?.first_name} {request.employee?.last_name}
-                      </td>
-                      <td>{request.expense_type?.name || '-'}</td>
-                      <td>{request.description}</td>
-                      <td>{formatCurrency(request.amount, request.currency)}</td>
-                      <td>{formatDate(request.expense_date)}</td>
-                      <td>{getStatusBadge(request.status)}</td>
-                      <td>{formatDate(request.created_at)}</td>
-                      <td className="text-end">
-                        <Button
-                          variant="outline-secondary"
-                          size="sm"
-                          onClick={() => handleShowDocuments(request)}
-                          className="me-2"
-                          title="Dökümanlar"
-                        >
-                          <FileText size={16} />
-                          {request.expense_type?.requires_receipt && (!request.document_count || request.document_count === 0) && (
-                            <Badge bg="warning" className="ms-1" style={{ fontSize: '0.6em' }}>!</Badge>
-                          )}
-                        </Button>
-                        {request.status === 'PENDING' && (
-                          <>
-                            <Button
-                              variant="success"
-                              size="sm"
-                              onClick={() => handleApproveClick(request)}
-                              className="me-2"
-                              title={
-                                request.expense_type?.requires_receipt && (!request.document_count || request.document_count === 0)
-                                  ? 'Döküman zorunludur. Lütfen önce döküman yükleyin.'
-                                  : 'Onayla'
-                              }
-                              disabled={request.expense_type?.requires_receipt && (!request.document_count || request.document_count === 0)}
-                            >
-                              <Check size={16} />
-                            </Button>
-                            <Button
-                              variant="danger"
-                              size="sm"
-                              onClick={() => handleRejectClick(request)}
-                              title="Reddet"
-                            >
-                              <X size={16} />
-                            </Button>
-                          </>
-                        )}
-                        {request.status === 'APPROVED' && (
-                          <Button
-                            variant="primary"
-                            size="sm"
-                            onClick={() => handleMarkPaidClick(request)}
-                            title="Ödendi İşaretle"
-                          >
-                            <DollarSign size={16} />
-                          </Button>
-                        )}
-                      </td>
+        <Card className="border-0 shadow-sm position-relative">
+          <Card.Body className="p-0">
+            <div className="table-box">
+              <div className="table-responsive">
+                <Table hover className="mb-0">
+                  <thead>
+                    <tr>
+                      <th>Çalışan</th>
+                      <th>Masraf Türü</th>
+                      <th>Açıklama</th>
+                      <th>Tutar</th>
+                      <th>Masraf Tarihi</th>
+                      <th>Durum</th>
+                      <th>Oluşturma Tarihi</th>
+                      <th className="text-end">İşlemler</th>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </Table>
-          </div>
-
-          {totalPages > 1 && (
-            <div className="d-flex justify-content-between align-items-center mt-3">
-              <div className="text-muted">
-                Toplam {totalItems} kayıt
-              </div>
-              <div className="pagination">
-                <Button
-                  variant="outline-primary"
-                  size="sm"
-                  disabled={currentPage === 1}
-                  onClick={() => fetchExpenseRequests(currentPage - 1, statusFilter)}
-                >
-                  Önceki
-                </Button>
-                <span className="mx-3">
-                  Sayfa {currentPage} / {totalPages}
-                </span>
-                <Button
-                  variant="outline-primary"
-                  size="sm"
-                  disabled={currentPage === totalPages}
-                  onClick={() => fetchExpenseRequests(currentPage + 1, statusFilter)}
-                >
-                  Sonraki
-                </Button>
+                  </thead>
+                  <tbody>
+                    {expenseRequests.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} className="text-center py-4">
+                          Masraf talebi bulunamadı
+                        </td>
+                      </tr>
+                    ) : (
+                      expenseRequests.map((request) => (
+                        <tr key={request.id}>
+                          <td>
+                            {request.employee?.first_name} {request.employee?.last_name}
+                          </td>
+                          <td>{request.expense_type?.name || '-'}</td>
+                          <td>{request.description}</td>
+                          <td>{formatCurrency(request.amount, request.currency)}</td>
+                          <td>{formatDate(request.expense_date)}</td>
+                          <td>{getStatusBadge(request.status)}</td>
+                          <td>{formatDate(request.created_at)}</td>
+                          <td className="text-end">
+                            <Button
+                              variant="outline-secondary"
+                              size="sm"
+                              onClick={() => handleShowDocuments(request)}
+                              className="me-2"
+                              title="Dökümanlar"
+                            >
+                              <FileText size={16} />
+                              {request.expense_type?.requires_receipt && (!request.document_count || request.document_count === 0) && (
+                                <Badge bg="warning" className="ms-1" style={{ fontSize: '0.6em' }}>!</Badge>
+                              )}
+                            </Button>
+                            {request.status === 'PENDING' && (
+                              <>
+                                <Button
+                                  variant="success"
+                                  size="sm"
+                                  onClick={() => handleApproveClick(request)}
+                                  className="me-2"
+                                  title={
+                                    request.expense_type?.requires_receipt && (!request.document_count || request.document_count === 0)
+                                      ? 'Döküman zorunludur. Lütfen önce döküman yükleyin.'
+                                      : 'Onayla'
+                                  }
+                                  disabled={request.expense_type?.requires_receipt && (!request.document_count || request.document_count === 0)}
+                                >
+                                  <Check size={16} />
+                                </Button>
+                                <Button
+                                  variant="danger"
+                                  size="sm"
+                                  onClick={() => handleRejectClick(request)}
+                                  title="Reddet"
+                                >
+                                  <X size={16} />
+                                </Button>
+                              </>
+                            )}
+                            {request.status === 'APPROVED' && (
+                              <Button
+                                variant="primary"
+                                size="sm"
+                                onClick={() => handleMarkPaidClick(request)}
+                                title="Ödendi İşaretle"
+                              >
+                                <DollarSign size={16} />
+                              </Button>
+                            )}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </Table>
               </div>
             </div>
-          )}
-        </Card.Body>
-      </Card>
+          </Card.Body>
+        </Card>
 
-      {/* Onay Modal */}
-      <Modal show={showApproveModal} onHide={() => setShowApproveModal(false)} centered>
+        {expenseRequests.length > 0 && (
+          <div className="px-3 mt-3">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={totalItems}
+              itemsPerPage={itemsPerPage}
+              onPageChange={(page) => setCurrentPage(page)}
+              onPageSizeChange={(size) => {}}
+            />
+          </div>
+        )}
+      </div>
+
+      <Modal show={showApproveModal} onHide={() => setShowApproveModal(false)}>
         <Modal.Header closeButton>
           <Modal.Title>Masraf Talebini Onayla</Modal.Title>
         </Modal.Header>

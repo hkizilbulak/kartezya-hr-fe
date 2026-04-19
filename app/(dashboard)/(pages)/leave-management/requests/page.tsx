@@ -8,6 +8,8 @@ import LeaveRequestModal from '@/components/modals/LeaveRequestModal';
 import LeaveDocumentModal from '@/components/leave/LeaveDocumentModal';
 import Pagination from '@/components/Pagination';
 import LoadingOverlay from '@/components/LoadingOverlay';
+import FormSelectField from '@/components/FormSelectField';
+import FormDateField from '@/components/FormDateField';
 import { Check, X, Edit, ChevronUp, ChevronDown, FileText } from 'react-feather';
 import { toast } from 'react-toastify';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
@@ -504,53 +506,51 @@ const LeaveRequestsPage = () => {
                   <Row className="g-2 align-items-end">
                     <Col md={3}>
                       <Form.Group>
-                        <Form.Label className="mb-1" style={{ fontSize: '13px' }}>Durum</Form.Label>
-                        <Form.Select 
-                          size="sm"
+                        <FormSelectField
+                          label="Durum"
+                          name="filterStatus"
                           value={filterStatus}
-                          onChange={(e) => setFilterStatus(e.target.value)}
+                          onChange={(e: any) => setFilterStatus(e.target.value)}
                         >
                           <option value="">Tümü (Tamamlananlar)</option>
                           <option value="APPROVED">Onaylandı</option>
                           <option value="REJECTED">Reddedildi</option>
                           <option value="CANCELLED">İptal Edildi</option>
-                        </Form.Select>
+                        </FormSelectField>
                       </Form.Group>
                     </Col>
                     <Col md={3}>
                       <Form.Group>
-                        <Form.Label className="mb-1" style={{ fontSize: '13px' }}>İzin Türü</Form.Label>
-                        <Form.Select 
-                          size="sm"
+                        <FormSelectField
+                          label="İzin Türü"
+                          name="filterLeaveTypeId"
                           value={filterLeaveTypeId}
-                          onChange={(e) => setFilterLeaveTypeId(e.target.value)}
+                          onChange={(e: any) => setFilterLeaveTypeId(e.target.value)}
                         >
                           <option value="">Tümü</option>
                           {leaveTypes.map(type => (
                             <option key={type.id} value={type.id.toString()}>{type.name}</option>
                           ))}
-                        </Form.Select>
+                        </FormSelectField>
                       </Form.Group>
                     </Col>
                     <Col md={3}>
                       <Form.Group>
-                        <Form.Label className="mb-1" style={{ fontSize: '13px' }}>Başlangıç Tarihi</Form.Label>
-                        <Form.Control
-                          type="date"
-                          size="sm"
+                        <FormDateField
+                          label="Başlangıç Tarihi"
+                          name="filterStartDate"
                           value={filterStartDate}
-                          onChange={(e) => setFilterStartDate(e.target.value)}
+                          onChange={(e: any) => setFilterStartDate(e.target.value)}
                         />
                       </Form.Group>
                     </Col>
                     <Col md={3}>
                       <Form.Group>
-                        <Form.Label className="mb-1" style={{ fontSize: '13px' }}>Bitiş Tarihi</Form.Label>
-                        <Form.Control
-                          type="date"
-                          size="sm"
+                        <FormDateField
+                          label="Bitiş Tarihi"
+                          name="filterEndDate"
                           value={filterEndDate}
-                          onChange={(e) => setFilterEndDate(e.target.value)}
+                          onChange={(e: any) => setFilterEndDate(e.target.value)}
                         />
                       </Form.Group>
                     </Col>

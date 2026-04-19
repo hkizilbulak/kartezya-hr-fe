@@ -8,6 +8,8 @@ import ExpenseRequestModal from '@/components/modals/ExpenseRequestModal';
 import ExpenseDocumentModal from '@/components/expense/ExpenseDocumentModal';
 import DeleteModal from '@/components/DeleteModal';
 import LoadingOverlay from '@/components/LoadingOverlay';
+import FormDateField from '@/components/FormDateField';
+import FormSelectField from '@/components/FormSelectField';
 import { Edit, Plus, FileText, X } from 'react-feather';
 import { toast } from 'react-toastify';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
@@ -198,182 +200,217 @@ const EmployeeExpenseRequests: React.FC<EmployeeExpenseRequestsProps> = ({
 
   return (
     <>
-      <LoadingOverlay show={isLoading} />
-      
-      <PageHeading 
-        heading={employeeId ? "Çalışan Masraf Talepleri" : "Masraf Taleplerim"}
-        showCreateButton={!hideCreateButton}
-        showFilterButton={false}
-        createButtonText="Yeni Masraf Talebi"
-        onCreate={() => handleShowModal()}
-      />
-
-      <Card className="border-0 shadow-sm mb-3">
-        <Card.Body className="py-2 px-3">
-          <Row className="g-2 align-items-end">
-            <Col md={3}>
-              <Form.Group>
-                <Form.Label className="mb-1" style={{ fontSize: '13px' }}>Durum</Form.Label>
-                <Form.Select 
-                  size="sm" 
-                  value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value)}
-                >
-                  <option value="">Tümü</option>
-                  <option value="PENDING">Beklemede</option>
-                  <option value="APPROVED">Onaylandı</option>
-                  <option value="REJECTED">Reddedildi</option>
-                  <option value="CANCELLED">İptal Edildi</option>
-                </Form.Select>
-              </Form.Group>
-            </Col>
-            <Col md={3}>
-              <Form.Group>
-                <Form.Label className="mb-1" style={{ fontSize: '13px' }}>Masraf Türü</Form.Label>
-                <Form.Select 
-                  size="sm"
-                  value={filterExpenseTypeId}
-                  onChange={(e) => setFilterExpenseTypeId(e.target.value)}
-                >
-                  <option value="">Tümü</option>
-                  {expenseTypes.map(et => (
-                    <option key={et.id} value={et.id}>{et.name}</option>
-                  ))}
-                </Form.Select>
-              </Form.Group>
-            </Col>
-            <Col md={3}>
-              <Form.Group>
-                <Form.Label className="mb-1" style={{ fontSize: '13px' }}>Masraf Başlangıç Tarihi</Form.Label>
-                <Form.Control 
-                  type="date" 
-                  size="sm"
-                  value={filterStartDate}
-                  onChange={(e) => setFilterStartDate(e.target.value)}
-                />
-              </Form.Group>
-            </Col>
-            <Col md={3}>
-              <Form.Group>
-                <Form.Label className="mb-1" style={{ fontSize: '13px' }}>Masraf Bitiş Tarihi</Form.Label>
-                <Form.Control 
-                  type="date" 
-                  size="sm"
-                  value={filterEndDate}
-                  onChange={(e) => setFilterEndDate(e.target.value)}
-                />
-              </Form.Group>
-            </Col>
-          </Row>
-        </Card.Body>
-      </Card>
-
-      <Card>
-        <Card.Body>
-          <div className="table-responsive">
-            <Table hover>
-              <thead>
-                <tr>
-                  <th>Masraf Türü</th>
-                  <th>Açıklama</th>
-                  <th>Tutar</th>
-                  <th>Masraf Tarihi</th>
-                  <th>Durum</th>
-                  <th>Oluşturma Tarihi</th>
-                  <th className="text-end">İşlemler</th>
-                </tr>
-              </thead>
-              <tbody>
-                {expenseRequests.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="text-center py-4">
-                      Masraf talebi bulunamadı
-                    </td>
-                  </tr>
-                ) : (
-                  expenseRequests.map((request) => (
-                    <tr key={request.id}>
-                      <td>{request.expense_type?.name || '-'}</td>
-                      <td>{request.description}</td>
-                      <td>{formatCurrency(request.amount, request.currency)}</td>
-                      <td>{formatDate(request.expense_date)}</td>
-                      <td>{getStatusBadge(request.status)}</td>
-                      <td>{formatDate(request.created_at)}</td>
-                      <td className="text-end">
-                        <div className="d-flex justify-content-end gap-2">
-                          {canEdit(request) && (
-                            <Button
-                              variant="outline-primary"
-                              size="sm"
-                              title="Düzenle"
-                              onClick={() => handleShowModal(request)}
-                            >
-                              <Edit size={14} />
-                            </Button>
-                          )}
-                          <Button
-                            variant="outline-secondary"
-                            size="sm"
-                            title="Dökümanlar"
-                            onClick={() => handleShowDocuments(request)}
-                          >
-                            <FileText size={16} />
-                            {request.expense_type?.requires_receipt && (!request.document_count || request.document_count === 0) && (
-                              <Badge bg="warning" className="ms-1" style={{ fontSize: '0.6em' }}>!</Badge>
-                            )}
-                          </Button>
-                          {canDelete(request) && (
-                            <Button
-                              variant="outline-warning"
-                              size="sm"
-                              title="İptal Et"
-                              onClick={() => {
-                                setSelectedRequest(request);
-                                setShowDeleteConfirm(true);
-                              }}
-                            >
-                              <X size={14} />
-                            </Button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </Table>
+      <div className="employee-expense-requests">
+        <LoadingOverlay show={isLoading} message="Masraf talepleri yükleniyor..." />
+        
+        {!employeeId && (
+          <div className="page-heading-wrapper">
+            <PageHeading 
+              heading="Masraf Taleplerim"
+              showCreateButton={!hideCreateButton}
+              showFilterButton={false}
+              createButtonText="Yeni Masraf Talebi"
+              onCreate={() => handleShowModal()}
+            />
           </div>
+        )}
 
-          {totalPages > 1 && (
-            <div className="d-flex justify-content-between align-items-center mt-3">
-              <div className="text-muted">
-                Toplam {totalItems} kayıt
+        {employeeId && !hideCreateButton && (
+          <div className="d-flex justify-content-between align-items-center mb-4">
+            <h6 style={{ color: '#495057', fontWeight: 700, fontSize: '16px' }}>Masraf Talepleri</h6>
+            <Button variant="primary" onClick={() => handleShowModal()} className="d-flex align-items-center gap-2">
+              <Plus size={16} /> Yeni Masraf Talebi
+            </Button>
+          </div>
+        )}
+
+        {employeeId && hideCreateButton && (
+          <div className="mb-4">
+            <h6 style={{ color: '#495057', fontWeight: 700, fontSize: '16px' }}>Masraf Talepleri</h6>
+          </div>
+        )}
+
+        <Row className="g-3">
+          <Col lg={12} md={12} sm={12} className="content-wrapper">
+            <div className="mb-4">
+              <div className="d-flex justify-content-between align-items-center mb-3">
+                <h6 className="mb-0" style={{ fontWeight: 700, fontSize: '16px' }}>{employeeId ? 'Tüm Talepler' : 'Tüm Taleplerim'}</h6>
               </div>
-              <div className="pagination">
-                <Button
-                  variant="outline-primary"
-                  size="sm"
-                  disabled={currentPage === 1}
-                  onClick={() => fetchExpenseRequests(currentPage - 1)}
-                >
-                  Önceki
-                </Button>
-                <span className="mx-3">
-                  Sayfa {currentPage} / {totalPages}
-                </span>
-                <Button
-                  variant="outline-primary"
-                  size="sm"
-                  disabled={currentPage === totalPages}
-                  onClick={() => fetchExpenseRequests(currentPage + 1)}
-                >
-                  Sonraki
-                </Button>
-              </div>
+              
+              <Card className="border-0 shadow-sm mb-3">
+                <Card.Body className="py-2 px-3">
+                  <Row className="g-2 align-items-end">
+                    <Col md={3}>
+                      <Form.Group>
+                        <FormSelectField
+                          label="Durum"
+                          name="filterStatus"
+                          value={filterStatus}
+                          onChange={(e: any) => setFilterStatus(e.target.value)}
+                        >
+                          <option value="">Tümü</option>
+                          <option value="PENDING">Beklemede</option>
+                          <option value="APPROVED">Onaylandı</option>
+                          <option value="REJECTED">Reddedildi</option>
+                          <option value="CANCELLED">İptal Edildi</option>
+                        </FormSelectField>
+                      </Form.Group>
+                    </Col>
+                    <Col md={3}>
+                      <Form.Group>
+                        <FormSelectField
+                          label="Masraf Türü"
+                          name="filterExpenseTypeId"
+                          value={filterExpenseTypeId}
+                          onChange={(e: any) => setFilterExpenseTypeId(e.target.value)}
+                        >
+                          <option value="">Tümü</option>
+                          {expenseTypes.map(et => (
+                            <option key={et.id} value={et.id}>{et.name}</option>
+                          ))}
+                        </FormSelectField>
+                      </Form.Group>
+                    </Col>
+                    <Col md={3}>
+                      <Form.Group>
+                        <FormDateField
+                          label="Masraf Başlangıç Tarihi"
+                          name="filterStartDate"
+                          value={filterStartDate}
+                          onChange={(e: any) => setFilterStartDate(e.target.value)}
+                        />
+                      </Form.Group>
+                    </Col>
+                    <Col md={3}>
+                      <Form.Group>
+                        <FormDateField
+                          label="Masraf Bitiş Tarihi"
+                          name="filterEndDate"
+                          value={filterEndDate}
+                          onChange={(e: any) => setFilterEndDate(e.target.value)}
+                        />
+                      </Form.Group>
+                    </Col>
+                  </Row>
+                </Card.Body>
+              </Card>
+
+              <Card className="border-0 shadow-sm position-relative">
+                <Card.Body className="p-0">
+                  <div className="table-box">
+                    <div className="table-responsive">
+                      <Table hover className="mb-0">
+                        <thead>
+                          <tr>
+                            <th>Masraf Türü</th>
+                            <th>Açıklama</th>
+                            <th>Tutar</th>
+                            <th>Masraf Tarihi</th>
+                            <th>Durum</th>
+                            <th>Oluşturma Tarihi</th>
+                            <th className="text-end">İşlemler</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {expenseRequests.length === 0 ? (
+                            <tr>
+                              <td colSpan={7} className="text-center py-4">
+                                Masraf talebi bulunamadı
+                              </td>
+                            </tr>
+                          ) : (
+                            expenseRequests.map((request) => (
+                              <tr key={request.id}>
+                                <td>{request.expense_type?.name || '-'}</td>
+                                <td>{request.description}</td>
+                                <td>{formatCurrency(request.amount, request.currency)}</td>
+                                <td>{formatDate(request.expense_date)}</td>
+                                <td>{getStatusBadge(request.status)}</td>
+                                <td>{formatDate(request.created_at)}</td>
+                                <td className="text-end">
+                                  <div className="d-flex justify-content-end gap-2">
+                                    {canEdit(request) && (
+                                      <Button
+                                        variant="outline-primary"
+                                        size="sm"
+                                        title="Düzenle"
+                                        onClick={() => handleShowModal(request)}
+                                      >
+                                        <Edit size={14} />
+                                      </Button>
+                                    )}
+                                    <Button
+                                      variant="outline-secondary"
+                                      size="sm"
+                                      title="Dökümanlar"
+                                      onClick={() => handleShowDocuments(request)}
+                                    >
+                                      <FileText size={16} />
+                                      {request.expense_type?.requires_receipt && (!request.document_count || request.document_count === 0) && (
+                                        <Badge bg="warning" className="ms-1" style={{ fontSize: '0.6em' }}>!</Badge>
+                                      )}
+                                    </Button>
+                                    {canDelete(request) && (
+                                      <Button
+                                        variant="outline-warning"
+                                        size="sm"
+                                        title="İptal Et"
+                                        onClick={() => {
+                                          setSelectedRequest(request);
+                                          setShowDeleteConfirm(true);
+                                        }}
+                                      >
+                                        <X size={14} />
+                                      </Button>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </Table>
+                    </div>
+                  </div>
+
+                  {totalPages > 1 && (
+                    <div className="p-3 border-top">
+                      <div className="d-flex justify-content-between align-items-center">
+                        <div className="text-muted" style={{ fontSize: '14px' }}>
+                          Toplam {totalItems} kayıt
+                        </div>
+                        <div className="pagination gap-2">
+                          <Button
+                            variant="outline-primary"
+                            size="sm"
+                            disabled={currentPage === 1}
+                            onClick={() => fetchExpenseRequests(currentPage - 1)}
+                            style={{ borderRadius: '6px' }}
+                          >
+                            Önceki
+                          </Button>
+                          <span className="d-flex align-items-center mx-2" style={{ fontSize: '14px' }}>
+                            Sayfa {currentPage} / {totalPages}
+                          </span>
+                          <Button
+                            variant="outline-primary"
+                            size="sm"
+                            disabled={currentPage === totalPages}
+                            onClick={() => fetchExpenseRequests(currentPage + 1)}
+                            style={{ borderRadius: '6px' }}
+                          >
+                            Sonraki
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </Card.Body>
+              </Card>
             </div>
-          )}
-        </Card.Body>
-      </Card>
+          </Col>
+        </Row>
+      </div>
 
       <ExpenseRequestModal
         show={showModal}
