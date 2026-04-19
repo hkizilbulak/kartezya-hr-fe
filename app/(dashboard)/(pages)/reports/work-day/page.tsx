@@ -64,11 +64,11 @@ const WorkDayReportPage = () => {
   useEffect(() => {
     const fetchLookups = async () => {
       try {
-        setIsLoading(true); // Show loading while fetching lookups
+        setIsLoading(true);
         setCompaniesLoading(true);
         const [companiesRes, departmentsRes] = await Promise.all([
           lookupService.getCompaniesLookup(),
-          lookupService.getDepartmentsLookup()
+          lookupService.getDepartmentsLookup(),
         ]);
         
         if (companiesRes.success && companiesRes.data) {
@@ -83,7 +83,7 @@ const WorkDayReportPage = () => {
         toast.error(translateErrorMessage(errorMessage));
       } finally {
         setCompaniesLoading(false);
-        setIsLoading(false); // Hide loading after lookups are fetched
+        setIsLoading(false);
       }
     };
 
@@ -136,7 +136,7 @@ const WorkDayReportPage = () => {
         endDate,
         selectedCompany ? parseInt(selectedCompany) : undefined,
         selectedDepartmentIds,
-        isActive
+        isActive,
       );
 
       setReportData(response);

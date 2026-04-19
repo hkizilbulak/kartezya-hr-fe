@@ -11,8 +11,9 @@ export interface OrderedColumnItem {
 
 export interface GradeReportExportPayload {
 	companyId?: number;
+	departmentId?: number;
 	departmentIds?: number[];
-	orderedColumns: OrderedColumnItem[];
+	title?: string;
 }
 
 const appendCsvArrayParam = (
@@ -45,7 +46,8 @@ export const reportService = {
 		endDate: string,
 		companyId?: number,
 		departmentId?: number | Array<number | string> | string,
-		isActive?: boolean
+		isActive?: boolean,
+		title?: string
 	): Promise<WorkDayReportResponse> {
 		const params = new URLSearchParams({
 			start_date: startDate,
@@ -66,6 +68,10 @@ export const reportService = {
 			params.append('is_active', isActive.toString());
 		}
 
+		if (title) {
+			params.append('title', title);
+		}
+
 		const response = await axiosInstance.get(
 			`/reports/work-day?${params.toString()}`
 		);
@@ -78,7 +84,8 @@ export const reportService = {
 	 */
 	async getGradeReport(
 		companyId?: number,
-		departmentId?: number | Array<number | string> | string
+		departmentId?: number | Array<number | string> | string,
+		isActive?: boolean
 	): Promise<GradeReportResponse> {
 		const params = new URLSearchParams({
 		});
@@ -92,6 +99,10 @@ export const reportService = {
 			params.append('department_id', departmentId.toString());
 		}
 
+		if (isActive !== undefined) {
+			params.append('is_active', isActive.toString());
+		}
+
 		const response = await axiosInstance.get(
 			`/reports/grade?${params.toString()}`
 		);
@@ -99,8 +110,10 @@ export const reportService = {
 		return response.data as GradeReportResponse;
 	},
 
-	async requestGradeReportExport(payload: GradeReportExportPayload) {
-		const response = await axiosInstance.post('/reports/grade/export', payload);
+	async requestGradeReportExport(payload: GradeReportExportPayload): Promise<Blob> {
+		const response = await axiosInstance.post('/reports/grade/export', payload, {
+			responseType: 'blob',
+		});
 		return response.data;
 	}
 }

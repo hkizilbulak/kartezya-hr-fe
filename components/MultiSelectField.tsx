@@ -16,6 +16,8 @@ interface MultiSelectFieldProps {
   disabled?: boolean;
   placeholder?: string;
   loading?: boolean;
+  showSelectAll?: boolean;
+  selectAllLabel?: string;
 }
 
 const MultiSelectField: React.FC<MultiSelectFieldProps> = ({
@@ -25,7 +27,9 @@ const MultiSelectField: React.FC<MultiSelectFieldProps> = ({
   options,
   disabled = false,
   placeholder = "Seçiniz",
-  loading = false
+  loading = false,
+  showSelectAll = false,
+  selectAllLabel = "Tümünü Seç",
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -254,6 +258,27 @@ const MultiSelectField: React.FC<MultiSelectFieldProps> = ({
             
             <div className="overflow-auto" style={{ maxHeight: `${dropdownPosition.maxHeight - 50}px` }}>
               <div className="list-group list-group-flush">
+                {showSelectAll && filteredOptions.length > 0 && (
+                  <button
+                    type="button"
+                    className="list-group-item list-group-item-action border-0 d-flex align-items-center fw-semibold text-primary"
+                    onClick={() => {
+                      const allValues = options.map(o => o.value);
+                      const allSelected = allValues.every(v => value.includes(v));
+                      onChange(allSelected ? [] : allValues);
+                    }}
+                    style={{ minHeight: '40px' }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={options.length > 0 && options.every(o => value.includes(o.value))}
+                      onChange={() => {}}
+                      className="me-2"
+                      style={{ pointerEvents: 'none' }}
+                    />
+                    {selectAllLabel}
+                  </button>
+                )}
                 {filteredOptions.length === 0 ? (
                   <div className="list-group-item border-0 text-center text-muted py-3">
                     {searchQuery ? 'Sonuç bulunamadı' : 'Seçenek bulunamadı'}
@@ -316,6 +341,27 @@ const MultiSelectField: React.FC<MultiSelectFieldProps> = ({
             
             <div className="overflow-auto" style={{ maxHeight: 'calc(60vh - 120px)' }}>
               <div className="list-group list-group-flush">
+                {showSelectAll && filteredOptions.length > 0 && (
+                  <button
+                    type="button"
+                    className="list-group-item list-group-item-action border-0 d-flex align-items-center fw-semibold text-primary"
+                    onClick={() => {
+                      const allValues = options.map(o => o.value);
+                      const allSelected = allValues.every(v => value.includes(v));
+                      onChange(allSelected ? [] : allValues);
+                    }}
+                    style={{ minHeight: '40px' }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={options.length > 0 && options.every(o => value.includes(o.value))}
+                      onChange={() => {}}
+                      className="me-2"
+                      style={{ pointerEvents: 'none' }}
+                    />
+                    {selectAllLabel}
+                  </button>
+                )}
                 {filteredOptions.length === 0 ? (
                   <div className="list-group-item border-0 text-center text-muted py-3">
                     {searchQuery ? 'Sonuç bulunamadı' : 'Seçenek bulunamadı'}
