@@ -336,11 +336,11 @@ const HakedisEforReportPage = () => {
                       >Raporu Getir</Button>
                       {showTable && reportData && (
                         <Button
-                          variant="info"
+                          variant="success"
                           onClick={handleExportHakedisToExcel}
                         >
-                          <DownloadIcon size={18} className="me-2" style={{ display: 'inline', color: 'white' }} />
-                          <span style={{color: 'white'}}>Hakediş Excel İndir</span>
+                          <DownloadIcon size={18} className="me-2" style={{ display: 'inline' }} />
+                          Excel'e İndir
                         </Button>
                       )}
                     </Col>

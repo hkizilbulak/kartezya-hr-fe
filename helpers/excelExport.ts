@@ -188,17 +188,17 @@ export const exportHakedisToExcel = async (reportData: EforReportResponse) => {
     // Title Row
     const titleRow = ws.addRow(['Table 1: 2026 Planlanan Efor (Aylara/Personele Göre Dağılım)']);
     titleRow.font = { bold: true };
-    ws.mergeCells(1, 1, 1, 16);
+    ws.mergeCells(1, 1, 1, 17);
 
     // Subtitle Row
     const subtitleRow = ws.addRow(['', '', '', 'Aylara Göre İş Günü Sayıları']);
     subtitleRow.font = { bold: true };
-    ws.mergeCells(2, 4, 2, 16);
+    ws.mergeCells(2, 4, 2, 17);
 
     // Headers
     const headers = [
       'Ad-Soyad', 'Grade', 'Rate', 'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 
-      'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık', 'Toplam'
+      'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık', 'Toplam', 'Hakediş'
     ];
     
     const headerRow = ws.addRow(headers);
@@ -208,31 +208,41 @@ export const exportHakedisToExcel = async (reportData: EforReportResponse) => {
     ws.getColumn(1).width = 25; // Ad-Soyad
     ws.getColumn(2).width = 15; // Grade
     ws.getColumn(3).width = 10; // Rate
-    for (let i = 4; i <= 16; i++) {
+    for (let i = 4; i <= 17; i++) {
       ws.getColumn(i).width = 10; // Ayları ve Toplamı
     }
 
     // Data rows
     reportData.rows.forEach((row, index) => {
       let sum = (row.january || 0) + (row.february || 0) + (row.march || 0) + (row.april || 0) + (row.may || 0) + (row.june || 0) + (row.july || 0) + (row.august || 0) + (row.september || 0) + (row.october || 0) + (row.november || 0) + (row.december || 0);
+      const currentRowNum = index + 4; // Title(1) + Subtitle(2) + Header(3) => Veri 4'ten başlar
       const dataRow = ws.addRow([
         `${row.first_name} ${row.last_name}`, // Ad-Soyad
         row.current_grade || '', // Grade
-        '', // Rate
-        (row.january || 0).toFixed(1), // Ocak
-        (row.february || 0).toFixed(1), // Şubat
-        (row.march || 0).toFixed(1), // Mart
-        (row.april || 0).toFixed(1), // Nisan
-        (row.may || 0).toFixed(1), // Mayıs
-        (row.june || 0).toFixed(1), // Haziran
-        (row.july || 0).toFixed(1), // Temmuz
-        (row.august || 0).toFixed(1), // Ağustos
-        (row.september || 0).toFixed(1), // Eylül
-        (row.october || 0).toFixed(1), // Ekim
-        (row.november || 0).toFixed(1), // Kasım
-        (row.december || 0).toFixed(1), // Aralık
-        sum.toFixed(1) // Toplam
+        0, // Rate
+        parseFloat((row.january || 0).toFixed(1)), // Ocak
+        parseFloat((row.february || 0).toFixed(1)), // Şubat
+        parseFloat((row.march || 0).toFixed(1)), // Mart
+        parseFloat((row.april || 0).toFixed(1)), // Nisan
+        parseFloat((row.may || 0).toFixed(1)), // Mayıs
+        parseFloat((row.june || 0).toFixed(1)), // Haziran
+        parseFloat((row.july || 0).toFixed(1)), // Temmuz
+        parseFloat((row.august || 0).toFixed(1)), // Ağustos
+        parseFloat((row.september || 0).toFixed(1)), // Eylül
+        parseFloat((row.october || 0).toFixed(1)), // Ekim
+        parseFloat((row.november || 0).toFixed(1)), // Kasım
+        parseFloat((row.december || 0).toFixed(1)), // Aralık
+        { formula: `SUM(D${currentRowNum}:O${currentRowNum})`, result: parseFloat(sum.toFixed(1)) }, // Toplam
+        { formula: `P${currentRowNum}*C${currentRowNum}`, result: 0 } // Hakediş
       ]);
+
+      // Format Rate, ayları, Toplam, and Hakediş columns to be explicitly numeric
+      dataRow.getCell(3).numFmt = '#,##0.##'; // Rate
+      for (let i = 4; i <= 15; i++) {
+        dataRow.getCell(i).numFmt = '0.0'; // Aylar
+      }
+      dataRow.getCell(16).numFmt = '0.0'; // Toplam
+      dataRow.getCell(17).numFmt = '#,##0.##'; // Hakediş
       
       // Zebra striping similar to normal excel export
       if (index % 2 === 1) {
