@@ -38,7 +38,7 @@ const WorkDayReportPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [sortConfig, setSortConfig] = useState<{
-    key: 'first_name' | 'last_name' | 'identity_no' | 'company_name' | 'department_name' | 'work_days' | null;
+    key: 'first_name' | 'last_name' | 'identity_no' | 'company_name' | 'department_name' | 'work_days' | 'manager' | null;
     direction: 'ASC' | 'DESC';
   }>({
     key: null,
@@ -170,7 +170,7 @@ const WorkDayReportPage = () => {
     }
   };
 
-  const handleSort = (key: 'first_name' | 'last_name' | 'identity_no' | 'company_name' | 'department_name' | 'work_days') => {
+  const handleSort = (key: 'first_name' | 'last_name' | 'identity_no' | 'company_name' | 'department_name' | 'work_days' | 'manager') => {
     let direction: 'ASC' | 'DESC' = 'ASC';
     if (sortConfig.key === key && sortConfig.direction === 'ASC') {
       direction = 'DESC';
@@ -179,7 +179,7 @@ const WorkDayReportPage = () => {
     setCurrentPage(1);
   };
 
-  const getSortIcon = (columnKey: 'first_name' | 'last_name' | 'identity_no' | 'company_name' | 'department_name' | 'work_days') => {
+  const getSortIcon = (columnKey: 'first_name' | 'last_name' | 'identity_no' | 'company_name' | 'department_name' | 'work_days' | 'manager') => {
     if (sortConfig.key !== columnKey) {
       return null;
     }
@@ -392,6 +392,12 @@ const WorkDayReportPage = () => {
                                 >
                                   DEPARTMAN {getSortIcon('department_name')}
                                 </th>
+                                <th
+                                  onClick={() => handleSort('manager')}
+                                  className="sortable-header"
+                                >
+                                  YÖNETİCİ {getSortIcon('manager')}
+                                </th>
                               </tr>
                             </thead>
                             <tbody>
@@ -404,6 +410,7 @@ const WorkDayReportPage = () => {
                                     <td className="text-end">{row.worked_days.toFixed(1)}</td>
                                     <td>{row.company_name}</td>
                                     <td>{row.department_name}</td>
+                                    <td>{row.manager}</td>
                                   </tr>
                                 ))
                               ) : (

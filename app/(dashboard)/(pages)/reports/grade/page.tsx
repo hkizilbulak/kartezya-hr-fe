@@ -12,6 +12,7 @@ import Pagination from '@/components/Pagination';
 import { Download as DownloadIcon, ChevronUp, ChevronDown } from 'react-feather';
 import { toast } from 'react-toastify';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
+import * as ExcelUtils from '@/helpers/excelExport';
 import '@/styles/table-list.scss';
 import '@/styles/components/table-common.scss';
 
@@ -109,18 +110,11 @@ const GradeReportPage = () => {
       toast.warning('Önce raporu getirmelisiniz');
       return;
     }
+
     try {
-      const blob = await reportService.requestGradeReportExport({
-        companyId: selectedCompany ? parseInt(selectedCompany) : undefined,
-      });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'grade-report.xlsx';
-      a.click();
-      window.URL.revokeObjectURL(url);
-      toast.success("Rapor Excel'e başarıyla aktarıldı");
-    } catch {
+      await ExcelUtils.exportGradeToExcel(reportData);
+      toast.success('Rapor Excel\'e başarıyla aktarıldı');
+    } catch (error: any) {
       toast.error('Excel export sırasında hata oluştu');
     }
   };

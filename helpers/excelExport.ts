@@ -85,21 +85,13 @@ export const exportToExcel = async (reportData: WorkDayReportResponse) => {
 
     // Row 10: Headers
     const headerRow = ws.addRow([
-      'SIRA NO',
-      'ID',
-      'AD',
-      'SOYAD',
-      'KİMLİK NO',
-      'İŞE GİRİŞ TARİHİ',
-      'İŞTEN AYRILIŞ TARİHİ',
-      'ŞİRKET',
-      'DEPARTMAN',
-      'YÖNETİCİ',
-      'TAKIMA BAŞLANGIÇ',
-      'TAKIMDAN AYRILIŞ',
+      'AD SOYAD',
       'İŞ GÜNÜ',
       'KULLANILAN İZİN',
-      'ÇALIŞILAN GÜN'
+      'ÇALIŞILAN GÜN',
+      'ŞİRKET',
+      'DEPARTMAN',
+      'YÖNETİCİ'
     ]);
     headerRow.height = 20;
     
@@ -128,21 +120,13 @@ export const exportToExcel = async (reportData: WorkDayReportResponse) => {
 
       sortedRows.forEach((row, index) => {
         const dataRow = ws.addRow([
-          index + 1,
-          row.id,
-          row.first_name,
-          row.last_name,
-          row.identity_no,
-          row.hire_date ? new Date(row.hire_date).toLocaleDateString('tr-TR') : '-',
-          row.leave_date ? new Date(row.leave_date).toLocaleDateString('tr-TR') : '-',
-          row.company_name,
-          row.department_name,
-          row.manager || '-',
-          row.team_start_date ? new Date(row.team_start_date).toLocaleDateString('tr-TR') : '-',
-          row.team_end_date ? new Date(row.team_end_date).toLocaleDateString('tr-TR') : '-',
+          `${row.first_name} ${row.last_name}`,
           Math.round(row.work_days),
           row.used_leave_days.toFixed(1),
-          row.worked_days.toFixed(1)
+          row.worked_days.toFixed(1),
+          row.company_name,
+          row.department_name,
+          row.manager || '-'
         ]);
         
         // Check if used_leave_days > 0 for yellow highlighting
@@ -169,21 +153,13 @@ export const exportToExcel = async (reportData: WorkDayReportResponse) => {
 
     // Set column widths
     ws.columns = [
-      { width: 10 },  // SIRA NO
-      { width: 8 },   // ID
-      { width: 15 },  // AD
-      { width: 15 },  // SOYAD
-      { width: 15 },  // KİMLİK NO
-      { width: 15 },  // İŞE GİRİŞ TARİHİ
-      { width: 20 },  // İŞTEN AYRILIŞ TARİHİ
-      { width: 20 },  // ŞİRKET
-      { width: 20 },  // DEPARTMAN
-      { width: 20 },  // YÖNETİCİ
-      { width: 20 },  // TAKIMA BAŞLANGIÇ
-      { width: 20 },  // TAKIMDAN AYRILIŞ
+      { width: 25 },  // AD SOYAD
       { width: 12 },  // İŞ GÜNÜ
       { width: 15 },  // KULLANILAN İZİN
-      { width: 15 }   // ÇALIŞILAN GÜN
+      { width: 15 },  // ÇALIŞILAN GÜN
+      { width: 20 },  // ŞİRKET
+      { width: 20 },  // DEPARTMAN
+      { width: 20 }   // YÖNETİCİ
     ];
 
     // Generate filename
@@ -241,19 +217,25 @@ export const exportGradeToExcel = async (
       },
       {
         key: 'hire_date',
-        label: 'İŞE GİR. TAR.',
+        label: 'İŞE GİRİŞ',
         width: 15,
         exportValue: (row) => row.hire_date ? new Date(row.hire_date).toLocaleDateString('tr-TR') : '-'
       },
       {
+        key: 'team_start_date',
+        label: 'TAKIMA BAŞLANGIÇ',
+        width: 20,
+        exportValue: (row) => row.team_start_date ? new Date(row.team_start_date).toLocaleDateString('tr-TR') : '-'
+      },
+      {
         key: 'profession_start_date',
-        label: 'MESLEĞE BAŞ. TAR.',
+        label: 'MESLEĞE BAŞLANGIÇ',
         width: 20,
         exportValue: (row) => row.profession_start_date ? new Date(row.profession_start_date).toLocaleDateString('tr-TR') : '-'
       },
       {
         key: 'total_experience_text',
-        label: 'TOPLAM DENEYIM',
+        label: 'TOPLAM DENEYİM',
         width: 20,
         exportValue: (row) => row.total_experience_text || '-'
       },
@@ -286,12 +268,6 @@ export const exportGradeToExcel = async (
         label: 'YÖNETİCİ',
         width: 20,
         exportValue: (row) => row.manager || '-'
-      },
-      {
-        key: 'team_start_date',
-        label: 'TAKIMA BAŞ. TAR.',
-        width: 20,
-        exportValue: (row) => row.team_start_date ? new Date(row.team_start_date).toLocaleDateString('tr-TR') : '-'
       }
     ];
 
