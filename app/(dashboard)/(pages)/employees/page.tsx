@@ -11,9 +11,10 @@ import DeleteModal from '@/components/DeleteModal';
 import LoadingOverlay from '@/components/LoadingOverlay';
 import FormSelectField from '@/components/FormSelectField';
 import FormTextField from '@/components/FormTextField';
-import { Trash2, Eye, ChevronUp, ChevronDown } from 'react-feather';
+import { Trash2, Eye, ChevronUp, ChevronDown, Download as DownloadIcon } from 'react-feather';
 import { toast } from 'react-toastify';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
+import { exportEmployeesToExcel } from '@/helpers/excelExport';
 import { CompanyLookup, DepartmentLookup, GradeLookup, JobPositionLookup } from '@/services/lookup.service';
 import { genderOptions, maritalStatusOptions, statusOptions } from '@/contants/options';
 import '@/styles/table-list.scss';
@@ -463,6 +464,37 @@ const EmployeesPage = () => {
     fetchEmployees(1, undefined, 'ASC', { status: 'ACTIVE' }, 10);
   };
 
+  const handleExportToExcel = async () => {
+    try {
+      setIsLoading(true);
+      const activeFilters = getActiveFilters();
+      const quickFilters = getQuickSearchFilters();
+      const allFilters = {
+        ...activeFilters,
+        ...quickFilters
+      };
+
+      const response = await employeeService.getAll({
+        ...allFilters,
+        page: 1,
+        limit: 10000,
+        sort: sortConfig.key || undefined,
+        direction: sortConfig.direction
+      });
+
+      if (response.success && response.data) {
+        await exportEmployeesToExcel(response.data);
+        toast.success("Excel'e başarıyla aktarıldı");
+      } else {
+        toast.warning("Dışa aktarılacak veri bulunamadı");
+      }
+    } catch (error: any) {
+      toast.error(translateErrorMessage(error.message || 'Excel oluşturulurken hata oluştu'));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSort = (key: 'first_name' | 'last_name') => {
     let direction: 'ASC' | 'DESC' = 'ASC';
     if (sortConfig.key === key && sortConfig.direction === 'ASC') {
@@ -803,8 +835,12 @@ const EmployeesPage = () => {
                     >
                       {showFilters ? 'Gelişmiş Filtreleri Gizle' : 'Gelişmiş Filtreler'}
                     </Button>
-                    <Button variant="secondary" size="sm" onClick={clearFilters}>
+                    <Button variant="secondary" size="sm" className="me-2" onClick={clearFilters}>
                       Temizle
+                    </Button>
+                    <Button variant="success" size="sm" onClick={handleExportToExcel} disabled={isLoading}>
+                      <DownloadIcon size={14} className="me-1" style={{ display: 'inline' }} />
+                      Excel'e İndir
                     </Button>
                   </Col>
                 </Row>

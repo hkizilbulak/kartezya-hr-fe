@@ -1,5 +1,6 @@
 import ExcelJS from 'exceljs';
 import { WorkDayReportResponse, GradeReportResponse, GradeReportRow, EforReportResponse } from '@/models/hr/report.model';
+import { Employee } from '@/models/hr/hr-models';
 
 export interface GradeExcelColumnConfig {
   key: string;
@@ -446,6 +447,111 @@ export const exportGradeToExcel = async (
     window.URL.revokeObjectURL(url);
   } catch (error) {
     console.error('Excel export hatası:', error);
+    throw error;
+  }
+};
+
+export const exportEmployeesToExcel = async (employees: Employee[]) => {
+  try {
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('Çalışanlar');
+
+    // Title Row
+    const titleRow = ws.addRow(['Çalışan Listesi']);
+    titleRow.font = { bold: true, size: 14 };
+    ws.mergeCells(1, 1, 1, 15);
+
+    // Headers
+    const headers = [
+      'ID', 'Ad Soyad', 'E-posta', 'Şirket E-posta', 'Telefon', 
+      'Cinsiyet', 'Durum', 'Şirket', 'Departman', 'Yönetici', 'Pozisyon', 
+      'İşe Giriş Tarihi', 'Çıkış Tarihi', 'Doğum Tarihi', 'Mesleğe Başlangıç'
+    ];
+    
+    // add an empty row after title
+    ws.addRow([]);
+    
+    const headerRow = ws.addRow(headers);
+    headerRow.font = { bold: true };
+    headerRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFE0E0E0' }
+    };
+    
+    // Widths
+    ws.getColumn(1).width = 10; // ID
+    ws.getColumn(2).width = 25; // Ad Soyad
+    ws.getColumn(3).width = 30; // E-posta
+    ws.getColumn(4).width = 30; // Şirket E-posta
+    ws.getColumn(5).width = 15; // Telefon
+    ws.getColumn(6).width = 10; // Cinsiyet
+    ws.getColumn(7).width = 15; // Durum
+    ws.getColumn(8).width = 20; // Şirket
+    ws.getColumn(9).width = 20; // Departman
+    ws.getColumn(10).width = 25; // Yönetici
+    ws.getColumn(11).width = 20; // Pozisyon
+    ws.getColumn(12).width = 15; // İşe Giriş Tarihi
+    ws.getColumn(13).width = 15; // Çıkış Tarihi
+    ws.getColumn(14).width = 15; // Doğum Tarihi
+    ws.getColumn(15).width = 15; // Mesleğe Başlangıç
+
+    // Data rows
+    employees.forEach((emp, index) => {
+      const formatDate = (dateString?: string) => {
+        if (!dateString) return '-';
+        const date = new Date(dateString);
+        return isNaN(date.getTime()) ? '-' : date.toLocaleDateString('tr-TR');
+      };
+
+      const dataRow = ws.addRow([
+        emp.id,
+        `${emp.first_name} ${emp.last_name}`,
+        emp.email || '-',
+        emp.company_email || '-',
+        emp.phone || '-',
+        emp.gender === 'MALE' ? 'Erkek' : emp.gender === 'FEMALE' ? 'Kadın' : '-',
+        emp.status === 'ACTIVE' ? 'Çalışıyor' : 'Ayrıldı',
+        emp.work_information?.company_name || '-',
+        emp.work_information?.department_name || '-',
+        emp.work_information?.manager || '-',
+        emp.work_information?.job_title || '-',
+        formatDate(emp.hire_date),
+        formatDate(emp.leave_date),
+        formatDate(emp.date_of_birth),
+        formatDate(emp.profession_start_date)
+      ]);
+      
+      if (index % 2 === 1) {
+        dataRow.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFF9F9F9' }
+        };
+      }
+      
+      dataRow.eachCell((cell) => {
+        cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' }
+        };
+      });
+    });
+
+    const buffer = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Calisan_Listesi_Raporu_${new Date().toISOString().split('T')[0]}.xlsx`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error('Excel generate error:', error);
     throw error;
   }
 };
