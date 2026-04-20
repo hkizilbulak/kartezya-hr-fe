@@ -45,6 +45,12 @@ const WorkDayReportPage = () => {
     direction: 'ASC'
   });
 
+  const formatDateTR = (date:any) => {
+    return date.toLocaleDateString('en-CA', {
+      timeZone: 'Europe/Istanbul'
+    });
+  };
+
   // Initialize dates on mount
   useEffect(() => {
     const today = new Date();
@@ -56,8 +62,8 @@ const WorkDayReportPage = () => {
     // Last day of current month
     const lastDay = new Date(year, month + 1, 0);
     
-    setStartDate(firstDay.toISOString().split('T')[0]);
-    setEndDate(lastDay.toISOString().split('T')[0]);
+    setStartDate(formatDateTR(firstDay));
+    setEndDate(formatDateTR(lastDay));
   }, []);
 
   // Fetch companies and all departments on mount

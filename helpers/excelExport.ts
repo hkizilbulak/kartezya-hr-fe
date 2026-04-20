@@ -52,7 +52,7 @@ export const exportToExcel = async (reportData: WorkDayReportResponse) => {
     rowNum++;
 
     // Row 5: Toplam İş Günü
-    const row5 = ws.addRow(['Toplam İş Günü:', Math.round(reportData.total_work_days)]);
+    const row5 = ws.addRow(['Toplam İş Günü:(Resmi Tatil Hariç)', Math.round(reportData.total_work_days)]);
     row5.getCell(1).font = { bold: true, size: 11 };
     row5.getCell(1).alignment = { horizontal: 'left', vertical: 'middle' };
     row5.getCell(2).font = { bold: true, size: 11 };
@@ -147,7 +147,7 @@ export const exportToExcel = async (reportData: WorkDayReportResponse) => {
         
         // Check if used_leave_days > 0 for yellow highlighting
         const isYellowRow = row.used_leave_days > 0 
-        || ((reportData.total_work_days - reportData.total_holiday_days).toFixed(1) !== row.worked_days.toFixed(1));
+        || reportData.total_work_days.toFixed(1) !== row.worked_days.toFixed(1);
         
         // Add borders and conditional formatting to data cells
         dataRow.eachCell((cell) => {
