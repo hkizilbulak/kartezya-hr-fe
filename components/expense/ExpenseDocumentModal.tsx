@@ -264,46 +264,34 @@ const ExpenseDocumentModal: React.FC<ExpenseDocumentModalProps> = ({
         {/* Upload Section */}
         {true ? (
           <div className="mb-4">
-            <h6 className="mb-3">
-              <Upload size={18} className="me-2" />
-              Döküman Yükle
-            </h6>
-            
-            {/* Drag & Drop Zone */}
             <div
-              className={`border rounded p-4 text-center ${isDragging ? 'border-primary bg-light' : 'border-secondary'}`}
-              style={{ 
-                borderStyle: 'dashed',
-                cursor: 'pointer',
-                transition: 'all 0.3s',
-              }}
+              className={`border rounded p-4 text-center ${isDragging ? 'border-primary bg-light' : 'border-secondary'
+                }`}
               onDragEnter={handleDragEnter}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
+              style={{ cursor: 'pointer', transition: 'all 0.2s' }}
               onClick={() => fileInputRef.current?.click()}
             >
-              <Upload size={48} className="text-muted mb-3" />
-              <h5 className="text-muted">Dosyaları buraya sürükleyin</h5>
-              <p className="text-muted mb-2">veya</p>
-              <Button variant="primary" size="sm">
-                Dosya Seç
-              </Button>
+              <Upload size={48} className="text-secondary mb-3" />
+              <p className="mb-2">
+                <strong>Dosyaları buraya sürükleyin veya tıklayarak seçin</strong>
+              </p>
+              <p className="text-muted small mb-0">
+                Desteklenen formatlar: PDF, JPG, PNG, GIF (Maks. 10MB)
+              </p>
+              <p className="text-muted small mb-0">
+                Birden fazla dosya seçebilirsiniz
+              </p>
               <input
                 ref={fileInputRef}
                 type="file"
-                multiple
-                accept=".pdf,.jpg,.jpeg,.png,.gif"
                 onChange={handleFileSelect}
                 style={{ display: 'none' }}
+                accept=".pdf,.jpg,.jpeg,.png,.gif"
+                multiple
               />
-              <div className="mt-3 text-muted small">
-                <strong>Maksimum dosya boyutu:</strong> 10MB
-                <br />
-                <strong>İzin verilen formatlar:</strong> PDF, JPG, PNG, GIF
-                <br />
-                <strong>Çoklu seçim:</strong> Birden fazla dosya seçebilirsiniz
-              </div>
             </div>
 
             {/* Uploading Files */}
