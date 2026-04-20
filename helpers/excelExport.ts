@@ -217,7 +217,7 @@ export const exportHakedisToExcel = async (reportData: EforReportResponse) => {
       let sum = (row.january || 0) + (row.february || 0) + (row.march || 0) + (row.april || 0) + (row.may || 0) + (row.june || 0) + (row.july || 0) + (row.august || 0) + (row.september || 0) + (row.october || 0) + (row.november || 0) + (row.december || 0);
       const dataRow = ws.addRow([
         `${row.first_name} ${row.last_name}`, // Ad-Soyad
-        '', // Grade
+        row.current_grade || '', // Grade
         '', // Rate
         (row.january || 0).toFixed(1), // Ocak
         (row.february || 0).toFixed(1), // Şubat

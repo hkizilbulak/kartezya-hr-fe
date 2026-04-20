@@ -21,6 +21,7 @@ export interface WorkDayReportRow {
 	work_days: number;
 	used_leave_days: number;
 	worked_days: number;
+	current_grade: string;
 }
 
 export interface WorkDayReportResponse {
@@ -39,6 +40,7 @@ export interface EforReportRow {
 	company_name: string;
 	department_name: string;
 	manager: string;
+	current_grade: string;
 	grade: string;
 	rate: string;
 	january: number;

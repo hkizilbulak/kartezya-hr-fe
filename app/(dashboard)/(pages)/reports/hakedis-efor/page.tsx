@@ -371,6 +371,7 @@ const HakedisEforReportPage = () => {
                                 >
                                   AD SOYAD {getSortIcon('first_name')}
                                 </th>
+                                <th>GRADE</th>
                                 <th>OCAK</th>
                                 <th>ŞUBAT</th>
                                 <th>MART</th>
@@ -408,6 +409,7 @@ const HakedisEforReportPage = () => {
                                 getSortedAndPaginatedData().map((row: EforReportRow) => (
                                   <tr key={row.id}>
                                     <td>{row.first_name} {row.last_name}</td>
+                                    <td>{row.current_grade}</td>
                                     <td>{(row.january || 0).toFixed(1)}</td>
                                     <td>{(row.february || 0).toFixed(1)}</td>
                                     <td>{(row.march || 0).toFixed(1)}</td>
@@ -427,7 +429,7 @@ const HakedisEforReportPage = () => {
                                 ))
                               ) : (
                                 <tr>
-                                  <td colSpan={16} className="text-center py-4">
+                                  <td colSpan={17} className="text-center py-4">
                                     Veri bulunamadı
                                   </td>
                                 </tr>
