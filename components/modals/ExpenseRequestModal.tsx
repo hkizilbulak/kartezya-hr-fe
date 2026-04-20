@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Form, Button, Row, Col, Alert } from 'react-bootstrap';
+import { IMaskInput } from 'react-imask';
 import { ExpenseRequest, Currency } from '@/models/hr/expense-models';
 import expenseService from '@/services/expense.service';
 import { toast } from 'react-toastify';
@@ -28,8 +29,7 @@ const ExpenseRequestModal: React.FC<ExpenseRequestModalProps> = ({
     amount: '',
     currency: 'TRY',
     expense_date: '',
-    description: '',
-    teamApprovalReceived: false
+    description: ''
   });
   
   const [expenseTypes, setExpenseTypes] = useState<any[]>([]);
@@ -49,8 +49,7 @@ const ExpenseRequestModal: React.FC<ExpenseRequestModalProps> = ({
         amount: expenseRequest.amount?.toString() || '',
         currency: expenseRequest.currency || 'TRY',
         expense_date: expenseRequest.expense_date?.split('T')[0] || '',
-        description: expenseRequest.description || '',
-        teamApprovalReceived: false
+        description: expenseRequest.description || ''
       });
       setFieldErrors({});
     } else if (show && !isEdit) {
@@ -60,8 +59,7 @@ const ExpenseRequestModal: React.FC<ExpenseRequestModalProps> = ({
         amount: '',
         currency: 'TRY',
         expense_date: today,
-        description: '',
-        teamApprovalReceived: false
+        description: ''
       });
       setFieldErrors({});
     }
@@ -187,18 +185,24 @@ const ExpenseRequestModal: React.FC<ExpenseRequestModalProps> = ({
                   <Form.Label>
                     Tutar <span className="text-danger">*</span>
                   </Form.Label>
-                  <Form.Control
-                    type="number"
-                    step="0.01"
-                    name="amount"
-                    value={formData.amount}
-                    onChange={(e: any) => handleChange('amount', e.target.value)}
-                    isInvalid={!!fieldErrors.amount}
+                  <IMaskInput
+                    className={`form-control${fieldErrors.amount ? ' is-invalid' : ''}`}
+                    mask={Number}
+                    scale={2}
+                    padFractionalZeros={true}
+                    normalizeZeros={true}
+                    radix=","
+                    mapToRadix={['.']}
+                    thousandsSeparator="."
+                    value={String(formData.amount)}
+                    unmask={true}
+                    onAccept={(value) => handleChange('amount', value)}
+                    placeholder="0,00"
                   />
                   {fieldErrors.amount && (
-                    <Form.Control.Feedback type="invalid">
+                    <div className="invalid-feedback d-block">
                       {fieldErrors.amount}
-                    </Form.Control.Feedback>
+                    </div>
                   )}
                 </Form.Group>
               </Col>
@@ -230,18 +234,6 @@ const ExpenseRequestModal: React.FC<ExpenseRequestModalProps> = ({
                 isInvalid={!!fieldErrors.expense_date}
                 errorMessage={fieldErrors.expense_date}
                 required={true}
-              />
-            </Form.Group>
-
-            {/* Team Approval Checkbox */}
-            <Form.Group className="mb-3">
-              <Form.Check
-                type="checkbox"
-                name="teamApprovalReceived"
-                id="teamApprovalReceived"
-                label={<span>Ekip onayı alındı <span className="text-danger">*</span></span>}
-                checked={formData.teamApprovalReceived}
-                onChange={(e: any) => handleChange('teamApprovalReceived', e.target.checked)}
               />
             </Form.Group>
 
@@ -280,7 +272,7 @@ const ExpenseRequestModal: React.FC<ExpenseRequestModalProps> = ({
             <Button 
               variant="primary" 
               type="submit" 
-              disabled={loading || !formData.teamApprovalReceived}
+              disabled={loading}
             >
               {loading ? 'Kaydediliyor...' : isEdit ? 'Güncelle' : 'Talep Oluştur'}
             </Button>

@@ -138,7 +138,7 @@ class ExpenseService extends BaseService<ExpenseRequest> {
   async rejectExpenseRequest(id: number, notes?: string): Promise<APIResponse<ExpenseRequest>> {
     try {
       const response = await axiosInstance.post(`/expense/requests/${id}/reject`, {
-        notes,
+        rejection_reason: notes,
       });
       return response.data;
     } catch (error) {

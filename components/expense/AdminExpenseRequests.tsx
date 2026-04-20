@@ -9,7 +9,7 @@ import LoadingOverlay from '@/components/LoadingOverlay';
 import FormSelectField from '@/components/FormSelectField';
 import FormDateField from '@/components/FormDateField';
 import Pagination from '@/components/Pagination';
-import { Check, X, DollarSign, FileText } from 'react-feather';
+import { Check, X, DollarSign, FileText, Info } from 'react-feather';
 import { toast } from 'react-toastify';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
 import '@/styles/table-list.scss';
@@ -36,6 +36,7 @@ const AdminExpenseRequests: React.FC = () => {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [showPaidModal, setShowPaidModal] = useState(false);
   const [showDocumentModal, setShowDocumentModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<ExpenseRequest | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [paymentReference, setPaymentReference] = useState('');
@@ -169,6 +170,11 @@ const AdminExpenseRequests: React.FC = () => {
     setShowDocumentModal(true);
   };
 
+  const handleShowDetail = (request: ExpenseRequest) => {
+    setSelectedRequest(request);
+    setShowDetailModal(true);
+  };
+
   const handleCloseDocumentModal = () => {
     setShowDocumentModal(false);
     setSelectedRequest(null);
@@ -192,7 +198,11 @@ const AdminExpenseRequests: React.FC = () => {
       'USD': '$',
       'EUR': '€',
     };
-    return `${amount.toFixed(2)} ${currencySymbol[currency] || currency}`;
+    const formattedAmount = new Intl.NumberFormat('tr-TR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(amount);
+    return `${formattedAmount} ${currencySymbol[currency] || currency}`;
   };
 
   const formatDate = (dateString: string) => {
@@ -311,54 +321,62 @@ const AdminExpenseRequests: React.FC = () => {
                           <td>{getStatusBadge(request.status)}</td>
                           <td>{formatDate(request.created_at)}</td>
                           <td className="text-end">
-                            <Button
-                              variant="outline-secondary"
-                              size="sm"
-                              onClick={() => handleShowDocuments(request)}
-                              className="me-2"
-                              title="Dökümanlar"
-                            >
-                              <FileText size={16} />
-                              {request.expense_type?.requires_receipt && (!request.document_count || request.document_count === 0) && (
-                                <Badge bg="warning" className="ms-1" style={{ fontSize: '0.6em' }}>!</Badge>
-                              )}
-                            </Button>
-                            {request.status === 'PENDING' && (
-                              <>
-                                <Button
-                                  variant="success"
-                                  size="sm"
-                                  onClick={() => handleApproveClick(request)}
-                                  className="me-2"
-                                  title={
-                                    request.expense_type?.requires_receipt && (!request.document_count || request.document_count === 0)
-                                      ? 'Döküman zorunludur. Lütfen önce döküman yükleyin.'
-                                      : 'Onayla'
-                                  }
-                                  disabled={request.expense_type?.requires_receipt && (!request.document_count || request.document_count === 0)}
-                                >
-                                  <Check size={16} />
-                                </Button>
-                                <Button
-                                  variant="danger"
-                                  size="sm"
-                                  onClick={() => handleRejectClick(request)}
-                                  title="Reddet"
-                                >
-                                  <X size={16} />
-                                </Button>
-                              </>
-                            )}
-                            {request.status === 'APPROVED' && (
+                            <div className="d-flex justify-content-end gap-2">
                               <Button
-                                variant="primary"
+                                variant="outline-secondary"
                                 size="sm"
-                                onClick={() => handleMarkPaidClick(request)}
-                                title="Ödendi İşaretle"
+                                onClick={() => handleShowDocuments(request)}
+                                title="Dökümanlar"
                               >
-                                <DollarSign size={16} />
+                                <FileText size={14} />
+                                {request.expense_type?.requires_receipt && (!request.document_count || request.document_count === 0) && (
+                                  <Badge bg="warning" className="ms-1" style={{ fontSize: '0.6em' }}>!</Badge>
+                                )}
                               </Button>
-                            )}
+                              {request.status === 'PENDING' && (
+                                <>
+                                  <Button
+                                    variant="outline-success"
+                                    size="sm"
+                                    onClick={() => handleApproveClick(request)}
+                                    title={
+                                      request.expense_type?.requires_receipt && (!request.document_count || request.document_count === 0)
+                                        ? 'Döküman zorunludur. Lütfen önce döküman yükleyin.'
+                                        : 'Onayla'
+                                    }
+                                    disabled={request.expense_type?.requires_receipt && (!request.document_count || request.document_count === 0)}
+                                  >
+                                    <Check size={14} />
+                                  </Button>
+                                  <Button
+                                    variant="outline-danger"
+                                    size="sm"
+                                    onClick={() => handleRejectClick(request)}
+                                    title="Reddet"
+                                  >
+                                    <X size={14} />
+                                  </Button>
+                                </>
+                              )}
+                              {request.status === 'APPROVED' && (
+                                <Button
+                                  variant="outline-primary"
+                                  size="sm"
+                                  onClick={() => handleMarkPaidClick(request)}
+                                  title="Ödendi İşaretle"
+                                >
+                                  <DollarSign size={14} />
+                                </Button>
+                              )}
+                              <Button
+                                variant="outline-info"
+                                size="sm"
+                                onClick={() => handleShowDetail(request)}
+                                title="Detaylar"
+                              >
+                                <Info size={14} />
+                              </Button>
+                            </div>
                           </td>
                         </tr>
                       ))
@@ -377,7 +395,7 @@ const AdminExpenseRequests: React.FC = () => {
               totalPages={totalPages}
               totalItems={totalItems}
               itemsPerPage={itemsPerPage}
-              onPageChange={(page) => setCurrentPage(page)}
+              onPageChange={(page) => fetchExpenseRequests(page, statusFilter)}
               onPageSizeChange={(size) => {}}
             />
           </div>
@@ -478,6 +496,60 @@ const AdminExpenseRequests: React.FC = () => {
           </Button>
           <Button variant="primary" onClick={handleMarkPaidConfirm}>
             Ödendi İşaretle
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Detail Modal */}
+      <Modal show={showDetailModal} onHide={() => setShowDetailModal(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Masraf Detayları</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {selectedRequest && (
+            <div className="d-flex flex-column gap-3">
+              <div>
+                <strong>Durum: </strong> {getStatusBadge(selectedRequest.status)}
+              </div>
+              {selectedRequest.status === 'APPROVED' && selectedRequest.approved_at && (
+                <div>
+                  <strong>Onaylanma Tarihi: </strong> {formatDate(selectedRequest.approved_at)}
+                </div>
+              )}
+              {selectedRequest.status === 'REJECTED' && (
+                <>
+                  {selectedRequest.rejected_at && (
+                    <div>
+                      <strong>Reddedilme Tarihi: </strong> {formatDate(selectedRequest.rejected_at)}
+                    </div>
+                  )}
+                  {selectedRequest.rejection_reason && (
+                    <div>
+                      <strong>Red Nedeni: </strong> {selectedRequest.rejection_reason}
+                    </div>
+                  )}
+                </>
+              )}
+              {selectedRequest.status === 'PAID' && (
+                <>
+                  {selectedRequest.paid_at && (
+                    <div>
+                      <strong>Ödenme Tarihi: </strong> {formatDate(selectedRequest.paid_at)}
+                    </div>
+                  )}
+                  {selectedRequest.payment_reference && (
+                    <div>
+                      <strong>Ödeme No: </strong> {selectedRequest.payment_reference}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowDetailModal(false)}>
+            Kapat
           </Button>
         </Modal.Footer>
       </Modal>

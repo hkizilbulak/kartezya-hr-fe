@@ -10,7 +10,7 @@ import DeleteModal from '@/components/DeleteModal';
 import LoadingOverlay from '@/components/LoadingOverlay';
 import FormDateField from '@/components/FormDateField';
 import FormSelectField from '@/components/FormSelectField';
-import { Edit, Plus, FileText, X } from 'react-feather';
+import { Edit, Plus, FileText, X, Info } from 'react-feather';
 import { toast } from 'react-toastify';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
 import '@/styles/table-list.scss';
@@ -28,6 +28,7 @@ const EmployeeExpenseRequests: React.FC<EmployeeExpenseRequestsProps> = ({
   const [expenseRequests, setExpenseRequests] = useState<ExpenseRequest[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<ExpenseRequest | null>(null);
   const [isEdit, setIsEdit] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -156,6 +157,11 @@ const EmployeeExpenseRequests: React.FC<EmployeeExpenseRequestsProps> = ({
   const handleShowDocuments = (request: ExpenseRequest) => {
     setSelectedRequest(request);
     setShowDocumentModal(true);
+  };
+
+  const handleShowDetail = (request: ExpenseRequest) => {
+    setSelectedRequest(request);
+    setShowDetailModal(true);
   };
 
   const handleCloseDocumentModal = () => {
@@ -363,6 +369,14 @@ const EmployeeExpenseRequests: React.FC<EmployeeExpenseRequestsProps> = ({
                                         <X size={14} />
                                       </Button>
                                     )}
+                                    <Button
+                                      variant="outline-info"
+                                      size="sm"
+                                      title="Detaylar"
+                                      onClick={() => handleShowDetail(request)}
+                                    >
+                                      <Info size={14} />
+                                    </Button>
                                   </div>
                                 </td>
                               </tr>
@@ -419,6 +433,65 @@ const EmployeeExpenseRequests: React.FC<EmployeeExpenseRequestsProps> = ({
         expenseRequest={selectedRequest}
         isEdit={isEdit}
       />
+
+      {/* Detail Modal */}
+      {selectedRequest && showDetailModal && (
+        <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Masraf Detayları</h5>
+                <button type="button" className="btn-close" onClick={() => setShowDetailModal(false)}></button>
+              </div>
+              <div className="modal-body">
+                <div className="d-flex flex-column gap-3">
+                  <div>
+                    <strong>Durum: </strong> {getStatusBadge(selectedRequest.status)}
+                  </div>
+                  {selectedRequest.status === 'APPROVED' && selectedRequest.approved_at && (
+                    <div>
+                      <strong>Onaylanma Tarihi: </strong> {formatDate(selectedRequest.approved_at)}
+                    </div>
+                  )}
+                  {selectedRequest.status === 'REJECTED' && (
+                    <>
+                      {selectedRequest.rejected_at && (
+                        <div>
+                          <strong>Reddedilme Tarihi: </strong> {formatDate(selectedRequest.rejected_at)}
+                        </div>
+                      )}
+                      {selectedRequest.rejection_reason && (
+                        <div>
+                          <strong>Red Nedeni: </strong> {selectedRequest.rejection_reason}
+                        </div>
+                      )}
+                    </>
+                  )}
+                  {selectedRequest.status === 'PAID' && (
+                    <>
+                      {selectedRequest.paid_at && (
+                        <div>
+                          <strong>Ödenme Tarihi: </strong> {formatDate(selectedRequest.paid_at)}
+                        </div>
+                      )}
+                      {selectedRequest.payment_reference && (
+                        <div>
+                          <strong>Ödeme No: </strong> {selectedRequest.payment_reference}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+              <div className="modal-footer">
+                <Button variant="secondary" onClick={() => setShowDetailModal(false)}>
+                  Kapat
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {selectedRequest && (
         <ExpenseDocumentModal
