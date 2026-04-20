@@ -119,6 +119,12 @@ export const DashboardMenu: IMenuProps[] = [
 				requiredRoles: ['ADMIN']
 			},
 			{
+				id: 'hakedis-efor-report',
+				link: '/reports/hakedis-efor',
+				name: 'Hakediş Efor Raporu',
+				requiredRoles: ['ADMIN']
+			},
+			{
 				id: 'grade',
 				link: '/reports/grade',
 				name: 'Grade Raporu',

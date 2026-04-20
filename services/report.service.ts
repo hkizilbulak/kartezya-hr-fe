@@ -1,5 +1,6 @@
 import { 
 	WorkDayReportResponse,
+	EforReportResponse,
 	GradeReportResponse 
 } from '@/models/hr/report.model';
 import axiosInstance from '@/helpers/api/axiosInstance';
@@ -77,6 +78,47 @@ export const reportService = {
 		);
 
 		return response.data as WorkDayReportResponse;
+	},
+
+	/**
+	 * Get efor report
+	 */
+	async getEforReport(
+		startDate: string,
+		endDate: string,
+		companyId?: number,
+		departmentId?: number | Array<number | string> | string,
+		isActive?: boolean,
+		title?: string
+	): Promise<EforReportResponse> {
+		const params = new URLSearchParams({
+			start_date: startDate,
+			end_date: endDate,
+		});
+
+		if (companyId) {
+			params.append('company_id', companyId.toString());
+		}
+
+		if (Array.isArray(departmentId) || typeof departmentId === 'string') {
+			appendCsvArrayParam(params, 'department_ids', departmentId);
+		} else if (departmentId) {
+			params.append('department_id', departmentId.toString());
+		}
+
+		if (isActive !== undefined) {
+			params.append('is_active', isActive.toString());
+		}
+
+		if (title) {
+			params.append('title', title);
+		}
+
+		const response = await axiosInstance.get(
+			`/reports/efor?${params.toString()}`
+		);
+
+		return response.data as EforReportResponse;
 	},
 
 	/**

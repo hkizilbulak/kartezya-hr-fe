@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Button, Form, Table } from 'react-bootstrap';
 import { reportService, lookupService } from '@/services';
-import { WorkDayReportResponse, WorkDayReportRow } from '@/models/hr/report.model';
+import { EforReportResponse, EforReportRow } from '@/models/hr/report.model';
 import { CompanyLookup, DepartmentLookup } from '@/services/lookup.service';
 import { PageHeading } from '@/widgets';
 import FormDateField from '@/components/FormDateField';
@@ -17,8 +17,8 @@ import * as ExcelUtils from '@/helpers/excelExport';
 import '@/styles/table-list.scss';
 import '@/styles/components/table-common.scss';
 
-const WorkDayReportPage = () => {
-  const [reportData, setReportData] = useState<WorkDayReportResponse | null>(null);
+const HakedisEforReportPage = () => {
+  const [reportData, setReportData] = useState<EforReportResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true); // Initialize as true for initial loading
   const [showTable, setShowTable] = useState(false);
 
@@ -38,7 +38,7 @@ const WorkDayReportPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [sortConfig, setSortConfig] = useState<{
-    key: 'first_name' | 'last_name' | 'identity_no' | 'company_name' | 'department_name' | 'work_days' | 'manager' | null;
+    key: 'first_name' | 'last_name' | 'identity_no' | 'company_name' | 'department_name' | 'manager' | null;
     direction: 'ASC' | 'DESC';
   }>({
     key: null,
@@ -55,12 +55,11 @@ const WorkDayReportPage = () => {
   useEffect(() => {
     const today = new Date();
     const year = today.getFullYear();
-    const month = today.getMonth();
     
-    // First day of current month
-    const firstDay = new Date(year, month, 1);
-    // Last day of current month
-    const lastDay = new Date(year, month + 1, 0);
+    // First day of current year
+    const firstDay = new Date(year, 0, 1);
+    // Last day of current year
+    const lastDay = new Date(year, 11, 31);
     
     setStartDate(formatDateTR(firstDay));
     setEndDate(formatDateTR(lastDay));
@@ -137,7 +136,7 @@ const WorkDayReportPage = () => {
       setIsLoading(true);
       setShowTable(false);
 
-      const response = await reportService.getWorkDayReport(
+      const response = await reportService.getEforReport(
         startDate,
         endDate,
         selectedCompany ? parseInt(selectedCompany) : undefined,
@@ -156,21 +155,21 @@ const WorkDayReportPage = () => {
     }
   };
 
-  const handleExportToExcel = async () => {
+  const handleExportHakedisToExcel = async () => {
     if (!reportData) {
       toast.warning('Önce raporu getirmelisiniz');
       return;
     }
 
     try {
-      await ExcelUtils.exportToExcel(reportData);
-      toast.success('Rapor Excel\'e başarıyla aktarıldı');
+      await ExcelUtils.exportHakedisToExcel(reportData);
+      toast.success('Hakediş Excel başarıyla indirildi');
     } catch (error: any) {
       toast.error('Excel export sırasında hata oluştu');
     }
   };
 
-  const handleSort = (key: 'first_name' | 'last_name' | 'identity_no' | 'company_name' | 'department_name' | 'work_days' | 'manager') => {
+  const handleSort = (key: 'first_name' | 'last_name' | 'identity_no' | 'company_name' | 'department_name' | 'manager') => {
     let direction: 'ASC' | 'DESC' = 'ASC';
     if (sortConfig.key === key && sortConfig.direction === 'ASC') {
       direction = 'DESC';
@@ -179,7 +178,7 @@ const WorkDayReportPage = () => {
     setCurrentPage(1);
   };
 
-  const getSortIcon = (columnKey: 'first_name' | 'last_name' | 'identity_no' | 'company_name' | 'department_name' | 'work_days' | 'manager') => {
+  const getSortIcon = (columnKey: 'first_name' | 'last_name' | 'identity_no' | 'company_name' | 'department_name' | 'manager') => {
     if (sortConfig.key !== columnKey) {
       return null;
     }
@@ -196,8 +195,8 @@ const WorkDayReportPage = () => {
     // Apply sorting
     if (sortConfig.key) {
       sorted.sort((a, b) => {
-        const aValue = a[sortConfig.key as keyof WorkDayReportRow];
-        const bValue = b[sortConfig.key as keyof WorkDayReportRow];
+        const aValue = a[sortConfig.key as keyof EforReportRow];
+        const bValue = b[sortConfig.key as keyof EforReportRow];
 
         if (typeof aValue === 'string' && typeof bValue === 'string') {
           return sortConfig.direction === 'ASC' 
@@ -248,7 +247,7 @@ const WorkDayReportPage = () => {
         
         <div className="page-heading-wrapper">
           <PageHeading 
-            heading="Çalışma Günü Raporu"
+            heading="Hakediş Efor Raporu"
             showCreateButton={false}
             showFilterButton={false}
           />
@@ -337,11 +336,11 @@ const WorkDayReportPage = () => {
                       >Raporu Getir</Button>
                       {showTable && reportData && (
                         <Button
-                          variant="success"
-                          onClick={handleExportToExcel}
+                          variant="info"
+                          onClick={handleExportHakedisToExcel}
                         >
-                          <DownloadIcon size={18} className="me-2" style={{ display: 'inline' }} />
-                          Excel'e İndir
+                          <DownloadIcon size={18} className="me-2" style={{ display: 'inline', color: 'white' }} />
+                          <span style={{color: 'white'}}>Hakediş Excel İndir</span>
                         </Button>
                       )}
                     </Col>
@@ -372,14 +371,18 @@ const WorkDayReportPage = () => {
                                 >
                                   AD SOYAD {getSortIcon('first_name')}
                                 </th>
-                                <th
-                                  onClick={() => handleSort('work_days')}
-                                  className="sortable-header text-end"
-                                >
-                                  İŞ GÜNÜ {getSortIcon('work_days')}
-                                </th>
-                                <th className="text-end">KULLANILAN İZİN</th>
-                                <th className="text-end">ÇALIŞILAN GÜN</th>
+                                <th>OCAK</th>
+                                <th>ŞUBAT</th>
+                                <th>MART</th>
+                                <th>NİSAN</th>
+                                <th>MAYIS</th>
+                                <th>HAZİRAN</th>
+                                <th>TEMMUZ</th>
+                                <th>AĞUSTOS</th>
+                                <th>EYLÜL</th>
+                                <th>EKİM</th>
+                                <th>KASIM</th>
+                                <th>ARALIK</th>
                                 <th
                                   onClick={() => handleSort('company_name')}
                                   className="sortable-header"
@@ -402,12 +405,21 @@ const WorkDayReportPage = () => {
                             </thead>
                             <tbody>
                               {getSortedAndPaginatedData().length > 0 ? (
-                                getSortedAndPaginatedData().map((row: WorkDayReportRow) => (
+                                getSortedAndPaginatedData().map((row: EforReportRow) => (
                                   <tr key={row.id}>
                                     <td>{row.first_name} {row.last_name}</td>
-                                    <td className="text-end">{row.work_days.toFixed(1)}</td>
-                                    <td className="text-end">{row.used_leave_days.toFixed(1)}</td>
-                                    <td className="text-end">{row.worked_days.toFixed(1)}</td>
+                                    <td>{(row.january || 0).toFixed(1)}</td>
+                                    <td>{(row.february || 0).toFixed(1)}</td>
+                                    <td>{(row.march || 0).toFixed(1)}</td>
+                                    <td>{(row.april || 0).toFixed(1)}</td>
+                                    <td>{(row.may || 0).toFixed(1)}</td>
+                                    <td>{(row.june || 0).toFixed(1)}</td>
+                                    <td>{(row.july || 0).toFixed(1)}</td>
+                                    <td>{(row.august || 0).toFixed(1)}</td>
+                                    <td>{(row.september || 0).toFixed(1)}</td>
+                                    <td>{(row.october || 0).toFixed(1)}</td>
+                                    <td>{(row.november || 0).toFixed(1)}</td>
+                                    <td>{(row.december || 0).toFixed(1)}</td>
                                     <td>{row.company_name}</td>
                                     <td>{row.department_name}</td>
                                     <td>{row.manager}</td>
@@ -415,7 +427,7 @@ const WorkDayReportPage = () => {
                                 ))
                               ) : (
                                 <tr>
-                                  <td colSpan={13} className="text-center py-4">
+                                  <td colSpan={16} className="text-center py-4">
                                     Veri bulunamadı
                                   </td>
                                 </tr>
@@ -453,4 +465,4 @@ const WorkDayReportPage = () => {
   );
 };
 
-export default WorkDayReportPage;
+export default HakedisEforReportPage;

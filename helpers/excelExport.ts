@@ -1,5 +1,5 @@
 import ExcelJS from 'exceljs';
-import { WorkDayReportResponse, GradeReportResponse, GradeReportRow } from '@/models/hr/report.model';
+import { WorkDayReportResponse, GradeReportResponse, GradeReportRow, EforReportResponse } from '@/models/hr/report.model';
 
 export interface GradeExcelColumnConfig {
   key: string;
@@ -52,7 +52,7 @@ export const exportToExcel = async (reportData: WorkDayReportResponse) => {
     rowNum++;
 
     // Row 5: Toplam İş Günü
-    const row5 = ws.addRow(['Toplam İş Günü:(Resmi Tatil Hariç)', Math.round(reportData.total_work_days)]);
+    const row5 = ws.addRow(['Toplam İş Günü:(Resmi Tatil Hariç)', reportData.total_work_days]);
     row5.getCell(1).font = { bold: true, size: 11 };
     row5.getCell(1).alignment = { horizontal: 'left', vertical: 'middle' };
     row5.getCell(2).font = { bold: true, size: 11 };
@@ -60,7 +60,7 @@ export const exportToExcel = async (reportData: WorkDayReportResponse) => {
     rowNum++;
 
     // Row 6: Toplam Resmi Tatil
-    const row6 = ws.addRow(['Toplam Resmi Tatil:', Math.round(reportData.total_holiday_days)]);
+    const row6 = ws.addRow(['Toplam Resmi Tatil:', reportData.total_holiday_days]);
     row6.getCell(1).font = { bold: true, size: 11 };
     row6.getCell(1).alignment = { horizontal: 'left', vertical: 'middle' };
     row6.getCell(2).font = { bold: true, size: 11 };
@@ -121,7 +121,7 @@ export const exportToExcel = async (reportData: WorkDayReportResponse) => {
       sortedRows.forEach((row, index) => {
         const dataRow = ws.addRow([
           `${row.first_name} ${row.last_name}`,
-          Math.round(row.work_days),
+          parseFloat(row.work_days.toFixed(1)),
           row.used_leave_days.toFixed(1),
           row.worked_days.toFixed(1),
           row.company_name,
@@ -171,11 +171,105 @@ export const exportToExcel = async (reportData: WorkDayReportResponse) => {
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = filename;
+    link.download = `Calisma_Gunu_Raporu_${formatDate(startDate)}-${formatDate(endDate)}.xlsx`;
     link.click();
     window.URL.revokeObjectURL(url);
   } catch (error) {
-    console.error('Excel export hatası:', error);
+    console.error('Excel creation error:', error);
+    throw error;
+  }
+};
+
+export const exportHakedisToExcel = async (reportData: EforReportResponse) => {
+  try {
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('Detay');
+
+    // Title Row
+    const titleRow = ws.addRow(['Table 1: 2026 Planlanan Efor (Aylara/Personele Göre Dağılım)']);
+    titleRow.font = { bold: true };
+    ws.mergeCells(1, 1, 1, 16);
+
+    // Subtitle Row
+    const subtitleRow = ws.addRow(['', '', '', 'Aylara Göre İş Günü Sayıları']);
+    subtitleRow.font = { bold: true };
+    ws.mergeCells(2, 4, 2, 16);
+
+    // Headers
+    const headers = [
+      'Ad-Soyad', 'Grade', 'Rate', 'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 
+      'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık', 'Toplam'
+    ];
+    
+    const headerRow = ws.addRow(headers);
+    headerRow.font = { bold: true };
+    
+    // Widths
+    ws.getColumn(1).width = 25; // Ad-Soyad
+    ws.getColumn(2).width = 15; // Grade
+    ws.getColumn(3).width = 10; // Rate
+    for (let i = 4; i <= 16; i++) {
+      ws.getColumn(i).width = 10; // Ayları ve Toplamı
+    }
+
+    // Data rows
+    reportData.rows.forEach((row, index) => {
+      let sum = (row.january || 0) + (row.february || 0) + (row.march || 0) + (row.april || 0) + (row.may || 0) + (row.june || 0) + (row.july || 0) + (row.august || 0) + (row.september || 0) + (row.october || 0) + (row.november || 0) + (row.december || 0);
+      const dataRow = ws.addRow([
+        `${row.first_name} ${row.last_name}`, // Ad-Soyad
+        '', // Grade
+        '', // Rate
+        (row.january || 0).toFixed(1), // Ocak
+        (row.february || 0).toFixed(1), // Şubat
+        (row.march || 0).toFixed(1), // Mart
+        (row.april || 0).toFixed(1), // Nisan
+        (row.may || 0).toFixed(1), // Mayıs
+        (row.june || 0).toFixed(1), // Haziran
+        (row.july || 0).toFixed(1), // Temmuz
+        (row.august || 0).toFixed(1), // Ağustos
+        (row.september || 0).toFixed(1), // Eylül
+        (row.october || 0).toFixed(1), // Ekim
+        (row.november || 0).toFixed(1), // Kasım
+        (row.december || 0).toFixed(1), // Aralık
+        sum.toFixed(1) // Toplam
+      ]);
+      
+      // Zebra striping similar to normal excel export
+      if (index % 2 === 1) {
+        dataRow.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFF9F9F9' }
+        };
+      }
+    });
+
+    // Formatting for all cells
+    ws.eachRow((row) => {
+      row.eachCell((cell) => {
+        cell.alignment = { vertical: 'middle', horizontal: 'left' };
+        if (row.number > 2) {
+          cell.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' }
+          };
+        }
+      });
+    });
+
+    // Generate output
+    const buffer = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Hakedis_Efor_Raporu.xlsx`;
+    link.click();
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error('Excel creation error:', error);
     throw error;
   }
 };

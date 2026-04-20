@@ -31,6 +31,38 @@ export interface WorkDayReportResponse {
 	rows: WorkDayReportRow[];
 }
 
+export interface EforReportRow {
+	id: number;
+	first_name: string;
+	last_name: string;
+	identity_no: string;
+	company_name: string;
+	department_name: string;
+	manager: string;
+	grade: string;
+	rate: string;
+	january: number;
+	february: number;
+	march: number;
+	april: number;
+	may: number;
+	june: number;
+	july: number;
+	august: number;
+	september: number;
+	october: number;
+	november: number;
+	december: number;
+	worked_days: number;
+}
+
+export interface EforReportResponse {
+	start_date: string;
+	end_date: string;
+	total_work_days: number;
+	rows: EforReportRow[];
+}
+
 export interface GradeReportRow {
 	id: number;
 	first_name: string;
