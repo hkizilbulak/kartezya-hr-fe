@@ -483,32 +483,6 @@ const Profile = () => {
                       </Col>
                     </Row>
 
-                    {/* Identity Info */}
-                    <Row className="mb-4">
-                      <Col md={6}>
-                        <Form.Group className="mb-3">
-                          <Form.Label>Kimlik No</Form.Label>
-                          <Form.Control
-                            type="text"
-                            name="identity_no"
-                            value={formData.identity_no}
-                            onChange={handleInputChange}
-                          />
-                        </Form.Group>
-                      </Col>
-                      <Col md={6}>
-                        <Form.Group className="mb-3">
-                          <Form.Label>Uyruk</Form.Label>
-                          <Form.Control
-                            type="text"
-                            name="nationality"
-                            value={formData.nationality}
-                            onChange={handleInputChange}
-                          />
-                        </Form.Group>
-                      </Col>
-                    </Row>
-
                     {/* Parent Names */}
                     <Row className="mb-4">
                       <Col md={6}>

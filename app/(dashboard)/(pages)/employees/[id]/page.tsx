@@ -560,7 +560,7 @@ const EmployeeDetailPage = () => {
               email: employee.email,
               phone: employee.phone || '-',
               address: employee.address || '-',
-              totalExperience: getDisplayExperience(),
+             
             }}
           />
 
@@ -663,17 +663,6 @@ const EmployeeDetailPage = () => {
                           />
                         </Col>
                         <Col md={4}>
-                          <FormTextField
-                            controlId="identityNo"
-                            label="Kimlik No"
-                            name="identity_no"
-                            value={(employee as any).identity_no || ''}
-                            onChange={(name, value) => setEmployee({ ...employee, identity_no: value } as any)}
-                          />
-                        </Col>
-                      </Row>
-                      <Row>
-                        <Col md={4}>
                           <FormDateField
                             label="Doğum Tarihi"
                             name="date_of_birth"
@@ -681,6 +670,8 @@ const EmployeeDetailPage = () => {
                             onChange={(e) => setEmployee({ ...employee, date_of_birth: e.target.value })}
                           />
                         </Col>
+                      </Row>
+                      <Row>
                         <Col md={4}>
                           <FormSelectField
                             name="gender"
@@ -711,18 +702,6 @@ const EmployeeDetailPage = () => {
                             ))}
                           </FormSelectField>
                         </Col>
-                      </Row>
-                      <Row>
-                        <Col md={4}>
-
-                          <FormTextField
-                            controlId="motherName"
-                            label="Anne Adı"
-                            name="mother_name"
-                            value={(employee as any).mother_name || ''}
-                            onChange={(name, value) => setEmployee({ ...employee, mother_name: value } as any)}
-                          />
-                        </Col>
                         <Col md={4}>
                           <FormTextField
                             controlId="fatherName"
@@ -730,15 +709,6 @@ const EmployeeDetailPage = () => {
                             name="father_name"
                             value={(employee as any).father_name || ''}
                             onChange={(name, value) => setEmployee({ ...employee, father_name: value } as any)}
-                          />
-                        </Col>
-                        <Col md={4}>
-                          <FormTextField
-                            controlId="nationality"
-                            label="Uyruk"
-                            name="nationality"
-                            value={(employee as any).nationality || ''}
-                            onChange={(name, value) => setEmployee({ ...employee, nationality: value } as any)}
                           />
                         </Col>
                       </Row>

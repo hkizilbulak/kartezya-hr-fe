@@ -362,21 +362,6 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
               </Col>
               <Col md={6}>
                 <Form.Group>
-                  <Form.Label>Kimlik No</Form.Label>
-                  <Form.Control
-                    type="text"
-                    name="identity_no"
-                    value={formData.identity_no}
-                    onChange={handleInputChange}
-                    placeholder="Kimlik numarasını giriniz"
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
-
-            <Row className="mb-3">
-              <Col md={6}>
-                <Form.Group>
                   <Form.Label>Meslek Başlama Tarihi <span className="text-danger">*</span></Form.Label>
                   <FormDateField
                     name="profession_start_date"
@@ -390,8 +375,10 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
                     </div>
                   )}
                 </Form.Group>
-
               </Col>
+            </Row>
+
+            <Row className="mb-3">
               <Col md={6}>
                 <Form.Group>
                   <Form.Label>İşe Başlama Tarihi <span className="text-danger">*</span></Form.Label>
@@ -408,9 +395,6 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
                   )}
                 </Form.Group>
               </Col>
-            </Row>
-
-            <Row className="mb-3">
               <Col md={6}>
                 <Form.Group>
                   <Form.Label>Toplam Boşluk (Yıl)</Form.Label>

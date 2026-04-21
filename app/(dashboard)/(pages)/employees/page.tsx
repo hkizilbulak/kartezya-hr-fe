@@ -748,17 +748,6 @@ const EmployeesPage = () => {
                         />
                       </Col>
                       <Col lg={3} md={6} sm={12}>
-                        <FormTextField
-                          controlId="filter-identity-no"
-                          label="Kimlik No"
-                          name="identity_no"
-                          type="text"
-                          value={filterParams.identity_no}
-                          onChange={(name, value) => handleFilterChange(name, value)}
-                          placeholder="Kimlik no giriniz"
-                        />
-                      </Col>
-                      <Col lg={3} md={6} sm={12}>
                         <FormSelectField
                           label="Cinsiyet"
                           name="gender"
