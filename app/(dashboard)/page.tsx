@@ -1,5 +1,5 @@
 'use client'
-import { Fragment, useState, useEffect } from "react";
+import { Fragment, useState, useEffect, useMemo } from "react";
 import { Container, Row, Col, Card, Spinner } from "react-bootstrap";
 import { dashboardService, DashboardData, GenderChartData, PositionChartData, CompanyDepartmentChartData, GradeChartData } from "@/services/dashboard.service";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LabelList } from 'recharts';
@@ -127,7 +127,11 @@ const Home = () => {
             try {
                 const genderResponse = await dashboardService.getEmployeesByGender();
                 if (genderResponse.success && genderResponse.data) {
-                    setGenderData(genderResponse.data);
+                    const mappedData = genderResponse.data.map(item => ({
+                        ...item,
+                        gender: item.gender === 'MALE' || item.gender === 'Male' ? 'Erkek' : item.gender === 'FEMALE' || item.gender === 'Female' ? 'Kadın' : item.gender
+                    }));
+                    setGenderData(mappedData);
                 }
             } catch (error) {
                 console.error('Error fetching gender data:', error);
@@ -255,6 +259,18 @@ const Home = () => {
             console.error('Employee dashboard veri yükleme hatası:', error);
         }
     };
+
+    const companyData = useMemo(() => {
+        const counts = companyDeptData.reduce((acc, curr) => {
+            acc[curr.company_name] = (acc[curr.company_name] || 0) + curr.count;
+            return acc;
+        }, {} as Record<string, number>);
+        
+        return Object.entries(counts).map(([name, count]) => ({
+            company_name: name,
+            count
+        }));
+    }, [companyDeptData]);
 
     // EMPLOYEE Dashboard
     if (!isAdmin) {
@@ -917,38 +933,33 @@ const Home = () => {
                         </Card>
                     </Col>
 
-                    {/* Gender Chart (Moved to second place) */}
+                    {/* Company Chart (New Widget) */}
                     <Col lg={4} md={12} xs={12} className="mb-6">
                         <Card className="border-0">
                             <Card.Header>
-                                <h5 className="mb-0">Çalışanların Cinsiyet Dağılımı</h5>
+                                <h5 className="mb-0">Şirkete Göre Çalışan Sayısı</h5>
                             </Card.Header>
                             <Card.Body>
-                                {loadingGenderData ? (
+                                {loadingCompanyDeptData ? (
                                     <div className="d-flex justify-content-center align-items-center py-5" style={{ minHeight: '300px' }}>
                                         <Spinner animation="border" role="status" size="sm">
                                             <span className="visually-hidden">Yükleniyor...</span>
                                         </Spinner>
                                     </div>
-                                ) : genderData.length > 0 ? (
+                                ) : companyData.length > 0 ? (
                                     <ResponsiveContainer width="100%" height={300}>
-                                        <PieChart>
-                                            <Pie
-                                                data={genderData}
-                                                cx="50%"
-                                                cy="50%"
-                                                labelLine={false}
-                                                label={({ gender, count }: any) => `${gender}: ${count}`}
-                                                outerRadius={80}
-                                                fill="#8884d8"
-                                                dataKey="count"
-                                            >
-                                                {genderData.map((entry, index) => (
+                                        <BarChart data={companyData}>
+                                            <CartesianGrid strokeDasharray="3 3" />
+                                            <XAxis dataKey="company_name" angle={-45} textAnchor="end" height={80} />
+                                            <YAxis />
+                                            <Tooltip />
+                                            <Bar dataKey="count">
+                                                <LabelList dataKey="count" position="top" fill="#666" fontSize={12} fontWeight={600} />
+                                                {companyData.map((entry, index) => (
                                                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                                 ))}
-                                            </Pie>
-                                            <Tooltip />
-                                        </PieChart>
+                                            </Bar>
+                                        </BarChart>
                                     </ResponsiveContainer>
                                 ) : (
                                     <div className="d-flex justify-content-center align-items-center py-5" style={{ minHeight: '300px' }}>
@@ -1003,11 +1014,53 @@ const Home = () => {
                             </Card.Body>
                         </Card>
                     </Col>
+
+                    {/* Gender Chart (Moved to second place) */}
+                    <Col lg={4} md={12} xs={12} className="mb-6">
+                        <Card className="border-0">
+                            <Card.Header>
+                                <h5 className="mb-0">Çalışanların Cinsiyet Dağılımı</h5>
+                            </Card.Header>
+                            <Card.Body>
+                                {loadingGenderData ? (
+                                    <div className="d-flex justify-content-center align-items-center py-5" style={{ minHeight: '300px' }}>
+                                        <Spinner animation="border" role="status" size="sm">
+                                            <span className="visually-hidden">Yükleniyor...</span>
+                                        </Spinner>
+                                    </div>
+                                ) : genderData.length > 0 ? (
+                                    <ResponsiveContainer width="100%" height={300}>
+                                        <PieChart>
+                                            <Pie
+                                                data={genderData}
+                                                cx="50%"
+                                                cy="50%"
+                                                labelLine={false}
+                                                label={({ gender, count }: any) => `${gender}: ${count}`}
+                                                outerRadius={80}
+                                                fill="#8884d8"
+                                                dataKey="count"
+                                            >
+                                                {genderData.map((entry, index) => (
+                                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                                ))}
+                                            </Pie>
+                                            <Tooltip />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                ) : (
+                                    <div className="d-flex justify-content-center align-items-center py-5" style={{ minHeight: '300px' }}>
+                                        <span className="text-muted">Veri bulunamadı</span>
+                                    </div>
+                                )}
+                            </Card.Body>
+                        </Card>
+                    </Col>
                 </Row>
 
                 <Row>
                     <Col lg={12} md={12} xs={12} className="mb-6">
-                        <Card>
+                        <Card className="border-0">
                             <Card.Header className="d-flex justify-content-between align-items-center">
                                 <div>
                                     <h4 className="mb-0">Kartezya HR Yönetim Sistemine Hoşgeldiniz</h4>
@@ -1015,20 +1068,24 @@ const Home = () => {
                             </Card.Header>
                             <Card.Body>
                                 <p>
-                                    Bu sistem ile çalışanlarınızı, departmanlarınızı ve izin süreçlerinizi kolayca yönetebilirsiniz.
+                                    Bu sistem ile çalışanlarınızı, departmanlarınızı, izin süreçlerinizi ve masraflarınızı kolayca yönetebilirsiniz.
                                 </p>
                                 <div className="row">
-                                    <div className="col-md-4 mb-3">
+                                    <div className="col-md-3 mb-3">
                                         <h6>👥 Çalışan Yönetimi</h6>
                                         <p className="text-muted">Çalışan bilgilerini ekleyin, düzenleyin ve yönetin.</p>
                                     </div>
-                                    <div className="col-md-4 mb-3">
+                                    <div className="col-md-3 mb-3">
                                         <h6>🏢 Departman Yönetimi</h6>
                                         <p className="text-muted">Departmanları organize edin ve pozisyonları belirleyin.</p>
                                     </div>
-                                    <div className="col-md-4 mb-3">
+                                    <div className="col-md-3 mb-3">
                                         <h6>📅 İzin Yönetimi</h6>
                                         <p className="text-muted">İzin taleplerini onaylayın ve raporlayın.</p>
+                                    </div>
+                                    <div className="col-md-3 mb-3">
+                                        <h6>💰 Masraf Yönetimi</h6>
+                                        <p className="text-muted">Çalışan masraf taleplerini değerlendirin ve ödemeleri takip edin.</p>
                                     </div>
                                 </div>
                             </Card.Body>
