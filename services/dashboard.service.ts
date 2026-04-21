@@ -11,13 +11,14 @@ const DASHBOARD_ENDPOINTS = {
 };
 
 export interface DashboardData {
-  total_employees: number;
-  total_departments: number;
-  total_companies: number;
-  pending_leave_requests: number;
-}
-
-export interface GenderChartData {
+    total_employees: number;
+    total_departments: number;
+    total_companies: number;
+    pending_leave_requests: number;
+    pending_expense_requests: number;
+    pending_payment_expenses: number;
+    paid_expenses: number;
+}export interface GenderChartData {
   gender: string;
   count: number;
 }

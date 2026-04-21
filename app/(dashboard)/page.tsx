@@ -49,7 +49,10 @@ const Home = () => {
         total_employees: 0,
         total_departments: 0,
         total_companies: 0,
-        pending_leave_requests: 0
+        pending_leave_requests: 0,
+        pending_expense_requests: 0,
+        pending_payment_expenses: 0,
+        paid_expenses: 0
     });
     const [genderData, setGenderData] = useState<GenderChartData[]>([]);
     const [positionData, setPositionData] = useState<PositionChartData[]>([]);
@@ -739,6 +742,98 @@ const Home = () => {
                                             <i className="fe fe-clock me-1"></i>
                                         </span>
                                         Onay bekleyen
+                                    </p>
+                                </div>
+                            </Card.Body>
+                        </Card>
+                    </Col>
+                </Row>
+
+                <Row>
+                    <Col xl={4} lg={4} md={12} xs={12} className="mb-6">
+                        <Card className="border-0" style={{ cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s' }} onClick={() => router.push('/expenses')} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-5px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}>
+                            <Card.Body>
+                                <div className="d-flex justify-content-between align-items-center mb-3">
+                                    <div>
+                                        <h4 className="mb-0">Onay Bekleyen Masraflar</h4>
+                                    </div>
+                                    <div className="icon-shape icon-md bg-light-warning text-warning rounded-2">
+                                        <i className="fe fe-refresh-cw fs-4"></i>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h1 className="fw-bold">
+                                        {loadingStats ? (
+                                            <Spinner animation="border" role="status" size="sm">
+                                                <span className="visually-hidden">Yükleniyor...</span>
+                                            </Spinner>
+                                        ) : stats.pending_expense_requests}
+                                    </h1>
+                                    <p className="mb-0">
+                                        <span className="text-warning me-2">
+                                            <i className="fe fe-clock me-1"></i>
+                                        </span>
+                                        Onay bekleyen
+                                    </p>
+                                </div>
+                            </Card.Body>
+                        </Card>
+                    </Col>
+
+                    <Col xl={4} lg={4} md={12} xs={12} className="mb-6">
+                        <Card className="border-0" style={{ cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s' }} onClick={() => router.push('/expenses')} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-5px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}>
+                            <Card.Body>
+                                <div className="d-flex justify-content-between align-items-center mb-3">
+                                    <div>
+                                        <h4 className="mb-0">Ödeme Bekleyen Masraflar</h4>
+                                    </div>
+                                    <div className="icon-shape icon-md bg-light-danger text-danger rounded-2">
+                                        <i className="fe fe-credit-card fs-4"></i>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h1 className="fw-bold">
+                                        {loadingStats ? (
+                                            <Spinner animation="border" role="status" size="sm">
+                                                <span className="visually-hidden">Yükleniyor...</span>
+                                            </Spinner>
+                                        ) : stats.pending_payment_expenses}
+                                    </h1>
+                                    <p className="mb-0">
+                                        <span className="text-danger me-2">
+                                            <i className="fe fe-clock me-1"></i>
+                                        </span>
+                                        Ödeme bekleyen
+                                    </p>
+                                </div>
+                            </Card.Body>
+                        </Card>
+                    </Col>
+
+                    <Col xl={4} lg={4} md={12} xs={12} className="mb-6">
+                        <Card className="border-0" style={{ cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s' }} onClick={() => router.push('/expenses')} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-5px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}>
+                            <Card.Body>
+                                <div className="d-flex justify-content-between align-items-center mb-3">
+                                    <div>
+                                        <h4 className="mb-0">Ödenen Masraflar</h4>
+                                    </div>
+                                    <div className="icon-shape icon-md bg-light-success text-success rounded-2">
+                                        <i className="fe fe-check-circle fs-4"></i>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h1 className="fw-bold">
+                                        {loadingStats ? (
+                                            <Spinner animation="border" role="status" size="sm">
+                                                <span className="visually-hidden">Yükleniyor...</span>
+                                            </Spinner>
+                                        ) : stats.paid_expenses}
+                                    </h1>
+                                    <p className="mb-0">
+                                        <span className="text-success me-2">
+                                            <i className="fe fe-check me-1"></i>
+                                        </span>
+                                        Ödenen
                                     </p>
                                 </div>
                             </Card.Body>
