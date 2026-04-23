@@ -181,11 +181,11 @@ const FormSelectField = ({
         const processChildren = (children: React.ReactNode): void => {
             React.Children.forEach(children, (child) => {
                 if (React.isValidElement(child)) {
-                    if (child.type === 'option' && child.props.value === value) {
-                        selectedLabel = child.props.children;
-                    } else if (child.props.children) {
+                    if (child.type === 'option' && (child as any).props.value === value) {
+                        selectedLabel = (child as any).props.children;
+                    } else if ((child as any).props.children) {
                         // Fragment durumu için recursively kontrol et
-                        processChildren(child.props.children);
+                        processChildren((child as any).props.children);
                     }
                 }
             });
@@ -204,26 +204,26 @@ const FormSelectField = ({
                 if (React.isValidElement(child)) {
                     if (child.type === 'option') {
                         // Filter by search query
-                        const optionLabel = String(child.props.children || '');
-                        const optionValue = String(child.props.value || '');
+                        const optionLabel = String((child as any).props.children || '');
+                        const optionValue = String((child as any).props.value || '');
                         const query = searchQuery.toLowerCase().trim();
                         
                         if (query && !optionLabel.toLowerCase().includes(query) && !optionValue.toLowerCase().includes(query)) {
                             return; // Skip this option if it doesn't match search
                         }
                         
-                        const isSelected = child.props.value === value;
+                        const isSelected = (child as any).props.value === value;
                         options.push(
                             <button
-                                key={`${child.props.value}-${index}`}
+                                key={`${(child as any).props.value}-${index}`}
                                 type="button"
                                 className={`list-group-item list-group-item-action border-0 d-flex align-items-center ${
                                     isSelected ? 'active' : ''
                                 } ${isMobile ? 'py-2' : 'py-2'}`}
-                                onClick={() => handleOptionClick(child.props.value)}
+                                onClick={() => handleOptionClick((child as any).props.value)}
                                 style={{ minHeight: isMobile ? '40px' : '40px' }}
                             >
-                                {child.props.children}
+                                {(child as any).props.children}
                                 {isSelected && (
                                     <svg 
                                         width="16" 
@@ -237,9 +237,9 @@ const FormSelectField = ({
                                 )}
                             </button>
                         );
-                    } else if (child.props.children) {
+                    } else if ((child as any).props.children) {
                         // Fragment durumu için recursively işle
-                        processChildren(child.props.children);
+                        processChildren((child as any).props.children);
                     }
                 }
             });

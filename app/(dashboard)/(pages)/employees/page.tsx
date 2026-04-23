@@ -10,6 +10,7 @@ import EmployeeModal from '@/components/modals/EmployeeModal';
 import DeleteModal from '@/components/DeleteModal';
 import LoadingOverlay from '@/components/LoadingOverlay';
 import FormSelectField from '@/components/FormSelectField';
+import MultiSelectField from '@/components/MultiSelectField';
 import FormTextField from '@/components/FormTextField';
 import { Trash2, Eye, ChevronUp, ChevronDown, Download as DownloadIcon } from 'react-feather';
 import { toast } from 'react-toastify';
@@ -54,6 +55,8 @@ const EmployeesPage = () => {
   const [grades, setGrades] = useState<GradeLookup[]>([]);
   const [allDepartments, setAllDepartments] = useState<DepartmentLookup[]>([]);
   const [companiesLoading, setCompaniesLoading] = useState(false);
+  const [departments, setDepartments] = useState<DepartmentLookup[]>([]);
+  const [departmentsLoading, setDepartmentsLoading] = useState(false);
 
   // Filter parameters
   const [filterParams, setFilterParams] = useState({
@@ -71,8 +74,8 @@ const EmployeesPage = () => {
   const [statusFilter, setStatusFilter] = useState('ACTIVE');
 
   const [quickSearchParams, setQuickSearchParams] = useState({
-    company: '',
-    department: '',
+    company_id: '',
+    department_ids: '',
     jobTitle: ''
   });
   const isQuickSearchInitialized = useRef(false);
@@ -123,6 +126,35 @@ const EmployeesPage = () => {
     fetchLookups();
   }, []);
 
+  // Fetch departments based on selected company
+  useEffect(() => {
+    const companyId = quickSearchParams.company_id;
+    if (companyId) {
+      const loadDepartmentsByCompany = async () => {
+        try {
+          setDepartmentsLoading(true);
+          const response = await lookupService.getDepartmentsByCompanyLookup(parseInt(companyId));
+          if (response.success && response.data) {
+            setDepartments(response.data);
+          } else {
+            setDepartments(allDepartments.filter((dept: any) => 
+              dept.company_id && String(dept.company_id) === companyId
+            ));
+          }
+        } catch (error: any) {
+          setDepartments(allDepartments.filter((dept: any) => 
+            dept.company_id && String(dept.company_id) === companyId
+          ));
+        } finally {
+          setDepartmentsLoading(false);
+        }
+      };
+      loadDepartmentsByCompany();
+    } else {
+      setDepartments([]);
+    }
+  }, [quickSearchParams.company_id, allDepartments]);
+
   // Helper function to update URL with current filters
   const updateURL = (filters: any, page: number, sortKey?: string, sortDir?: string, perPage?: number) => {
     const params = new URLSearchParams();
@@ -167,8 +199,8 @@ const EmployeesPage = () => {
     const maritalStatus = searchParams.get('marital_status');
     const gradeId = searchParams.get('grade_id');
     const status = searchParams.get('status');
-    const company = searchParams.get('company');
-    const department = searchParams.get('department');
+    const company_id = searchParams.get('company_id');
+    const department_ids = searchParams.get('department_ids');
     const jobTitle = searchParams.get('jobTitle');
 
     // Set filter states
@@ -188,8 +220,8 @@ const EmployeesPage = () => {
       direction: urlDirection,
       limit: urlLimit,
       status: status || 'ACTIVE',
-      company: company || '',
-      department: department || '',
+      company_id: company_id || '',
+      department_ids: department_ids || '',
       jobTitle: jobTitle || ''
     };
   };
@@ -265,8 +297,8 @@ const EmployeesPage = () => {
       });
       
       setQuickSearchParams({
-        company: urlData.company,
-        department: urlData.department,
+        company_id: urlData.company_id || '',
+        department_ids: urlData.department_ids || '',
         jobTitle: urlData.jobTitle
       });
       
@@ -286,8 +318,8 @@ const EmployeesPage = () => {
         status: urlData.status
       };
       
-      if (urlData.company) allFilters.company = urlData.company;
-      if (urlData.department) allFilters.department = urlData.department;
+      if (urlData.company_id) allFilters.company_id = urlData.company_id;
+      if (urlData.department_ids) allFilters.department_ids = urlData.department_ids;
       if (urlData.jobTitle) allFilters.jobTitle = urlData.jobTitle;
 
       fetchEmployees(
@@ -305,26 +337,32 @@ const EmployeesPage = () => {
     }
   }, []);
 
-  const handleQuickSearchChange = (name: 'company' | 'department' | 'jobTitle', value: string) => {
-    setQuickSearchParams(prev => ({
-      ...prev,
-      [name]: value
-    }));
+  const handleQuickSearchChange = (name: 'company_id' | 'department_ids' | 'jobTitle', value: string) => {
+    setQuickSearchParams(prev => {
+      const nextState = {
+        ...prev,
+        [name]: value
+      };
+      
+      if (name === 'company_id' && prev.company_id !== value) {
+        nextState.department_ids = '';
+      }
+      
+      return nextState;
+    });
   };
 
   const getQuickSearchFilters = () => {
     const quickFilters: Record<string, string> = {};
 
-    if (quickSearchParams.company.trim()) {
-      const companyValue = quickSearchParams.company.trim();
-      quickFilters.company = companyValue;
-      quickFilters.company_name = companyValue;
+    if (quickSearchParams.company_id.trim()) {
+      const companyValue = quickSearchParams.company_id.trim();
+      quickFilters.company_id = companyValue;
     }
 
-    if (quickSearchParams.department.trim()) {
-      const departmentValue = quickSearchParams.department.trim();
-      quickFilters.department = departmentValue;
-      quickFilters.department_name = departmentValue;
+    if (quickSearchParams.department_ids.trim()) {
+      const departmentValue = quickSearchParams.department_ids.trim();
+      quickFilters.department_ids = departmentValue;
     }
 
     if (quickSearchParams.jobTitle.trim()) {
@@ -400,8 +438,8 @@ const EmployeesPage = () => {
 
     return () => clearTimeout(timer);
   }, [
-    quickSearchParams.company,
-    quickSearchParams.department,
+    quickSearchParams.company_id,
+    quickSearchParams.department_ids,
     quickSearchParams.jobTitle,
     filterParams.first_name,
     filterParams.email,
@@ -450,8 +488,8 @@ const EmployeesPage = () => {
       grade_id: ''
     });
     setQuickSearchParams({
-      company: '',
-      department: '',
+      company_id: '',
+      department_ids: '',
       jobTitle: ''
     });
     setStatusFilter('ACTIVE'); // Reset to ACTIVE
@@ -675,33 +713,35 @@ const EmployeesPage = () => {
                   <Col lg={3} md={6} sm={12}>
                     <FormSelectField
                       label="Şirket"
-                      name="quick-company"
-                      value={quickSearchParams.company}
-                      onChange={(e) => handleQuickSearchChange('company', e.target.value)}
+                      name="quick-company_id"
+                      value={quickSearchParams.company_id}
+                      onChange={(e) => handleQuickSearchChange('company_id', e.target.value)}
                       disabled={companiesLoading}
                     >
                       <option value="">Şirket seçiniz</option>
                       {companies.map((company) => (
-                        <option key={company.id} value={company.name}>
+                        <option key={company.id} value={company.id.toString()}>
                           {company.name}
                         </option>
                       ))}
                     </FormSelectField>
                   </Col>
                   <Col lg={3} md={6} sm={12}>
-                    <FormSelectField
-                      label="Departman"
-                      name="quick-department"
-                      value={quickSearchParams.department}
-                      onChange={(e) => handleQuickSearchChange('department', e.target.value)}
-                    >
-                      <option value="">Departman seçiniz</option>
-                      {allDepartments.map((department) => (
-                        <option key={department.id} value={department.name}>
-                          {department.name}
-                        </option>
-                      ))}
-                    </FormSelectField>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Departman</Form.Label>
+                      <MultiSelectField
+                        name="quick-department_ids"
+                        value={quickSearchParams.department_ids ? quickSearchParams.department_ids.split(',').filter(Boolean) : []}
+                        onChange={(values: string[]) => handleQuickSearchChange('department_ids', values.join(','))}
+                        options={departments.map((dept) => ({
+                          value: String(dept.id),
+                          label: dept.name,
+                        }))}
+                        disabled={departmentsLoading || !quickSearchParams.company_id}
+                        loading={departmentsLoading}
+                        placeholder={!quickSearchParams.company_id ? "Doldurmak için Önce Şirket Seçiniz" : "Departman seçiniz"}
+                      />
+                    </Form.Group>
                   </Col>
                   <Col lg={3} md={6} sm={12}>
                     <FormSelectField

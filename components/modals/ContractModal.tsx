@@ -47,12 +47,12 @@ const ContractModal: React.FC<ContractModalProps> = ({
   const [departments, setDepartments] = useState<DepartmentLookup[]>([]);
   const [selectedEmployees, setSelectedEmployees] = useState<string[]>([]);
           const [selectedCompany, setSelectedCompany] = useState<string>('');
-  const [selectedDepartment, setSelectedDepartment] = useState<string>('');
+  const [selectedDepartmentIds, setSelectedDepartmentIds] = useState<string[]>([]);
 
   useEffect(() => {
     if (selectedCompany) {
       setDepartments([]);
-      setSelectedDepartment('');
+      setSelectedDepartmentIds([]);
       setEmployees([]);
       setSelectedEmployees([]);
       setLoading(true);
@@ -69,10 +69,10 @@ const ContractModal: React.FC<ContractModalProps> = ({
   }, [selectedCompany]);
 
   useEffect(() => {
-    if (selectedDepartment && selectedCompany) {
+    if (selectedDepartmentIds.length > 0 && selectedCompany) {
       setEmployees([]);
       setLoading(true);
-      employeeService.getAll({ limit: 1000, status: 'ACTIVE', department_id: selectedDepartment, company_id: selectedCompany } as any)
+      employeeService.getAll({ limit: 1000, status: 'ACTIVE', department_ids: selectedDepartmentIds.join(','), company_id: selectedCompany } as any)
         .then(res => {
           setEmployees(res?.data || []);
         })
@@ -81,7 +81,7 @@ const ContractModal: React.FC<ContractModalProps> = ({
     } else {
       setEmployees([]);
     }
-  }, [selectedDepartment, selectedCompany]);
+  }, [selectedDepartmentIds, selectedCompany]);
 
   
   
@@ -119,7 +119,7 @@ const ContractModal: React.FC<ContractModalProps> = ({
         status: ContractStatus.PendingProposal
       });
       setSelectedEmployees([]);
-      setSelectedDepartment('');
+      setSelectedDepartmentIds([]);
       setSelectedCompany('');
       setSelectedCompany('');
     }
@@ -293,39 +293,37 @@ const ContractModal: React.FC<ContractModalProps> = ({
 
                         <Row className="mb-3">
               <Col md={6}>
-                <Form.Group>
-                  <Form.Label>Şirket Filtresi</Form.Label>
-                  <Form.Select
-                    value={selectedCompany}
-                    onChange={(e) => {
-                      setSelectedCompany(e.target.value);
-                      setSelectedDepartment(''); // reset department when company changes
-                    }}
-                    disabled={loading}
-                    className="mb-3"
-                  >
-                    <option value="">Tüm Şirketler</option>
-                    {companies.map(comp => (
-                      <option key={comp.id} value={comp.id}>{comp.name}</option>
-                    ))}
-                  </Form.Select>
-                </Form.Group>
+                <FormSelectField
+                  label="Şirket Filtresi"
+                  name="selectedCompany"
+                  value={selectedCompany}
+                  onChange={(e: any) => {
+                    setSelectedCompany(e.target.value);
+                    setSelectedDepartmentIds([]); // reset department when company changes
+                  }}
+                  disabled={loading}
+                >
+                  <option value="">Tüm Şirketler</option>
+                  {companies.map(comp => (
+                    <option key={comp.id} value={comp.id}>{comp.name}</option>
+                  ))}
+                </FormSelectField>
               </Col>
               <Col md={6}>
                 <Form.Group>
-                  <Form.Label>Departman Filtresi</Form.Label>
-                  <Form.Select
-                    value={selectedDepartment}
-                    onChange={(e) => setSelectedDepartment(e.target.value)}
+                  <Form.Label className="fw-500">Departman Filtresi</Form.Label>
+                  <MultiSelectField
+                    name="selectedDepartmentIds"
+                    value={selectedDepartmentIds}
+                    onChange={setSelectedDepartmentIds}
+                    options={departments.map((dept) => ({
+                      value: String(dept.id),
+                      label: dept.name,
+                    }))}
                     disabled={loading || (!selectedCompany && companies.length > 0)}
-                    className="mb-3"
-                  >
-                    <option value="">{selectedCompany ? 'Tüm Departmanlar' : 'Önce Şirket Seçiniz'}</option>
-                    {departments
-                      .map(dep => (
-                      <option key={dep.id} value={dep.id}>{dep.name}</option>
-                    ))}
-                  </Form.Select>
+                    loading={loading}
+                    placeholder={selectedCompany ? 'Departman seçiniz' : 'Öncelikle Şirket Seçiniz'}
+                  />
                 </Form.Group>
               </Col>
             </Row>
@@ -340,7 +338,6 @@ const ContractModal: React.FC<ContractModalProps> = ({
                     <div className="overflow-auto p-2" style={{ flex: 1 }}>
                       {employees
                         .filter(emp => !selectedEmployees.includes(emp.id.toString()))
-                        .filter(emp => !selectedDepartment || emp.work_information?.department_name === departments.find(d => d.id.toString() === selectedDepartment)?.name)
                         .map(emp => (
                           <div 
                             key={'avail-'+emp.id}
@@ -361,7 +358,7 @@ const ContractModal: React.FC<ContractModalProps> = ({
 
                   {/* Middle arrows */}
                   <div className="d-flex flex-column justify-content-center">
-                    <Button variant="outline-secondary" size="sm" className="mb-2" onClick={(e) => { e.preventDefault(); setSelectedEmployees(employees.filter(emp => !selectedDepartment || emp.work_information?.department_name === departments.find(d => d.id.toString() === selectedDepartment)?.name).map(e => e.id.toString())); }}>&gt;&gt;</Button>
+                    <Button variant="outline-secondary" size="sm" className="mb-2" onClick={(e) => { e.preventDefault(); setSelectedEmployees(employees.map(e => e.id.toString())); }}>&gt;&gt;</Button>
                     <Button variant="outline-secondary" size="sm" onClick={(e) => { e.preventDefault(); setSelectedEmployees([]); }}>&lt;&lt;</Button>
                   </div>
 
