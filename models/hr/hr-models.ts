@@ -202,9 +202,8 @@ export interface EmployeeContract {
   id: number;
   employee_id: number;
   employee?: Employee;
-  contract_no: string;
-  start_date: string;
-  end_date?: string;
+  contract_id: number;
+  contract?: import('./contract').Contract;
   deleted: boolean;
   createdAt: string;
   updatedAt: string;

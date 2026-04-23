@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Button, Form, Row, Col } from 'react-bootstrap';
-import { employeeContractService } from '@/services';
+import { Modal, Button, Form } from 'react-bootstrap';
+import { employeeContractService, contractService } from '@/services';
 import { CreateEmployeeContractRequest, UpdateEmployeeContractRequest } from '@/models/hr/hr-requests';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
 import { toast } from 'react-toastify';
 import LoadingOverlay from '@/components/LoadingOverlay';
-import FormDateField from '@/components/FormDateField';
 import { EmployeeContract } from '@/models/hr/hr-models';
+import { Contract } from '@/models/hr/contract';
+import FormSelectField from '@/components/FormSelectField';
 
 interface EmployeeContractModalProps {
   show: boolean;
@@ -27,28 +28,44 @@ const EmployeeContractModal: React.FC<EmployeeContractModalProps> = ({
 }) => {
   const [formData, setFormData] = useState<CreateEmployeeContractRequest>({
     employee_id: employeeId,
-    contract_no: '',
-    start_date: '',
-    end_date: ''
+    contract_id: 0,
   });
 
+  const [contracts, setContracts] = useState<Contract[]>([]);
   const [loading, setLoading] = useState(false);
+  const [fetchingContracts, setFetchingContracts] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<{[key: string]: string}>({});
+
+  useEffect(() => {
+    if (show) {
+      fetchContracts();
+    }
+  }, [show]);
+
+  const fetchContracts = async () => {
+    try {
+      setFetchingContracts(true);
+      const res = await contractService.getAll({ page: 1, limit: 100 });
+      if (res.data) {
+        setContracts(res.data);
+      }
+    } catch (error) {
+      toast.error('Sözleşmeler yüklenirken hata oluştu', { autoClose: 2000 });
+    } finally {
+      setFetchingContracts(false);
+    }
+  };
 
   useEffect(() => {
     if (isEdit && employeeContract) {
       setFormData({
         employee_id: employeeId,
-        contract_no: employeeContract.contract_no || '',
-        start_date: employeeContract.start_date ? employeeContract.start_date.split('T')[0] : '',
-        end_date: employeeContract.end_date ? employeeContract.end_date.split('T')[0] : ''
+        contract_id: employeeContract.contract_id || 0,
       });
     } else {
       setFormData({
         employee_id: employeeId,
-        contract_no: '',
-        start_date: '',
-        end_date: ''
+        contract_id: 0,
       });
     }
     setFieldErrors({});
@@ -58,7 +75,7 @@ const EmployeeContractModal: React.FC<EmployeeContractModalProps> = ({
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: name === 'contract_id' ? Number(value) : value
     }));
 
     if (fieldErrors[name]) {
@@ -72,11 +89,8 @@ const EmployeeContractModal: React.FC<EmployeeContractModalProps> = ({
   const validateForm = (): boolean => {
     const errors: {[key: string]: string} = {};
 
-    if (!formData.contract_no || !formData.contract_no.trim()) {
-      errors.contract_no = 'Sözleşme numarası zorunludur';
-    }
-    if (!formData.start_date) {
-      errors.start_date = 'Başlama tarihi zorunludur';
+    if (!formData.contract_id) {
+      errors.contract_id = 'Lütfen bir sözleşme seçiniz';
     }
 
     setFieldErrors(errors);
@@ -131,67 +145,50 @@ const EmployeeContractModal: React.FC<EmployeeContractModalProps> = ({
     }
   };
 
+  const contractOptions = contracts.map(c => ({
+    value: c.id.toString(),
+    label: `${c.contract_no} - ${c.project_name} (${c.customer_contact_name})`
+  }));
+
   return (
     <Modal show={show} onHide={onHide} size="lg">
       <div className="position-relative">
-        <LoadingOverlay show={loading} message="Kaydediliyor..." />
+        <LoadingOverlay show={loading || fetchingContracts} message={fetchingContracts ? "Sözleşmeler yükleniyor..." : "Kaydediliyor..."} />
 
         <Modal.Header closeButton>
           <Modal.Title>
-            {isEdit ? 'Sözleşmeyi Düzenle' : 'Yeni Sözleşme Ekle'}
+            {isEdit ? 'Çalışan Sözleşmesini Düzenle' : 'Çalışana Sözleşme Ekle'}
           </Modal.Title>
         </Modal.Header>
 
         <Form onSubmit={handleSubmit}>
           <Modal.Body>
-            <Form.Group className="mb-3">
-              <Form.Label>Sözleşme No <span className="text-danger">*</span></Form.Label>
-              <Form.Control
-                type="text"
-                name="contract_no"
-                value={formData.contract_no}
-                onChange={handleInputChange}
-                placeholder="Sözleşme numarasını giriniz"
-                isInvalid={!!fieldErrors.contract_no}
-              />
-              {fieldErrors.contract_no && (
-                <div className="text-danger mt-1" style={{ fontSize: '0.875rem' }}>
-                  {fieldErrors.contract_no}
-                </div>
-              )}
-            </Form.Group>
-
-            <Row className="mb-3">
-              <Col md={6}>
-                <FormDateField
-                  label="Başlangıç Tarihi"
-                  name="start_date"
-                  value={formData.start_date}
-                  onChange={handleInputChange}
-                  required
-                />
-                {fieldErrors.start_date && (
-                  <div className="text-danger mt-1" style={{ fontSize: '0.875rem' }}>
-                    {fieldErrors.start_date}
-                  </div>
-                )}
-              </Col>
-              <Col md={6}>
-                <FormDateField
-                  label="Bitiş Tarihi"
-                  name="end_date"
-                  value={formData.end_date || ''}
-                  onChange={handleInputChange}
-                />
-              </Col>
-            </Row>
+            <FormSelectField
+              label="Sözleşme Seçin"
+              name="contract_id"
+              value={formData.contract_id ? formData.contract_id.toString() : ''}
+              onChange={handleInputChange}
+              isInvalid={!!fieldErrors.contract_id}
+            >
+              <option value="">Seçiniz</option>
+              {contractOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </FormSelectField>
+            {fieldErrors.contract_id && (
+              <div className="text-danger mt-1" style={{ fontSize: '0.875rem' }}>
+                {fieldErrors.contract_id}
+              </div>
+            )}
           </Modal.Body>
 
           <Modal.Footer>
-            <Button variant="secondary" onClick={onHide} disabled={loading}>
+            <Button variant="secondary" onClick={onHide} disabled={loading || fetchingContracts}>
               İptal
             </Button>
-            <Button variant="primary" type="submit" disabled={loading}>
+            <Button variant="primary" type="submit" disabled={loading || fetchingContracts}>
               {loading ? 'Kaydediliyor...' : 'Kaydet'}
             </Button>
           </Modal.Footer>

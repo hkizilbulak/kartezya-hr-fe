@@ -178,9 +178,7 @@ export interface UpdateEmployeeGradeRequest extends CreateEmployeeGradeRequest {
 
 export interface CreateEmployeeContractRequest {
   employee_id: number;
-  contract_no: string;
-  start_date: string;
-  end_date?: string;
+  contract_id: number;
 }
 
 export interface UpdateEmployeeContractRequest extends CreateEmployeeContractRequest {

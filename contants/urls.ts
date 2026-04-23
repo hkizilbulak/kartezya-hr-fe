@@ -30,6 +30,8 @@ export const HR_ENDPOINTS = {
   EMPLOYEE_GRADES: '/employee-grades',
   // Employee Contracts
   EMPLOYEE_CONTRACTS: '/employee-contracts',
+  // Contracts
+  CONTRACTS: '/contracts',
   // Work Information
   WORK_INFORMATION: '/work-information',
   WORK_INFORMATION_ME: '/work-information/me',

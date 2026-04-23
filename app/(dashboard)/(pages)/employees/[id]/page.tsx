@@ -1209,19 +1209,35 @@ const EmployeeDetailPage = () => {
                           <thead>
                             <tr>
                               <th>Sözleşme No</th>
+                              <th>Proje Adı</th>
+                              <th>Müşteri Yetkili</th>
                               <th>Başlama Tarihi</th>
                               <th>Bitiş Tarihi</th>
+                              <th>Durum</th>
                               <th></th>
                             </tr>
                           </thead>
                           <tbody>
-                            {employeeContracts.map((contract) => {
+                            {employeeContracts.map((empContract) => {
+                              const contract = empContract.contract || {};
                               const isActive = !contract.end_date || new Date(contract.end_date) > new Date();
                               return (
-                                <tr key={contract.id}>
+                                <tr key={empContract.id}>
                                   <td>{contract.contract_no || '-'}</td>
+                                  <td>{contract.project_name || '-'}</td>
+                                  <td>{contract.customer_contact_name || '-'}</td>
                                   <td>{contract.start_date ? formatDate(contract.start_date) : '-'}</td>
                                   <td>{contract.end_date ? formatDate(contract.end_date) : '-'}</td>
+                                  <td>
+                                    <span className={`badge ${
+                                      contract.status === 'ACTIVE' ? 'bg-success' : 
+                                      contract.status === 'COMPLETED' ? 'bg-primary' : 
+                                      contract.status === 'CANCELLED' ? 'bg-danger' : 
+                                      'bg-secondary'
+                                    }`}>
+                                      {contract.status || '-'}
+                                    </span>
+                                  </td>
                                   
                                   <td>
                                     <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
@@ -1229,7 +1245,7 @@ const EmployeeDetailPage = () => {
                                         variant="outline-primary"
                                         size="sm"
                                         onClick={() => {
-                                          setSelectedContract(contract);
+                                          setSelectedContract(empContract);
                                           setIsContractEdit(true);
                                           setShowContractModal(true);
                                         }}
@@ -1241,7 +1257,7 @@ const EmployeeDetailPage = () => {
                                         variant="outline-danger"
                                         size="sm"
                                         onClick={() => {
-                                          setContractToDelete(contract);
+                                          setContractToDelete(empContract);
                                           setDeleteItemType('contract');
                                           setShowDeleteModal(true);
                                         }}

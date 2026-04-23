@@ -42,11 +42,24 @@ export const DashboardMenu: IMenuProps[] = [
 		]
 	},
 	{
-		id: 'employees',
-		title: 'Çalışanlar',
-		icon: 'user',
-		link: '/employees',
-		requiredRoles: ['ADMIN']
+		id: 'employee-management',
+		title: 'Çalışan Yönetimi',
+		icon: 'users',
+		requiredRoles: ['ADMIN'],
+		children: [
+			{
+				id: 'employees',
+				name: 'Çalışanlar',
+				link: '/employees',
+				requiredRoles: ['ADMIN']
+			},
+			{
+				id: 'contracts',
+				name: 'Kurumsal Sözleşmeler',
+				link: '/contracts',
+				requiredRoles: ['ADMIN']
+			}
+		]
 	},
 	{
 		id: 'request-management',

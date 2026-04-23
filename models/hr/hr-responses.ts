@@ -1,4 +1,4 @@
-import { Company, Department, JobPosition, Employee, WorkInformation, LeaveType, LeaveRequest, LeaveBalance, User, LookupItem, Grade, EmployeeGrade } from './hr-models';
+import { Company, Department, JobPosition, Employee, EmployeeWorkInformation as WorkInformation, LeaveType, LeaveRequest, LeaveBalance, User, LookupItem, Grade, EmployeeGrade } from './hr-models';
 
 // Base API Response
 export interface APIResponse<T = any> {
