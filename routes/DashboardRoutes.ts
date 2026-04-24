@@ -142,6 +142,12 @@ export const DashboardMenu: IMenuProps[] = [
 				link: '/reports/grade',
 				name: 'Grade Raporu',
 				requiredRoles: ['ADMIN']
+			},
+			{
+				id: 'contract-report',
+				link: '/reports/contract',
+				name: 'Sözleşme Raporu',
+				requiredRoles: ['ADMIN']
 			}
 		]
 	},

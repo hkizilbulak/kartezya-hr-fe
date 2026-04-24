@@ -84,3 +84,17 @@ export interface GradeReportRow {
 export interface GradeReportResponse {
 	rows: GradeReportRow[];
 }
+
+export interface ContractReportRow {
+	id: number;
+	first_name: string;
+	last_name: string;
+	company_name: string;
+	department_name: string;
+	manager: string;
+	contract_names: string;
+}
+
+export interface ContractReportResponse {
+	rows: ContractReportRow[];
+}
