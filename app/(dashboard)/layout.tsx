@@ -6,6 +6,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { useEffect } from "react";
 import DashboardWrapper from './dashboard-wrapper';
 import Loading from '@/components/Loading';
+import MissingInfoModal from '@/components/modals/MissingInfoModal';
 
 // ADMIN gereken sayfalar
 const ADMIN_REQUIRED_ROUTES = [
@@ -48,5 +49,10 @@ export default function DashboardLayout({
     return null;
   }
 
-  return <DashboardWrapper>{children}</DashboardWrapper>;
+  return (
+    <>
+      <MissingInfoModal />
+      <DashboardWrapper>{children}</DashboardWrapper>
+    </>
+  );
 }
