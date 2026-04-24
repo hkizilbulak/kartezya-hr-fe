@@ -29,7 +29,12 @@ const WorkDayReportPage = () => {
   const [departments, setDepartments] = useState<DepartmentLookup[]>([]);
   const [selectedCompany, setSelectedCompany] = useState<string>('');
   const [selectedDepartmentIds, setSelectedDepartmentIds] = useState<string[]>([]);
-  const [isActive, setIsActive] = useState(true);
+  const [selectedStatus, setSelectedStatus] = useState<string>('active');
+  const statusOptions = [
+      { value: 'active', label: 'Aktif Çalışanlar' },
+      { value: 'inactive', label: 'Eski Çalışanlar' },
+      { value: 'all', label: 'Tümü' }
+  ];
   const [companiesLoading, setCompaniesLoading] = useState(false);
   const [departmentsLoading, setDepartmentsLoading] = useState(false);
   const [allDepartments, setAllDepartments] = useState<DepartmentLookup[]>([]);
@@ -137,12 +142,16 @@ const WorkDayReportPage = () => {
       setIsLoading(true);
       setShowTable(false);
 
+      let isActiveParam: boolean | undefined = undefined;
+      if (selectedStatus === 'active') isActiveParam = true;
+      if (selectedStatus === 'inactive') isActiveParam = false;
+
       const response = await reportService.getWorkDayReport(
         startDate,
         endDate,
         selectedCompany ? parseInt(selectedCompany) : undefined,
         selectedDepartmentIds,
-        isActive,
+        isActiveParam,
       );
 
       setReportData(response);
@@ -317,15 +326,17 @@ const WorkDayReportPage = () => {
                       </Form.Group>
                     </Col>
 
-                    {/* Sadece Aktif Çalışanlar */}
-                    <Col xs={12}>
-                      <Form.Check
-                        type="checkbox"
-                        id="isActiveCheckbox"
-                        label="Sadece Aktif Çalışanlar"
-                        checked={isActive}
-                        onChange={(e) => setIsActive(e.target.checked)}
-                      />
+                    <Col md={6} lg={3}>
+                        <Form.Group>
+                            <Form.Label className="fw-500">Durum</Form.Label>
+                            <FormSelectField
+                                name="status"
+                                value={selectedStatus}
+                                onChange={(e) => setSelectedStatus(e.target.value)}
+                            >
+                                {statusOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                            </FormSelectField>
+                        </Form.Group>
                     </Col>
 
                     {/* Butonlar */}

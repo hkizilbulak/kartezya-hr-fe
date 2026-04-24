@@ -27,7 +27,6 @@ const GradeReportPage = () => {
   const [departments, setDepartments] = useState<DepartmentLookup[]>([]);
   const [selectedCompany, setSelectedCompany] = useState<string>('');
   const [selectedDepartmentIds, setSelectedDepartmentIds] = useState<string[]>([]);
-  const [isActive, setIsActive] = useState(true);
   const [companiesLoading, setCompaniesLoading] = useState(false);
   const [departmentsLoading, setDepartmentsLoading] = useState(false);
   const [allDepartments, setAllDepartments] = useState<DepartmentLookup[]>([]);
@@ -93,7 +92,6 @@ const GradeReportPage = () => {
       const response = await reportService.getGradeReport(
         selectedCompany ? parseInt(selectedCompany) : undefined,
         selectedDepartmentIds,
-        isActive,
       );
       setReportData(response);
       setShowTable(true);
@@ -211,16 +209,6 @@ const GradeReportPage = () => {
                           placeholder="Departman seçiniz"
                         />
                       </Form.Group>
-                    </Col>
-
-                    <Col xs={12}>
-                      <Form.Check
-                        type="checkbox"
-                        id="isActiveCheckboxGrade"
-                        label="Sadece Aktif Çalışanlar"
-                        checked={isActive}
-                        onChange={(e) => setIsActive(e.target.checked)}
-                      />
                     </Col>
 
                     <Col xs={12} className="d-flex gap-2 justify-content-end">

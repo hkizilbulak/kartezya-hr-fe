@@ -128,7 +128,6 @@ export const reportService = {
   async getGradeReport(
     companyId?: number,
     departmentId?: number | Array<number | string> | string,
-    isActive?: boolean,
   ): Promise<GradeReportResponse> {
     const params = new URLSearchParams({});
     if (companyId) {
@@ -139,10 +138,6 @@ export const reportService = {
       appendCsvArrayParam(params, "department_ids", departmentId);
     } else if (departmentId) {
       params.append("department_id", departmentId.toString());
-    }
-
-    if (isActive !== undefined) {
-      params.append("is_active", isActive.toString());
     }
 
     const response = await axiosInstance.get(
