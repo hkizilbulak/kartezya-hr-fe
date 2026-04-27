@@ -116,6 +116,12 @@ export const DashboardMenu: IMenuProps[] = [
 				name: 'Masraf Türleri',
 				link: '/expense-management/types',
 				requiredRoles: ['ADMIN']
+			},
+			{
+				id: 'kspeaker-vouchers',
+				name: 'Kspeaker Voucher',
+				link: '/kspeaker/vouchers',
+				requiredRoles: ['ADMIN']
 			}
 		]
 	},
@@ -176,7 +182,7 @@ export const DashboardMenu: IMenuProps[] = [
 				requiredRoles: ['ADMIN']
 			}
 		]
-	},
+	}
 ];
 
 export default DashboardMenu;
