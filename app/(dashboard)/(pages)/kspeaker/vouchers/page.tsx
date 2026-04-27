@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Form, Button, Table, Spinner, Badge } from 'react-bootstrap';
+import { Container, Row, Col, Card, Form, Button, Table, Spinner, Badge, Modal } from 'react-bootstrap';
 import { toast } from 'react-toastify';
 import { PageHeading } from '@/widgets';
 import LoadingOverlay from '@/components/LoadingOverlay';
@@ -18,6 +18,10 @@ export default function KspeakerVouchersPage() {
     const [deviceId, setDeviceId] = useState('');
     const [expiresAt, setExpiresAt] = useState('');
     const [editingVoucherId, setEditingVoucherId] = useState<number | string | null>(null);
+
+    // Delete Modal State
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [voucherToDelete, setVoucherToDelete] = useState<number | string | null>(null);
 
     useEffect(() => {
         loadVouchers();
@@ -105,14 +109,21 @@ export default function KspeakerVouchersPage() {
         setExpiresAt(d);
     };
 
-    const handleDelete = async (id?: string | number) => {
+    const handleDeleteClick = (id?: string | number) => {
         if (id === undefined) return;
-        if (!window.confirm("Bu voucher'ı silmek istediğinize emin misiniz?")) return;
+        setVoucherToDelete(id);
+        setShowDeleteModal(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (voucherToDelete === null) return;
         
         try {
             setLoading(true);
-            await kspeakerService.deleteVoucher(id);
+            await kspeakerService.deleteVoucher(voucherToDelete);
             toast.success('Voucher başarıyla silindi.');
+            setShowDeleteModal(false);
+            setVoucherToDelete(null);
             loadVouchers();
         } catch (error: any) {
             toast.error(error.message || 'Silinirken bir hata oluştu.');
@@ -262,7 +273,7 @@ export default function KspeakerVouchersPage() {
                                                                     variant="outline-danger" 
                                                                     size="sm"
                                                                     title="Sil"
-                                                                    onClick={() => handleDelete(voucher.id ?? voucher.userDeviceId ?? voucher.usedByDeviceId)}
+                                                                    onClick={() => handleDeleteClick(voucher.id ?? voucher.userDeviceId ?? voucher.usedByDeviceId)}
                                                                 >
                                                                     <Trash2 size={14} />
                                                                 </Button>
@@ -280,6 +291,32 @@ export default function KspeakerVouchersPage() {
                     </Card>
                 </Col>
             </Row>
+
+            {/* Delete Confirmation Modal */}
+            <Modal show={showDeleteModal} onHide={() => !loading && setShowDeleteModal(false)} centered>
+                <Modal.Header closeButton>
+                    <Modal.Title>Voucher'ı Sil</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <p>Bu voucher'ı silmek istediğinizden emin misiniz?</p>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button 
+                        variant="secondary" 
+                        onClick={() => setShowDeleteModal(false)}
+                        disabled={loading}
+                    >
+                        İptal
+                    </Button>
+                    <Button 
+                        variant="danger" 
+                        onClick={handleConfirmDelete}
+                        disabled={loading}
+                    >
+                        {loading ? 'Siliniyor...' : 'Sil'}
+                    </Button>
+                </Modal.Footer>
+            </Modal>
         </Container>
     );
 }
