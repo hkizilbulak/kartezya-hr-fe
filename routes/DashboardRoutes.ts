@@ -122,6 +122,12 @@ export const DashboardMenu: IMenuProps[] = [
 				name: 'Kspeaker Voucher',
 				link: '/kspeaker/vouchers',
 				requiredRoles: ['ADMIN']
+			},
+			{
+				id: 'job-management',
+				name: 'Görev Yönetimi',
+				link: '/job-management',
+				requiredRoles: ['ADMIN']
 			}
 		]
 	},
