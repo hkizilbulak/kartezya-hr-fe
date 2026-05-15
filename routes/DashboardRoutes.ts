@@ -128,6 +128,12 @@ export const DashboardMenu: IMenuProps[] = [
 				name: 'Görev Yönetimi',
 				link: '/job-management',
 				requiredRoles: ['ADMIN']
+			},
+			{
+				id: 'events',
+				name: 'Etkinlikler',
+				link: '/events',
+				requiredRoles: ['ADMIN']
 			}
 		]
 	},

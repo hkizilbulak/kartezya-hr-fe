@@ -10,6 +10,7 @@ import { employeeService } from "@/services/employee.service";
 import { LeaveRequest, LeaveBalance } from "@/models/hr/hr-models";
 import { useRouter } from 'next/navigation';
 import LoadingOverlay from "@/components/LoadingOverlay";
+import EventsWidget from '@/components/widgets/EventsWidget';
 
 // Helper function to format dates from API (ISO strings) or local format (number arrays)
 const formatDate = (date?: string | number[]): string => {
@@ -512,6 +513,8 @@ const Home = () => {
                             </Card>
                         </Col>
                     </Row>
+
+                    <EventsWidget />
 
                     {/* Bekleyen İzin Taleplerim ve Kariyer Geçmişi Timeline */}
                     <Row className="mb-4">

@@ -256,3 +256,46 @@ export enum UserRole {
   ADMIN = 'ADMIN',
   EMPLOYEE = 'EMPLOYEE'
 }
+
+export enum EventStatus {
+  DRAFT = 'DRAFT',
+  PUBLISHED = 'PUBLISHED',
+  CANCELLED = 'CANCELLED'
+}
+
+export enum ParticipantStatus {
+  PENDING = 'PENDING',
+  ATTENDING = 'ATTENDING',
+  NOT_ATTENDING = 'NOT_ATTENDING'
+}
+
+export interface EventParticipant {
+  id: number;
+  event_id: number;
+  user_id: number;
+  status: ParticipantStatus;
+  companion_count: number;
+  user?: {
+    employee?: Employee;
+  };
+  createdAt: string;
+}
+
+export interface Event {
+  id: number;
+  name: string;
+  type: string;
+  description?: string;
+  start_date: string;
+  end_date: string;
+  location?: string;
+  audience_filter?: string;
+  quota?: number;
+  allow_companion?: boolean;
+  max_companion?: number;
+  last_change_date?: string;
+  resend_template_id?: string;
+  status: EventStatus;
+  participants?: EventParticipant[];
+  createdAt: string;
+}
