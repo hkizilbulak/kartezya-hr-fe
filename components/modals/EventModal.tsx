@@ -55,6 +55,7 @@ const EventModal: React.FC<EventModalProps> = ({
   const [selectedDepartmentIds, setSelectedDepartmentIds] = useState<string[]>([]);
   const [selectedEmployees, setSelectedEmployees] = useState<string[]>([]);
   const [participantNames, setParticipantNames] = useState<Record<string, string>>({});
+  const [participantStatuses, setParticipantStatuses] = useState<Record<string, string>>({});
 
   useEffect(() => {
     lookupService.getCompaniesLookup().then(res => {
@@ -114,18 +115,23 @@ const EventModal: React.FC<EventModalProps> = ({
         // Find existing users
         const existingEmpIds: string[] = [];
         const namesMap: Record<string, string> = {};
-        event.participants.forEach((p: any) => {
-          if (p.user?.employee?.id) {
-            const empIdStr = p.user.employee.id.toString();
-            existingEmpIds.push(empIdStr);
-            namesMap[empIdStr] = `${p.user.employee.first_name} ${p.user.employee.last_name}`;
-          }
-        });
+        const statusMap: Record<string, string> = {};
+        event.participants
+          .forEach((p: any) => {
+            if (p.user?.employee?.id) {
+              const empIdStr = p.user.employee.id.toString();
+              existingEmpIds.push(empIdStr);
+              namesMap[empIdStr] = `${p.user.employee.first_name} ${p.user.employee.last_name}`;
+              statusMap[empIdStr] = p.status;
+            }
+          });
         setSelectedEmployees(existingEmpIds);
         setParticipantNames(namesMap);
+        setParticipantStatuses(statusMap);
       } else {
         setSelectedEmployees([]);
         setParticipantNames({});
+        setParticipantStatuses({});
       }
     } else {
       setFormData({
@@ -149,6 +155,7 @@ const EventModal: React.FC<EventModalProps> = ({
       setSelectedCompany('');
       setSelectedDepartmentIds([]);
       setParticipantNames({});
+      setParticipantStatuses({});
     }
     setFieldErrors({});
   }, [show, event, isEdit]);
@@ -370,12 +377,16 @@ const EventModal: React.FC<EventModalProps> = ({
                         <div className="bg-primary text-white border-bottom p-2 fw-bold text-center rounded-top">Davetli Çalışanlar ({selectedEmployees.length})</div>
                         <div className="overflow-auto p-2" style={{ flex: 1 }}>
                           {selectedEmployees.map(empId => {
-                            // Try to find the employee in the current loaded list, or we might just show ID if not loaded.
-                            // To be perfect, we would load existing participants' names too, but we just need a basic list.
-                            // If they are in existing participants, their name isn't in `employees` unless we fetch them.
-                            // For simplicity, let's just find them in `employees` OR if we had a full list.
                             const emp = employees.find(e => e.id.toString() === empId);
                             const name = emp ? `${emp.first_name} ${emp.last_name}` : (participantNames[empId] || `Katılımcı #${empId} (Yüklü Değil)`);
+                            const status = participantStatuses[empId];
+                            const statusBadge = status === 'ATTENDING'
+                              ? <span className="badge bg-success ms-1" style={{fontSize:'10px'}}>Katılacak</span>
+                              : status === 'NOT_ATTENDING'
+                              ? <span className="badge bg-danger ms-1" style={{fontSize:'10px'}}>Katılmayacak</span>
+                              : status === 'PENDING'
+                              ? <span className="badge bg-warning text-dark ms-1" style={{fontSize:'10px'}}>Bekliyor</span>
+                              : null;
                             return (
                               <div 
                                 key={'sel-'+empId}
@@ -384,7 +395,7 @@ const EventModal: React.FC<EventModalProps> = ({
                                 style={{ cursor: 'pointer' }}
                                 title="Kaldır"
                               >
-                                <span>{name}</span>
+                                <span>{name}{statusBadge}</span>
                                 <span className="text-danger fw-bold">-</span>
                               </div>
                             )
