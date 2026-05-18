@@ -290,6 +290,7 @@ export interface Event {
   end_date: string;
   location?: string;
   audience_filter?: string;
+  target_employee_ids?: string[];
   quota?: number;
   allow_companion?: boolean;
   max_companion?: number;

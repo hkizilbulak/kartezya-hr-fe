@@ -7,7 +7,11 @@ import { toast } from 'react-toastify';
 import LoadingOverlay from '@/components/LoadingOverlay';
 import FormDateField from '@/components/FormDateField';
 import FormSelectField from '@/components/FormSelectField';
+import MultiSelectField from '@/components/MultiSelectField';
 import moment from 'moment';
+import { lookupService, DepartmentLookup, CompanyLookup } from '@/services/lookup.service';
+import { employeeService } from '@/services/employee.service';
+import { Employee } from '@/models/hr/hr-models';
 
 interface EventModalProps {
   show: boolean;
@@ -44,6 +48,49 @@ const EventModal: React.FC<EventModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<{[key: string]: string}>({});
 
+  const [companies, setCompanies] = useState<CompanyLookup[]>([]);
+  const [departments, setDepartments] = useState<DepartmentLookup[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [selectedCompany, setSelectedCompany] = useState<string>('');
+  const [selectedDepartmentIds, setSelectedDepartmentIds] = useState<string[]>([]);
+  const [selectedEmployees, setSelectedEmployees] = useState<string[]>([]);
+  const [participantNames, setParticipantNames] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    lookupService.getCompaniesLookup().then(res => {
+      setCompanies(Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : []);
+    }).catch(err => console.error(err));
+  }, []);
+
+  useEffect(() => {
+    if (selectedCompany) {
+      setDepartments([]);
+      setSelectedDepartmentIds([]);
+      setEmployees([]);
+      lookupService.getDepartmentsByCompanyLookup(parseInt(selectedCompany))
+        .then(res => {
+          setDepartments(Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : []);
+        })
+        .catch(err => console.error('fetch departments failed', err));
+    } else {
+      setDepartments([]);
+      setEmployees([]);
+    }
+  }, [selectedCompany]);
+
+  useEffect(() => {
+    if (selectedDepartmentIds.length > 0 && selectedCompany) {
+      setEmployees([]);
+      employeeService.getAll({ limit: 1000, status: 'ACTIVE', department_ids: selectedDepartmentIds.join(','), company_id: selectedCompany } as any)
+        .then(res => {
+          setEmployees(res?.data || []);
+        })
+        .catch(err => console.error('fetch employees failed', err));
+    } else {
+      setEmployees([]);
+    }
+  }, [selectedDepartmentIds, selectedCompany]);
+
   useEffect(() => {
     if (isEdit && event) {
       setFormData({
@@ -63,6 +110,23 @@ const EventModal: React.FC<EventModalProps> = ({
         last_change_time: event.last_change_date ? moment(event.last_change_date).format('HH:mm') : '',
         resend_template_id: event.resend_template_id || ''
       });
+      if (event.participants && Array.isArray(event.participants)) {
+        // Find existing users
+        const existingEmpIds: string[] = [];
+        const namesMap: Record<string, string> = {};
+        event.participants.forEach((p: any) => {
+          if (p.user?.employee?.id) {
+            const empIdStr = p.user.employee.id.toString();
+            existingEmpIds.push(empIdStr);
+            namesMap[empIdStr] = `${p.user.employee.first_name} ${p.user.employee.last_name}`;
+          }
+        });
+        setSelectedEmployees(existingEmpIds);
+        setParticipantNames(namesMap);
+      } else {
+        setSelectedEmployees([]);
+        setParticipantNames({});
+      }
     } else {
       setFormData({
         name: '',
@@ -81,6 +145,10 @@ const EventModal: React.FC<EventModalProps> = ({
         last_change_time: '',
         resend_template_id: ''
       });
+      setSelectedEmployees([]);
+      setSelectedCompany('');
+      setSelectedDepartmentIds([]);
+      setParticipantNames({});
     }
     setFieldErrors({});
   }, [show, event, isEdit]);
@@ -133,6 +201,7 @@ const EventModal: React.FC<EventModalProps> = ({
       delete submitData.start_time;
       delete submitData.end_time;
       delete submitData.last_change_time;
+      submitData.target_employee_ids = selectedEmployees.map(id => parseInt(id));
 
       if (isEdit && event) {
         await eventService.update(event.id, submitData);
@@ -219,14 +288,115 @@ const EventModal: React.FC<EventModalProps> = ({
                   <Form.Control type="text" name="location" value={formData.location} onChange={handleInputChange} />
                 </Form.Group>
               </Col>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <FormSelectField label="Kitle Filtresi" name="audience_filter" value={formData.audience_filter} onChange={handleInputChange}>
-                    <option value="ALL_COMPANY">Tüm Şirket</option>
-                    <option value="DEPARTMENT">Departman</option>
-                    <option value="LOCATION">Lokasyon</option>
-                  </FormSelectField>
-                </Form.Group>
+              <Col md={12}>
+                <hr />
+                <h5 className="mb-3 mt-2">Katılımcı Hedefleme (İsteğe Bağlı)</h5>
+                <Form.Text className="text-muted mb-3 d-block">
+                  Aşağıdan kişi seçerseniz etkinlik sadece seçtiğiniz kişilere görünür ve mail gider. Hiç kimseyi seçmezseniz etkinlik <b>Tüm Şirket</b>'e açık olur.
+                </Form.Text>
+                <Row className="mb-3">
+                  <Col md={6}>
+                    <FormSelectField
+                      label="Şirket Filtresi"
+                      name="selectedCompany"
+                      value={selectedCompany}
+                      onChange={(e: any) => {
+                        setSelectedCompany(e.target.value);
+                        setSelectedDepartmentIds([]); 
+                      }}
+                      disabled={loading}
+                    >
+                      <option value="">Şirket Seçiniz</option>
+                      {companies.map(comp => (
+                        <option key={comp.id} value={comp.id}>{comp.name}</option>
+                      ))}
+                    </FormSelectField>
+                  </Col>
+                  <Col md={6}>
+                    <Form.Group>
+                      <Form.Label className="fw-500">Departman Filtresi</Form.Label>
+                      <MultiSelectField
+                        name="selectedDepartmentIds"
+                        value={selectedDepartmentIds}
+                        onChange={setSelectedDepartmentIds}
+                        options={departments.map((dept) => ({
+                          value: String(dept.id),
+                          label: dept.name,
+                        }))}
+                        disabled={loading || (!selectedCompany && companies.length > 0)}
+                        loading={loading}
+                        placeholder={selectedCompany ? 'Departman seçiniz' : 'Öncelikle Şirket Seçiniz'}
+                      />
+                    </Form.Group>
+                  </Col>
+                </Row>
+                
+                <Row className="mb-3">
+                  <Col md={12}>
+                    <Form.Label>Etkinliğe Eklenecek Çalışanlar</Form.Label>
+                    <div className="d-flex align-items-stretch" style={{ height: '300px', gap: '15px' }}>
+                      {/* Left Panel: Available Employees */}
+                      <div className="border rounded d-flex flex-column flex-grow-1" style={{ flexBasis: '45%' }}>
+                        <div className="bg-light border-bottom p-2 fw-bold text-center">Filtrelenen Çalışanlar</div>
+                        <div className="overflow-auto p-2" style={{ flex: 1 }}>
+                          {employees
+                            .filter(emp => !selectedEmployees.includes(emp.id.toString()))
+                            .map(emp => (
+                              <div 
+                                key={'avail-'+emp.id}
+                                className="p-2 border-bottom cursor-pointer d-flex justify-content-between align-items-center"
+                                onClick={() => setSelectedEmployees(prev => [...prev, emp.id.toString()])}
+                                style={{ cursor: 'pointer' }}
+                                title="Sağa ekle"
+                              >
+                                <span>{emp.first_name} {emp.last_name}</span>
+                                <span className="text-primary fw-bold">+</span>
+                              </div>
+                          ))}
+                          {employees.filter(emp => !selectedEmployees.includes(emp.id.toString())).length === 0 && (
+                            <div className="text-muted text-center mt-3">Listelenecek çalışan bulunamadı. Filtreleri kullanın.</div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Middle arrows */}
+                      <div className="d-flex flex-column justify-content-center">
+                        <Button variant="outline-secondary" size="sm" className="mb-2" onClick={(e) => { e.preventDefault(); setSelectedEmployees(prev => [...new Set([...prev, ...employees.map(e => e.id.toString())])]); }}>&gt;&gt;</Button>
+                        <Button variant="outline-secondary" size="sm" onClick={(e) => { e.preventDefault(); setSelectedEmployees([]); }}>&lt;&lt;</Button>
+                      </div>
+
+                      {/* Right Panel: Selected Employees */}
+                      <div className="border rounded d-flex flex-column flex-grow-1" style={{ flexBasis: '45%', borderColor: 'var(--bs-primary) !important' }}>
+                        <div className="bg-primary text-white border-bottom p-2 fw-bold text-center rounded-top">Davetli Çalışanlar ({selectedEmployees.length})</div>
+                        <div className="overflow-auto p-2" style={{ flex: 1 }}>
+                          {selectedEmployees.map(empId => {
+                            // Try to find the employee in the current loaded list, or we might just show ID if not loaded.
+                            // To be perfect, we would load existing participants' names too, but we just need a basic list.
+                            // If they are in existing participants, their name isn't in `employees` unless we fetch them.
+                            // For simplicity, let's just find them in `employees` OR if we had a full list.
+                            const emp = employees.find(e => e.id.toString() === empId);
+                            const name = emp ? `${emp.first_name} ${emp.last_name}` : (participantNames[empId] || `Katılımcı #${empId} (Yüklü Değil)`);
+                            return (
+                              <div 
+                                key={'sel-'+empId}
+                                className="p-2 border-bottom cursor-pointer d-flex justify-content-between align-items-center"
+                                onClick={() => setSelectedEmployees(prev => prev.filter(id => id !== empId))}
+                                style={{ cursor: 'pointer' }}
+                                title="Kaldır"
+                              >
+                                <span>{name}</span>
+                                <span className="text-danger fw-bold">-</span>
+                              </div>
+                            )
+                          })}
+                          {selectedEmployees.length === 0 && (
+                            <div className="text-muted text-center mt-3">Henüz davetli yok. (Tüm şirket olarak yayınlanacak)</div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </Col>
+                </Row>
               </Col>
             </Row>
 

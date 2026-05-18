@@ -183,7 +183,7 @@ const EventsPage = () => {
                                 <td>{event.name}</td>
                                 <td>{moment(event.start_date).format('DD.MM.YYYY HH:mm')}</td>
                                 <td>{event.location || '-'}</td>
-                                <td>{event.audience_filter === 'ALL_COMPANY' ? 'Tüm Şirket' : event.audience_filter}</td>
+                                <td>{event.audience_filter === 'TARGETED' ? 'Özel Davetliler' : 'Tüm Şirket'}</td>
                                 <td>
                                   {event.status === EventStatus.PUBLISHED ? (
                                     <Badge bg="success">Yayınlandı</Badge>
