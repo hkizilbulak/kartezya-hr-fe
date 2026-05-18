@@ -46,7 +46,8 @@ const ContractModal: React.FC<ContractModalProps> = ({
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [departments, setDepartments] = useState<DepartmentLookup[]>([]);
   const [selectedEmployees, setSelectedEmployees] = useState<string[]>([]);
-          const [selectedCompany, setSelectedCompany] = useState<string>('');
+  const [participantNames, setParticipantNames] = useState<Record<string, string>>({});
+  const [selectedCompany, setSelectedCompany] = useState<string>('');
   const [selectedDepartmentIds, setSelectedDepartmentIds] = useState<string[]>([]);
 
   useEffect(() => {
@@ -107,6 +108,22 @@ const ContractModal: React.FC<ContractModalProps> = ({
         status: contract.status || ContractStatus.PendingProposal
       });
       
+      if (contract.employee_contracts && Array.isArray(contract.employee_contracts)) {
+        const existingEmpIds: string[] = [];
+        const namesMap: Record<string, string> = {};
+        contract.employee_contracts.forEach((ec: any) => {
+          if (ec.employee?.id) {
+            const empIdStr = ec.employee.id.toString();
+            existingEmpIds.push(empIdStr);
+            namesMap[empIdStr] = `${ec.employee.first_name} ${ec.employee.last_name}`;
+          }
+        });
+        setSelectedEmployees(existingEmpIds);
+        setParticipantNames(namesMap);
+      } else {
+        setSelectedEmployees([]);
+        setParticipantNames({});
+      }
     } else {
       setFormData({
         customer_contact_name: '',
@@ -119,8 +136,8 @@ const ContractModal: React.FC<ContractModalProps> = ({
         status: ContractStatus.PendingProposal
       });
       setSelectedEmployees([]);
+      setParticipantNames({});
       setSelectedDepartmentIds([]);
-      setSelectedCompany('');
       setSelectedCompany('');
     }
     setFieldErrors({});
@@ -138,29 +155,17 @@ const ContractModal: React.FC<ContractModalProps> = ({
     let contractId = contract?.id;
 
     try {
+      const submitData = {
+        ...formData,
+        target_employee_ids: selectedEmployees.map(id => parseInt(id))
+      };
+
       if (isEdit && contract) {
-        await contractService.update(contract.id, formData);
+        await contractService.update(contract.id, submitData);
+        toast.success('Sözleşme başarıyla güncellendi.');
       } else {
-        const res = await contractService.create(formData);
-        contractId = res.data?.id;
-      }
-      
-      if (contractId && selectedEmployees.length > 0) {
-        let successCount = 0;
-        for (const empIdStr of selectedEmployees) {
-          try {
-            await employeeContractService.create({
-              employee_id: parseInt(empIdStr),
-              contract_id: contractId
-            });
-            successCount++;
-          } catch(err) {
-            // Probably already assigned, ignore silently
-          }
-        }
-        if (successCount > 0) {
-          toast.success(`${successCount} çalışan başarıyla sözleşmeye eklendi.`);
-        }
+        await contractService.create(submitData);
+        toast.success('Sözleşme başarıyla oluşturuldu.');
       }
       
       onSave();
@@ -366,20 +371,31 @@ const ContractModal: React.FC<ContractModalProps> = ({
                   <div className="border rounded d-flex flex-column flex-grow-1" style={{ flexBasis: '45%', borderColor: 'var(--bs-primary) !important' }}>
                     <div className="bg-primary text-white border-bottom p-2 fw-bold text-center rounded-top">Seçili Çalışanlar ({selectedEmployees.length})</div>
                     <div className="overflow-auto p-2" style={{ flex: 1 }}>
-                      {employees
-                        .filter(emp => selectedEmployees.includes(emp.id.toString()))
-                        .map(emp => (
+                      {selectedEmployees.map(empIdStr => {
+                        const emp = employees.find(e => e.id.toString() === empIdStr);
+                        const empName = emp ? `${emp.first_name} ${emp.last_name}` : participantNames[empIdStr];
+                        if (!empName) return null;
+
+                        return (
                           <div 
-                            key={'sel-'+emp.id}
+                            key={'sel-'+empIdStr}
                             className="p-2 border-bottom cursor-pointer d-flex justify-content-between align-items-center"
-                            onClick={() => setSelectedEmployees(prev => prev.filter(id => id !== emp.id.toString()))}
+                            onClick={() => {
+                              setSelectedEmployees(prev => prev.filter(id => id !== empIdStr));
+                              setParticipantNames(prev => {
+                                const newMap = { ...prev };
+                                delete newMap[empIdStr];
+                                return newMap;
+                              });
+                            }}
                             style={{ cursor: 'pointer' }}
                             title="Kaldır"
                           >
-                            <span>{emp.first_name} {emp.last_name}</span>
+                            <span>{empName}</span>
                             <span className="text-danger fw-bold">-</span>
                           </div>
-                      ))}
+                        );
+                      })}
                       {selectedEmployees.length === 0 && (
                         <div className="text-muted text-center mt-3">Henüz seçilen kimse yok</div>
                       )}

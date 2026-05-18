@@ -21,6 +21,7 @@ export interface Contract {
   start_date: string;
   end_date?: string;
   status: ContractStatus;
+  employee_contracts?: any[];
 }
 
 export interface ContractRequest {
