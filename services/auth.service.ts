@@ -201,6 +201,19 @@ export const authService = {
     }
   },
 
+  sendPasswordResetEmail: async (userId: number): Promise<{ success: boolean; message: string }> => {
+    try {
+      const response = await axiosInstance.post(HR_ENDPOINTS.AUTH.SEND_PASSWORD_RESET_EMAIL, { user_id: userId });
+      return response.data;
+    } catch (error: any) {
+      let errorMessage = 'Şifre sıfırlama maili gönderilemedi';
+      if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      }
+      throw new Error(errorMessage);
+    }
+  },
+
   yandexLogin: async (request: YandexLoginRequest): Promise<LoginResponse> => {
     try {
       // Backend'e GET isteği ile code ve cid parametrelerini gönder

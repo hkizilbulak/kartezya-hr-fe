@@ -11,6 +11,7 @@ export const HR_ENDPOINTS = {
     VALIDATE_RESET_TOKEN: '/auth/validate-reset-token',
     RESET_PASSWORD: '/auth/reset-password',
     CHANGE_PASSWORD: '/auth/change-password',
+    SEND_PASSWORD_RESET_EMAIL: '/auth/send-password-reset-email',
     YANDEX_CALLBACK: '/auth/yandex/callback'
   },
   // Companies

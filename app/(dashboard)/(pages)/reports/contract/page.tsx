@@ -13,6 +13,8 @@ import Pagination from '@/components/Pagination';
 import { Download as DownloadIcon, ChevronUp, ChevronDown } from 'react-feather';
 import { toast } from 'react-toastify';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
+import * as ExcelUtils from '@/helpers/excelExport';
+import ReportEmailButton from '@/components/reports/ReportEmailButton';
 import '@/styles/table-list.scss';
 import '@/styles/components/table-common.scss';
 
@@ -242,13 +244,43 @@ const ContractReportPage = () => {
                                     Raporu Getir
                                 </Button>
                                 {showTable && reportData && (
-                                    <Button 
-                                        variant="success" 
-                                        onClick={handleExportExcel}
-                                    >
-                                        <DownloadIcon size={18} className="me-2" style={{ display: 'inline' }} />
-                                        Excel'e İndir
-                                    </Button>
+                                    <>
+                                        <Button 
+                                            variant="success" 
+                                            onClick={handleExportExcel}
+                                        >
+                                            <DownloadIcon size={18} className="me-2" style={{ display: 'inline' }} />
+                                            Excel'e İndir
+                                        </Button>
+                                        <ReportEmailButton
+                                            reportType="contract"
+                                            filters={{ startDate, endDate, companyId: selectedCompany, departmentIds: selectedDepartmentIds, status: selectedStatus }}
+                                            disabled={!reportData}
+                                            getExportBlob={async () => {
+                                                // Contract report uses backend export, fetch blob from API
+                                                const { default: axiosInstance } = await import('@/helpers/api/axiosInstance');
+                                                const apiPayload = {
+                                                    start_date: startDate || undefined,
+                                                    end_date: endDate || undefined,
+                                                    company_id: selectedCompany ? Number(selectedCompany) : undefined,
+                                                    department_ids: selectedDepartmentIds.length > 0 ? selectedDepartmentIds : undefined,
+                                                    export_columns: [
+                                                        { key: 'fullName', label: 'Ad Soyad' },
+                                                        { key: 'contractNames', label: 'Sözleşmeler' },
+                                                        { key: 'companyName', label: 'Şirket' },
+                                                        { key: 'departmentName', label: 'Departman' },
+                                                        { key: 'manager', label: 'Yönetici' }
+                                                    ],
+                                                };
+                                                const response = await axiosInstance.post('/reports/contract/export/excel', apiPayload, { responseType: 'blob' });
+                                                return new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                                            }}
+                                            startDate={startDate}
+                                            endDate={endDate}
+                                            companyName={companies.find(c => String(c.id) === selectedCompany)?.name}
+                                            departmentName={departments.find(d => selectedDepartmentIds.includes(d.id))?.name}
+                                        />
+                                    </>
                                 )}
                             </Col>
                         </Row>

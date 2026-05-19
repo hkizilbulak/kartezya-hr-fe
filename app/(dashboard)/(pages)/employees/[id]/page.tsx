@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Container, Spinner, Row, Col, Card, Button, Nav, Tab, Form, Table } from 'react-bootstrap';
 import { employeeService, workInformationService, employeeGradeService, employeeContractService, lookupService } from '@/services';
+import { authService } from '@/services/auth.service';
 import { Employee, EmployeeWorkInformation } from '@/models/hr/hr-models';
 import { toast } from 'react-toastify';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
@@ -58,6 +59,8 @@ const EmployeeDetailPage = () => {
   const [roles, setRoles] = useState<string[]>(['EMPLOYEE']);
   const [deleteItemType, setDeleteItemType] = useState<'workinfo' | 'grade' | 'contract' | null>(null);
   const [activeTab, setActiveTab] = useState<string>('employee-info');
+  const [showPasswordResetModal, setShowPasswordResetModal] = useState(false);
+  const [isSendingResetEmail, setIsSendingResetEmail] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -397,6 +400,20 @@ const EmployeeDetailPage = () => {
     }
   };
 
+  const handleSendPasswordResetEmail = async () => {
+    if (!employee?.user?.id) return;
+    setIsSendingResetEmail(true);
+    try {
+      await authService.sendPasswordResetEmail(employee.user.id);
+      toast.success('Şifre sıfırlama maili başarıyla gönderildi');
+      setShowPasswordResetModal(false);
+    } catch (error: any) {
+      toast.error(error.message || 'Şifre sıfırlama maili gönderilemedi');
+    } finally {
+      setIsSendingResetEmail(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className={styles.loadingContainer}>
@@ -567,6 +584,17 @@ const EmployeeDetailPage = () => {
           <div className="d-lg-none mb-4 pt-3">
             <h3 className="mb-0">{employee.first_name} {employee.last_name}</h3>
             <p className="text-muted mb-0">{getWorkInfoField('job_title')}</p>
+          </div>
+
+          <div className="d-flex justify-content-end mb-3">
+            <Button
+              variant="outline-primary"
+              size="sm"
+              onClick={() => setShowPasswordResetModal(true)}
+              disabled={isSendingResetEmail}
+            >
+              {isSendingResetEmail ? 'Gönderiliyor...' : 'Şifre Sıfırlama Maili Gönder'}
+            </Button>
           </div>
 
           <Tab.Container id="employee-tabs" activeKey={activeTab} onSelect={(k) => setActiveTab(k || 'employee-info')}>
@@ -1402,6 +1430,19 @@ const EmployeeDetailPage = () => {
           loading={isDeleting}
           title="Sözleşme Sil"
           message="Sözleşmeyi silmek istediğinize emin misiniz?"
+        />
+      )}
+      {showPasswordResetModal && (
+        <DeleteModal
+          onClose={() => setShowPasswordResetModal(false)}
+          onHandleDelete={handleSendPasswordResetEmail}
+          loading={isSendingResetEmail}
+          title="Şifre Sıfırlama"
+          message={`Bu kullanıcının email adresine (${employee?.user?.email || employee?.email}) şifre sıfırlama maili gönderilecektir. Onaylıyor musun?`}
+          cancelLabel="İptal"
+          confirmLabel="Gönder"
+          loadingLabel="Gönderiliyor..."
+          variant="warning"
         />
       )}
     </Container>

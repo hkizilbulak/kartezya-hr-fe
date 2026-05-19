@@ -14,6 +14,7 @@ import { Download as DownloadIcon, ChevronUp, ChevronDown } from 'react-feather'
 import { toast } from 'react-toastify';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
 import * as ExcelUtils from '@/helpers/excelExport';
+import ReportEmailButton from '@/components/reports/ReportEmailButton';
 import '@/styles/table-list.scss';
 import '@/styles/components/table-common.scss';
 
@@ -250,6 +251,24 @@ const WorkDayReportPage = () => {
     label: dept.name,
   }));
 
+  const getSelectedCompanyName = (): string | undefined => {
+    if (!selectedCompany) return undefined;
+    return companies.find(c => String(c.id) === selectedCompany)?.name;
+  };
+
+  const getSelectedDepartmentName = (): string | undefined => {
+    if (selectedDepartmentIds.length === 0) return undefined;
+    if (selectedDepartmentIds.length === 1) {
+      return departments.find(d => String(d.id) === selectedDepartmentIds[0])?.name;
+    }
+    return undefined;
+  };
+
+  const getExportBlob = async (): Promise<Blob> => {
+    if (!reportData) throw new Error('Rapor verisi yok');
+    return ExcelUtils.exportToExcelBlob(reportData);
+  };
+
   return (
     <>
       <Container fluid className="page-container">
@@ -347,13 +366,25 @@ const WorkDayReportPage = () => {
                         disabled={!startDate || !endDate}
                       >Raporu Getir</Button>
                       {showTable && reportData && (
-                        <Button
-                          variant="success"
-                          onClick={handleExportToExcel}
-                        >
-                          <DownloadIcon size={18} className="me-2" style={{ display: 'inline' }} />
-                          Excel'e İndir
-                        </Button>
+                        <>
+                          <Button
+                            variant="success"
+                            onClick={handleExportToExcel}
+                          >
+                            <DownloadIcon size={18} className="me-2" style={{ display: 'inline' }} />
+                            Excel'e İndir
+                          </Button>
+                          <ReportEmailButton
+                            reportType="work-day"
+                            filters={{ startDate, endDate, companyId: selectedCompany, departmentIds: selectedDepartmentIds, status: selectedStatus }}
+                            disabled={!reportData}
+                            getExportBlob={getExportBlob}
+                            startDate={startDate}
+                            endDate={endDate}
+                            companyName={getSelectedCompanyName()}
+                            departmentName={getSelectedDepartmentName()}
+                          />
+                        </>
                       )}
                     </Col>
                   </Row>

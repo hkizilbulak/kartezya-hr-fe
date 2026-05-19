@@ -555,3 +555,142 @@ export const exportEmployeesToExcel = async (employees: Employee[]) => {
     throw error;
   }
 };
+
+// ====== Blob-only variants for email attachment ======
+
+export const exportToExcelBlob = async (reportData: WorkDayReportResponse): Promise<Blob> => {
+  const ExcelJSModule = await import('exceljs');
+  const ExcelJSLib = ExcelJSModule.default || ExcelJSModule;
+  const wb = new (ExcelJSLib as any).Workbook();
+  const ws = wb.addWorksheet('Rapor');
+
+  const startDate = new Date(reportData.start_date);
+  const endDate = new Date(reportData.end_date);
+  const formatDate = (date: Date) => date.toLocaleDateString('tr-TR', { year: 'numeric', month: '2-digit', day: '2-digit' });
+
+  let rowNum = 1;
+  const titleRow = ws.addRow(['ÇALIŞMA GÜNÜ RAPORU']);
+  ws.mergeCells(rowNum, 1, rowNum, 7);
+  titleRow.height = 24;
+  titleRow.getCell(1).font = { bold: true, size: 16 };
+  titleRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
+  rowNum++;
+  ws.addRow([]); rowNum++;
+  const dateRow = ws.addRow([`${formatDate(startDate)} - ${formatDate(endDate)}`]);
+  ws.mergeCells(rowNum, 1, rowNum, 7);
+  dateRow.getCell(1).font = { bold: true, size: 12 };
+  dateRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
+  rowNum++;
+  ws.addRow([]); rowNum++;
+  ws.addRow(['Toplam İş Günü:(Resmi Tatil Hariç)', reportData.total_work_days]); rowNum++;
+  ws.addRow(['Toplam Resmi Tatil:', reportData.total_holiday_days]); rowNum++;
+  ws.addRow(['Toplam Çalışan Sayısı:', reportData.rows?.length || 0]); rowNum++;
+  ws.addRow([]); rowNum++;
+  ws.addRow([]); rowNum++;
+
+  const headerRow = ws.addRow(['AD SOYAD', 'İŞ GÜNÜ', 'KULLANILAN İZİN', 'ÇALIŞILAN GÜN', 'ŞİRKET', 'DEPARTMAN', 'YÖNETİCİ']);
+  headerRow.eachCell((cell: any) => {
+    cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4472C4' } };
+    cell.alignment = { horizontal: 'center', vertical: 'middle' };
+  });
+
+  if (reportData.rows && reportData.rows.length > 0) {
+    const sortedRows = [...reportData.rows].sort((a, b) =>
+      `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`, 'tr-TR')
+    );
+    sortedRows.forEach((row) => {
+      ws.addRow([
+        `${row.first_name} ${row.last_name}`,
+        parseFloat(row.work_days.toFixed(1)),
+        row.used_leave_days.toFixed(1),
+        row.worked_days.toFixed(1),
+        row.company_name,
+        row.department_name,
+        row.manager || '-'
+      ]);
+    });
+  }
+
+  ws.columns = [{ width: 25 }, { width: 12 }, { width: 15 }, { width: 15 }, { width: 20 }, { width: 20 }, { width: 20 }];
+
+  const buffer = await wb.xlsx.writeBuffer();
+  return new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+};
+
+export const exportHakedisToExcelBlob = async (reportData: EforReportResponse): Promise<Blob> => {
+  const ExcelJSModule = await import('exceljs');
+  const ExcelJSLib = ExcelJSModule.default || ExcelJSModule;
+  const wb = new (ExcelJSLib as any).Workbook();
+  const ws = wb.addWorksheet('Detay');
+
+  ws.addRow(['Table 1: 2026 Planlanan Efor (Aylara/Personele Göre Dağılım)']);
+  ws.mergeCells(1, 1, 1, 17);
+  ws.addRow(['', '', '', 'Aylara Göre İş Günü Sayıları']);
+  ws.mergeCells(2, 4, 2, 17);
+
+  const headers = ['Ad-Soyad', 'Grade', 'Rate', 'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık', 'Toplam', 'Hakediş'];
+  const headerRow = ws.addRow(headers);
+  headerRow.font = { bold: true };
+
+  reportData.rows.forEach((row, index) => {
+    const sum = (row.january||0)+(row.february||0)+(row.march||0)+(row.april||0)+(row.may||0)+(row.june||0)+(row.july||0)+(row.august||0)+(row.september||0)+(row.october||0)+(row.november||0)+(row.december||0);
+    const currentRowNum = index + 4;
+    ws.addRow([
+      `${row.first_name} ${row.last_name}`, row.current_grade || '', 0,
+      parseFloat((row.january||0).toFixed(1)), parseFloat((row.february||0).toFixed(1)), parseFloat((row.march||0).toFixed(1)),
+      parseFloat((row.april||0).toFixed(1)), parseFloat((row.may||0).toFixed(1)), parseFloat((row.june||0).toFixed(1)),
+      parseFloat((row.july||0).toFixed(1)), parseFloat((row.august||0).toFixed(1)), parseFloat((row.september||0).toFixed(1)),
+      parseFloat((row.october||0).toFixed(1)), parseFloat((row.november||0).toFixed(1)), parseFloat((row.december||0).toFixed(1)),
+      { formula: `SUM(D${currentRowNum}:O${currentRowNum})`, result: parseFloat(sum.toFixed(1)) },
+      { formula: `P${currentRowNum}*C${currentRowNum}`, result: 0 }
+    ]);
+  });
+
+  const buffer = await wb.xlsx.writeBuffer();
+  return new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+};
+
+export const exportGradeToExcelBlob = async (reportData: GradeReportResponse): Promise<Blob> => {
+  const ExcelJSModule = await import('exceljs');
+  const ExcelJSLib = ExcelJSModule.default || ExcelJSModule;
+  const wb = new (ExcelJSLib as any).Workbook();
+  const ws = wb.addWorksheet('Grade Raporu');
+
+  ws.addRow(['GRADE RAPORU']);
+  ws.mergeCells(1, 1, 1, 10);
+  ws.addRow([]);
+  ws.addRow([]);
+
+  const headers = ['AD SOYAD', 'İŞE GİRİŞ', 'TAKIMA BAŞLANGIÇ', 'MESLEĞE BAŞLANGIÇ', 'TOPLAM DENEYİM', 'MEVCUT GRADE', 'BEKLENEN GRADE', 'ŞİRKET', 'DEPARTMAN', 'YÖNETİCİ'];
+  const headerRow = ws.addRow(headers);
+  headerRow.eachCell((cell: any) => {
+    cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4472C4' } };
+  });
+
+  if (reportData.rows && reportData.rows.length > 0) {
+    const sortedRows = [...reportData.rows].sort((a, b) =>
+      `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`, 'tr-TR')
+    );
+    sortedRows.forEach((row) => {
+      ws.addRow([
+        `${row.first_name} ${row.last_name}`,
+        row.hire_date ? new Date(row.hire_date).toLocaleDateString('tr-TR') : '-',
+        row.team_start_date ? new Date(row.team_start_date).toLocaleDateString('tr-TR') : '-',
+        row.profession_start_date ? new Date(row.profession_start_date).toLocaleDateString('tr-TR') : '-',
+        row.total_experience_text || '-',
+        row.current_grade || '-',
+        row.expected_grade || '-',
+        row.company_name,
+        row.department_name,
+        row.manager || '-'
+      ]);
+    });
+  }
+
+  ws.columns = [{ width: 25 }, { width: 15 }, { width: 20 }, { width: 20 }, { width: 20 }, { width: 15 }, { width: 15 }, { width: 20 }, { width: 20 }, { width: 20 }];
+
+  const buffer = await wb.xlsx.writeBuffer();
+  return new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+};

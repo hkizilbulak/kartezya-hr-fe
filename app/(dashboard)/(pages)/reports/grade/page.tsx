@@ -13,6 +13,7 @@ import { Download as DownloadIcon, ChevronUp, ChevronDown } from 'react-feather'
 import { toast } from 'react-toastify';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
 import * as ExcelUtils from '@/helpers/excelExport';
+import ReportEmailButton from '@/components/reports/ReportEmailButton';
 import '@/styles/table-list.scss';
 import '@/styles/components/table-common.scss';
 
@@ -216,10 +217,20 @@ const GradeReportPage = () => {
                         Raporu Getir
                       </Button>
                       {showTable && reportData && (
-                        <Button variant="success" onClick={handleExportToExcel}>
-                          <DownloadIcon size={18} className="me-2" style={{ display: 'inline' }} />
-                          Excel&apos;e İndir
-                        </Button>
+                        <>
+                          <Button variant="success" onClick={handleExportToExcel}>
+                            <DownloadIcon size={18} className="me-2" style={{ display: 'inline' }} />
+                            Excel&apos;e İndir
+                          </Button>
+                          <ReportEmailButton
+                            reportType="grade"
+                            filters={{ companyId: selectedCompany, departmentIds: selectedDepartmentIds }}
+                            disabled={!reportData}
+                            getExportBlob={() => ExcelUtils.exportGradeToExcelBlob(reportData!)}
+                            companyName={companies.find(c => String(c.id) === selectedCompany)?.name}
+                            departmentName={departments.find(d => selectedDepartmentIds.includes(String(d.id)))?.name}
+                          />
+                        </>
                       )}
                     </Col>
                   </Row>
