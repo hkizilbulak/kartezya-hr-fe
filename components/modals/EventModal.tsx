@@ -227,7 +227,7 @@ const EventModal: React.FC<EventModalProps> = ({
   };
 
   return (
-    <Modal show={show} onHide={onHide} size="xl">
+    <Modal show={show} onHide={onHide} size="xl" enforceFocus={false}>
       <div className="position-relative">
         <LoadingOverlay show={loading} message="Kaydediliyor..." />
         

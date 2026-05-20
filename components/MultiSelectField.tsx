@@ -242,6 +242,7 @@ const MultiSelectField: React.FC<MultiSelectFieldProps> = ({
               zIndex: 1065,
               maxHeight: `${dropdownPosition.maxHeight}px`
             }}
+            onMouseDown={(e) => e.stopPropagation()}
           >
             {/* Search Input */}
             <div className="p-2 border-bottom bg-light sticky-top">
@@ -253,6 +254,8 @@ const MultiSelectField: React.FC<MultiSelectFieldProps> = ({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onClick={(e) => e.stopPropagation()}
+                onMouseDown={(e) => e.stopPropagation()}
+                autoFocus
               />
             </div>
             
