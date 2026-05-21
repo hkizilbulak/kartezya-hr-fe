@@ -188,7 +188,7 @@ const ContractModal: React.FC<ContractModalProps> = ({
 
   
   return (
-    <Modal show={show} onHide={onHide} size="lg">
+    <Modal show={show} onHide={onHide} size="lg" enforceFocus={false}>
       <div className="position-relative">
         <LoadingOverlay show={loading} message="Yükleniyor..." />
         <Modal.Header closeButton>
