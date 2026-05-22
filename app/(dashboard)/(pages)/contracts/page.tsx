@@ -17,6 +17,7 @@ export default function ContractsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
   const limit = 10;
 
   const [showModal, setShowModal] = useState(false);
@@ -43,14 +44,17 @@ export default function ContractsPage() {
         lookupService.getCompaniesLookup().catch(() => ({ data: [] }))
       ]);
 
-      if (res.data) {
-        if (res.data.data) {
-          setContracts(res.data.data);
-          setTotalPages(Math.ceil((res.data.page?.total || 0) / limit));
-        } else if (Array.isArray(res.data)) {
-          setContracts(res.data);
-          setTotalPages(1);
-        }
+      // API returns: { data: [...], page: { total, page, limit, total_pages, ... } }
+      // base.service getAll() already returns response.data, so res = { data: [...], page: {...} }
+      if (res?.data && Array.isArray(res.data)) {
+        setContracts(res.data);
+        const total = res.page?.total || 0;
+        setTotalCount(total);
+        setTotalPages(res.page?.total_pages || Math.ceil(total / limit) || 1);
+      } else if (Array.isArray(res)) {
+        setContracts(res);
+        setTotalCount(res.length);
+        setTotalPages(1);
       }
 
       if (compRes?.data) {
@@ -120,8 +124,12 @@ export default function ContractsPage() {
               <p className="text-muted mb-0">Henüz kayıtlı sözleşme bulunmamaktadır.</p>
             </div>
           ) : (
-            <div className="table-responsive">
-              <table className="table table-hover align-middle">
+            <>
+              <div className="d-flex justify-content-between align-items-center mb-3">
+                <span className="text-muted small">Toplam <strong>{totalCount}</strong> sözleşme</span>
+              </div>
+              <div className="table-responsive">
+                <table className="table table-hover align-middle">
                 <thead>
                   <tr>
                     <th>Sözleşme No</th>
@@ -180,17 +188,25 @@ export default function ContractsPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
 
-              {totalPages > 1 && (
-                <div className="mt-4">
-                  <Pagination
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={setCurrentPage}
-                  />
-                </div>
+              {totalCount > 0 && (
+                <Row className="mt-4">
+                  <Col lg={12} md={12} sm={12}>
+                    <div className="px-3">
+                      <Pagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        totalItems={totalCount}
+                        itemsPerPage={limit}
+                        onPageChange={(page) => setCurrentPage(page)}
+                        onPageSizeChange={() => {}}
+                      />
+                    </div>
+                  </Col>
+                </Row>
               )}
-            </div>
+            </>
           )}
         </Card.Body>
       </Card>
