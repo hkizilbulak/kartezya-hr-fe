@@ -1071,24 +1071,28 @@ const Home = () => {
                             </Card.Header>
                             <Card.Body>
                                 <p>
-                                    Bu sistem ile çalışanlarınızı, departmanlarınızı, izin süreçlerinizi ve masraflarınızı kolayca yönetebilirsiniz.
+                                    Bu sistem ile çalışanlarınızı, departmanlarınızı, izin süreçlerinizi, masraflarınızı ve etkinliklerinizi kolayca yönetebilirsiniz.
                                 </p>
                                 <div className="row">
-                                    <div className="col-md-3 mb-3">
+                                    <div className="col-md mb-3">
                                         <h6>👥 Çalışan Yönetimi</h6>
                                         <p className="text-muted">Çalışan bilgilerini ekleyin, düzenleyin ve yönetin.</p>
                                     </div>
-                                    <div className="col-md-3 mb-3">
+                                    <div className="col-md mb-3">
                                         <h6>🏢 Departman Yönetimi</h6>
                                         <p className="text-muted">Departmanları organize edin ve pozisyonları belirleyin.</p>
                                     </div>
-                                    <div className="col-md-3 mb-3">
+                                    <div className="col-md mb-3">
                                         <h6>📅 İzin Yönetimi</h6>
                                         <p className="text-muted">İzin taleplerini onaylayın ve raporlayın.</p>
                                     </div>
-                                    <div className="col-md-3 mb-3">
+                                    <div className="col-md mb-3">
                                         <h6>💰 Masraf Yönetimi</h6>
                                         <p className="text-muted">Çalışan masraf taleplerini değerlendirin ve ödemeleri takip edin.</p>
+                                    </div>
+                                    <div className="col-md mb-3">
+                                        <h6>🎉 Etkinlik Yönetimi</h6>
+                                        <p className="text-muted">Etkinlikleri planlayın, duyurun ve katılım süreçlerini yönetin.</p>
                                     </div>
                                 </div>
                             </Card.Body>
