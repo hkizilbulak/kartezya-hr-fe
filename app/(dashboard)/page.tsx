@@ -1063,6 +1063,12 @@ const Home = () => {
 
                 <Row>
                     <Col lg={12} md={12} xs={12} className="mb-6">
+                        <EventsWidget />
+                    </Col>
+                </Row>
+
+                <Row>
+                    <Col lg={12} md={12} xs={12} className="mb-6">
                         <Card className="border-0">
                             <Card.Header className="d-flex justify-content-between align-items-center">
                                 <div>
