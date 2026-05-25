@@ -18,7 +18,7 @@ export default function ContractsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
-  const limit = 10;
+  const [limit, setLimit] = useState(10);
 
   const [showModal, setShowModal] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
@@ -32,12 +32,11 @@ export default function ContractsPage() {
 
   useEffect(() => {
     fetchContracts(currentPage);
-  }, [currentPage]);
+  }, [currentPage, limit]);
 
   const fetchContracts = async (page: number) => {
     try {
       setIsLoading(true);
-      const limit = 10;
       
       const [res, compRes] = await Promise.all([
         contractService.getAll({ page, limit }) as any,
@@ -200,7 +199,7 @@ export default function ContractsPage() {
                         totalItems={totalCount}
                         itemsPerPage={limit}
                         onPageChange={(page) => setCurrentPage(page)}
-                        onPageSizeChange={() => {}}
+                        onPageSizeChange={(newSize) => { setLimit(newSize); setCurrentPage(1); }}
                       />
                     </div>
                   </Col>
