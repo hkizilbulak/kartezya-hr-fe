@@ -1,16 +1,21 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Card, Button, Container, Row, Col, Spinner } from 'react-bootstrap';
+import { Card, Button, Container, Row, Col } from 'react-bootstrap';
 import { contractService } from '@/services';
 import { lookupService } from '@/services/lookup.service';
-import { Contract } from '@/models/hr/contract';
+import { Contract, ContractStatus } from '@/models/hr/contract';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
 import { toast } from 'react-toastify';
 import { Edit, Trash2, Plus } from 'react-feather';
 import DeleteModal from '@/components/DeleteModal';
 import ContractModal from '@/components/modals/ContractModal';
 import Pagination from '@/components/Pagination';
+import FormTextField from '@/components/FormTextField';
+import FormSelectField from '@/components/FormSelectField';
+import LoadingOverlay from '@/components/LoadingOverlay';
+import '@/styles/table-list.scss';
+import '@/styles/components/table-common.scss';
 
 export default function ContractsPage() {
   const [contracts, setContracts] = useState<Contract[]>([]);
@@ -19,6 +24,11 @@ export default function ContractsPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [limit, setLimit] = useState(10);
+
+  // Filters
+  const [search, setSearch] = useState('');
+  const [customerName, setCustomerName] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
 
   const [showModal, setShowModal] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
@@ -34,17 +44,22 @@ export default function ContractsPage() {
     fetchContracts(currentPage);
   }, [currentPage, limit]);
 
-  const fetchContracts = async (page: number) => {
+  const fetchContracts = async (page: number, overrideFilters?: { search?: string; customerName?: string; statusFilter?: string }) => {
     try {
       setIsLoading(true);
-      
+      const f = overrideFilters ?? { search, customerName, statusFilter };
+
       const [res, compRes] = await Promise.all([
-        contractService.getAll({ page, limit }) as any,
+        contractService.getAll({
+          page,
+          limit,
+          ...(f.search ? { search: f.search } : {}),
+          ...(f.customerName ? { customer_name: f.customerName } : {}),
+          ...(f.statusFilter ? { status: f.statusFilter } : {}),
+        } as any) as any,
         lookupService.getCompaniesLookup().catch(() => ({ data: [] }))
       ]);
 
-      // API returns: { data: [...], page: { total, page, limit, total_pages, ... } }
-      // base.service getAll() already returns response.data, so res = { data: [...], page: {...} }
       if (res?.data && Array.isArray(res.data)) {
         setContracts(res.data);
         const total = res.page?.total || 0;
@@ -64,6 +79,19 @@ export default function ContractsPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSearch = () => {
+    setCurrentPage(1);
+    fetchContracts(1);
+  };
+
+  const handleClearFilters = () => {
+    setSearch('');
+    setCustomerName('');
+    setStatusFilter('');
+    setCurrentPage(1);
+    fetchContracts(1, { search: '', customerName: '', statusFilter: '' });
   };
 
   const handleDelete = async () => {
@@ -88,111 +116,177 @@ export default function ContractsPage() {
   };
 
   return (
-    <Container fluid className="p-6">
-      <Row className="mb-4">
-        <Col>
-          <div className="d-flex justify-content-between align-items-center">
-            <div>
-              <h2 className="mb-0">Kurumsal Sözleşme Yönetimi</h2>
-              <p className="text-muted">Müşteri sözleşmeleri ve teklif yönetimi</p>
-            </div>
-            <Button
-              variant="primary"
-              className="d-flex align-items-center"
-              onClick={() => {
-                setIsEdit(false);
-                setSelectedContract(null);
-                setShowModal(true);
-              }}
-            >
-              <Plus size={16} className="me-2" />
-              Yeni Kayıt
-            </Button>
+    <Container fluid className="page-container">
+      <LoadingOverlay show={isLoading} message="Sözleşmeler yükleniyor..." />
+
+      <div className="page-heading-wrapper">
+        <div className="d-flex justify-content-between align-items-center mb-4">
+          <div>
+            <h2 className="mb-0">Kurumsal Sözleşme Yönetimi</h2>
+            <p className="text-muted mb-0">Müşteri sözleşmeleri ve teklif yönetimi</p>
           </div>
+          <Button
+            variant="primary"
+            className="d-flex align-items-center"
+            onClick={() => {
+              setIsEdit(false);
+              setSelectedContract(null);
+              setShowModal(true);
+            }}
+          >
+            <Plus size={16} className="me-2" />
+            Yeni Kayıt
+          </Button>
+        </div>
+      </div>
+
+      {/* Filtre Kartı */}
+      <Row className="mb-3">
+        <Col lg={12} md={12} sm={12}>
+          <Card className="border-0 shadow-sm">
+            <Card.Body>
+              <Row className="g-3 align-items-end mb-3">
+                <Col lg={3} md={6} sm={12}>
+                  <FormTextField
+                    controlId="filter-search"
+                    label="Sözleşme No / Proje Adı"
+                    name="search"
+                    type="text"
+                    value={search}
+                    onChange={(_name, value) => setSearch(value)}
+                    placeholder="Ara..."
+                  />
+                </Col>
+                <Col lg={3} md={6} sm={12}>
+                  <FormTextField
+                    controlId="filter-customer"
+                    label="Müşteri Yetkili"
+                    name="customerName"
+                    type="text"
+                    value={customerName}
+                    onChange={(_name, value) => setCustomerName(value)}
+                    placeholder="İsim ara..."
+                  />
+                </Col>
+                <Col lg={3} md={6} sm={12}>
+                  <FormSelectField
+                    label="Durum"
+                    name="statusFilter"
+                    value={statusFilter}
+                    onChange={e => setStatusFilter(e.target.value)}
+                  >
+                    <option value="">Tümü</option>
+                    <option value={ContractStatus.PendingProposal}>Teklif Aşamasında</option>
+                    <option value={ContractStatus.Approved}>Onaylandı</option>
+                    <option value={ContractStatus.Rejected}>Reddedildi</option>
+                    <option value={ContractStatus.Active}>Aktif</option>
+                    <option value={ContractStatus.Completed}>Tamamlandı</option>
+                    <option value={ContractStatus.Cancelled}>İptal Edildi</option>
+                  </FormSelectField>
+                </Col>
+              </Row>
+              <Row>
+                <Col lg={12} md={12} sm={12} className="text-end">
+                  <Button variant="secondary" size="sm" className="me-2" onClick={handleClearFilters}>
+                    Temizle
+                  </Button>
+                  <Button variant="primary" size="sm" onClick={handleSearch}>
+                    Filtrele
+                  </Button>
+                </Col>
+              </Row>
+            </Card.Body>
+          </Card>
         </Col>
       </Row>
 
-      <Card>
-        <Card.Body>
-          {isLoading ? (
-            <div className="text-center py-5">
-              <Spinner animation="border" variant="primary" />
-            </div>
-          ) : contracts.length === 0 ? (
-            <div className="text-center py-5">
-              <p className="text-muted mb-0">Henüz kayıtlı sözleşme bulunmamaktadır.</p>
-            </div>
-          ) : (
-            <>
-              <div className="d-flex justify-content-between align-items-center mb-3">
-                <span className="text-muted small">Toplam <strong>{totalCount}</strong> sözleşme</span>
-              </div>
-              <div className="table-responsive">
-                <table className="table table-hover align-middle">
-                <thead>
-                  <tr>
-                    <th>Sözleşme No</th>
-                    <th>Proje Adı</th>
-                    <th>Müşteri Yetkili</th>
-                    <th>Tarih</th>
-                    <th>Durum</th>
-                    <th className="text-end">İşlemler</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {contracts.map(contract => (
-                    <tr key={contract.id}>
-                      <td><span className="fw-semibold">{contract.contract_no}</span></td>
-                      <td>{contract.project_name}</td>
-                      <td>{contract.customer_contact_name}</td>
-                      <td>
-                        {formatDate(contract.start_date)} - {formatDate(contract.end_date)}
-                      </td>
-                      <td>
-                        <span className={`badge ${
-                          contract.status === 'ACTIVE' ? 'bg-success' : 
-                          contract.status === 'COMPLETED' ? 'bg-primary' : 
-                          contract.status === 'CANCELLED' ? 'bg-danger' : 
-                          'bg-secondary'
-                        }`}>
-                          {contract.status || '-'}
-                        </span>
-                      </td>
-                      <td className="text-end">
-                        <Button
-                          variant="light"
-                          size="sm"
-                          className="me-2"
-                          onClick={() => {
-                            setSelectedContract(contract);
-                            setIsEdit(true);
-                            setShowModal(true);
-                          }}
-                        >
-                          <Edit size={14} />
-                        </Button>
-                        <Button
-                          variant="light"
-                          size="sm"
-                          className="text-danger"
-                          onClick={() => {
-                            setContractToDelete(contract);
-                            setShowDeleteModal(true);
-                          }}
-                        >
-                          <Trash2 size={14} />
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              </div>
+      <Row>
+        <Col lg={12} md={12} sm={12}>
+          <div className="table-wrapper">
+            <Card className="border-0 shadow-sm position-relative">
+              <Card.Body className="p-0">
+                <div className="table-box">
+                  <div className="d-flex justify-content-between align-items-center px-4 py-3">
+                    <span className="text-muted small">Toplam <strong>{totalCount}</strong> sözleşme</span>
+                  </div>
+                  <div className="table-responsive">
+                    <table className="table table-hover mb-0">
+                      <thead>
+                        <tr>
+                          <th>Sözleşme No</th>
+                          <th>Proje Adı</th>
+                          <th>Müşteri Yetkili</th>
+                          <th>Tarih</th>
+                          <th>Durum</th>
+                          <th className="text-end">İşlemler</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {contracts.length === 0 ? (
+                          <tr>
+                            <td colSpan={6} className="text-center py-5 text-muted">
+                              Kayıt bulunamadı.
+                            </td>
+                          </tr>
+                        ) : contracts.map(contract => (
+                          <tr key={contract.id}>
+                            <td><span className="fw-semibold">{contract.contract_no}</span></td>
+                            <td>{contract.project_name}</td>
+                            <td>{contract.customer_contact_name}</td>
+                            <td>
+                              {formatDate(contract.start_date)} - {formatDate(contract.end_date)}
+                            </td>
+                            <td>
+                              <span className={`badge ${
+                                contract.status === ContractStatus.Active ? 'bg-success' :
+                                contract.status === ContractStatus.Completed ? 'bg-primary' :
+                                contract.status === ContractStatus.Cancelled ? 'bg-danger' :
+                                contract.status === ContractStatus.Approved ? 'bg-info' :
+                                contract.status === ContractStatus.Rejected ? 'bg-warning text-dark' :
+                                'bg-secondary'
+                              }`}>
+                                {contract.status === ContractStatus.Active ? 'Aktif' :
+                                 contract.status === ContractStatus.Completed ? 'Tamamlandı' :
+                                 contract.status === ContractStatus.Cancelled ? 'İptal Edildi' :
+                                 contract.status === ContractStatus.Approved ? 'Onaylandı' :
+                                 contract.status === ContractStatus.Rejected ? 'Reddedildi' :
+                                 contract.status === ContractStatus.PendingProposal ? 'Teklif Aşamasında' :
+                                 contract.status || '-'}
+                              </span>
+                            </td>
+                            <td className="text-end">
+                              <Button
+                                variant="light"
+                                size="sm"
+                                className="me-2"
+                                onClick={() => {
+                                  setSelectedContract(contract);
+                                  setIsEdit(true);
+                                  setShowModal(true);
+                                }}
+                              >
+                                <Edit size={14} />
+                              </Button>
+                              <Button
+                                variant="light"
+                                size="sm"
+                                className="text-danger"
+                                onClick={() => {
+                                  setContractToDelete(contract);
+                                  setShowDeleteModal(true);
+                                }}
+                              >
+                                <Trash2 size={14} />
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
 
-              {totalCount > 0 && (
-                <Row className="mt-4">
-                  <Col lg={12} md={12} sm={12}>
-                    <div className="px-3">
+                  {totalCount > 0 && (
+                    <div className="px-3 py-3">
                       <Pagination
                         currentPage={currentPage}
                         totalPages={totalPages}
@@ -202,13 +296,13 @@ export default function ContractsPage() {
                         onPageSizeChange={(newSize) => { setLimit(newSize); setCurrentPage(1); }}
                       />
                     </div>
-                  </Col>
-                </Row>
-              )}
-            </>
-          )}
-        </Card.Body>
-      </Card>
+                  )}
+                </div>
+              </Card.Body>
+            </Card>
+          </div>
+        </Col>
+      </Row>
 
       <ContractModal
         show={showModal}
