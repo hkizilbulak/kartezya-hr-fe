@@ -38,6 +38,7 @@ const EventModal: React.FC<EventModalProps> = ({
     end_time: '',
     location: '',
     audience_filter: 'ALL_COMPANY',
+    status: 'DRAFT',
     quota: 0,
     allow_companion: false,
     max_companion: 0,
@@ -104,6 +105,7 @@ const EventModal: React.FC<EventModalProps> = ({
         end_time: event.end_date ? moment(event.end_date).format('HH:mm') : '',
         location: event.location || '',
         audience_filter: event.audience_filter || 'ALL_COMPANY',
+        status: event.status || 'DRAFT',
         quota: event.quota || 0,
         allow_companion: event.allow_companion || false,
         max_companion: event.max_companion || 0,
@@ -144,6 +146,7 @@ const EventModal: React.FC<EventModalProps> = ({
         end_time: '',
         location: '',
         audience_filter: 'ALL_COMPANY',
+        status: 'DRAFT',
         quota: 0,
         allow_companion: false,
         max_companion: 0,
@@ -257,6 +260,18 @@ const EventModal: React.FC<EventModalProps> = ({
                   </FormSelectField>
                 </Form.Group>
               </Col>
+              {isEdit && (
+                <Col md={6}>
+                  <Form.Group className="mb-3">
+                    <FormSelectField label="Durum" name="status" value={formData.status} onChange={handleInputChange}>
+                      <option value="DRAFT">Taslak</option>
+                      <option value="PUBLISHED">Yayında</option>
+                      <option value="CANCELLED">İptal Edildi</option>
+                      <option value="COMPLETED">Tamamlandı</option>
+                    </FormSelectField>
+                  </Form.Group>
+                </Col>
+              )}
               <Col md={12}>
                 <Form.Group className="mb-3">
                   <Form.Label>Açıklama</Form.Label>

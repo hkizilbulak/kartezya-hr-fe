@@ -53,7 +53,8 @@ const Home = () => {
         pending_leave_requests: 0,
         pending_expense_requests: 0,
         pending_payment_expenses: 0,
-        paid_expenses: 0
+        paid_expenses: 0,
+        active_events: 0
     });
     const [genderData, setGenderData] = useState<GenderChartData[]>([]);
     const [positionData, setPositionData] = useState<PositionChartData[]>([]);
@@ -830,14 +831,14 @@ const Home = () => {
                     </Col>
 
                     <Col xl={4} lg={4} md={12} xs={12} className="mb-6">
-                        <Card className="border-0" style={{ cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s' }} onClick={() => router.push('/expense-management/requests')} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-5px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}>
+                        <Card className="border-0" style={{ cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s' }} onClick={() => router.push('/events')} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-5px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}>
                             <Card.Body>
                                 <div className="d-flex justify-content-between align-items-center mb-3">
                                     <div>
-                                        <h4 className="mb-0">Ödenen Masraflar</h4>
+                                        <h4 className="mb-0">Aktif Etkinlikler</h4>
                                     </div>
-                                    <div className="icon-shape icon-md bg-light-success text-success rounded-2">
-                                        <i className="fe fe-check-circle fs-4"></i>
+                                    <div className="icon-shape icon-md bg-light-primary text-primary rounded-2">
+                                        <i className="fe fe-calendar fs-4"></i>
                                     </div>
                                 </div>
                                 <div>
@@ -846,13 +847,13 @@ const Home = () => {
                                             <Spinner animation="border" role="status" size="sm">
                                                 <span className="visually-hidden">Yükleniyor...</span>
                                             </Spinner>
-                                        ) : stats.paid_expenses}
+                                        ) : stats.active_events}
                                     </h1>
                                     <p className="mb-0">
-                                        <span className="text-success me-2">
-                                            <i className="fe fe-check me-1"></i>
+                                        <span className="text-primary me-2">
+                                            <i className="fe fe-activity me-1"></i>
                                         </span>
-                                        Ödenen
+                                        Yayında olan etkinlikler
                                     </p>
                                 </div>
                             </Card.Body>

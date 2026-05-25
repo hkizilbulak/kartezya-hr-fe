@@ -18,6 +18,7 @@ export interface DashboardData {
     pending_expense_requests: number;
     pending_payment_expenses: number;
     paid_expenses: number;
+    active_events: number;
 }export interface GenderChartData {
   gender: string;
   count: number;
