@@ -26,7 +26,8 @@ interface EmployeeLeaveRequestsProps {
 }
 
 const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeId, hideCreateButton = false }) => {
-  const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
+  const [pendingRequests, setPendingRequests] = useState<LeaveRequest[]>([]);
+  const [completedRequests, setCompletedRequests] = useState<LeaveRequest[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [showDocumentModal, setShowDocumentModal] = useState(false);
@@ -38,9 +39,16 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
   const [balanceLoading, setBalanceLoading] = useState(false);
 
   const itemsPerPage = 10;
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalItems, setTotalItems] = useState(0);
+
+  // Bekleyen talepler pagination
+  const [pendingCurrentPage, setPendingCurrentPage] = useState(1);
+  const [pendingTotalPages, setPendingTotalPages] = useState(1);
+  const [pendingTotalItems, setPendingTotalItems] = useState(0);
+
+  // Tamamlanmış talepler pagination
+  const [completedCurrentPage, setCompletedCurrentPage] = useState(1);
+  const [completedTotalPages, setCompletedTotalPages] = useState(1);
+  const [completedTotalItems, setCompletedTotalItems] = useState(0);
 
   const [filterStatus, setFilterStatus] = useState<string>('');
   const [filterLeaveTypeId, setFilterLeaveTypeId] = useState<string>('');
@@ -57,18 +65,60 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
     direction: 'DESC'
   });
 
-  const fetchLeaveRequests = async (page: number = 1, sortKey: string = 'created_at', sortDir: 'ASC' | 'DESC' = 'DESC') => {
+  const fetchPendingRequests = async (page: number = 1) => {
+    try {
+      setIsLoading(true);
+      const params: any = {
+        page,
+        limit: itemsPerPage,
+        sort: 'created_at',
+        direction: 'DESC',
+        status: 'PENDING',
+      };
+
+      let response;
+      if (employeeId) {
+        response = await leaveRequestService.getAll({ ...params, employee_id: employeeId });
+      } else {
+        response = await leaveRequestService.getMyLeaveRequests(params);
+      }
+
+      if (response.data) {
+        setPendingRequests(response.data);
+        setPendingTotalPages(response.page?.total_pages || 1);
+        setPendingTotalItems(response.page?.total || 0);
+        setPendingCurrentPage(page);
+      } else {
+        setPendingRequests([]);
+        setPendingTotalPages(1);
+        setPendingTotalItems(0);
+        setPendingCurrentPage(page);
+      }
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.error || error.message || 'Veri çekme sırasında hata oluştu';
+      toast.error(translateErrorMessage(errorMessage));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchCompletedRequests = async (page: number = 1, sortKey: string = 'created_at', sortDir: 'ASC' | 'DESC' = 'DESC') => {
     try {
       setIsLoading(true);
 
-      const params: any = { 
-        page, 
+      const params: any = {
+        page,
         limit: itemsPerPage,
         sort: sortKey,
-        direction: sortDir
+        direction: sortDir,
       };
 
-      if (filterStatus) params.status = filterStatus;
+      // Tamamlanmış talepler: filtre yoksa APPROVED,REJECTED,CANCELLED'ı dışarıda bırak PENDING'i hariç tut
+      if (filterStatus) {
+        params.status = filterStatus;
+      } else {
+        params.exclude_status = 'PENDING';
+      }
       if (filterLeaveTypeId) params.leave_type_id = filterLeaveTypeId;
       if (filterStartDate) params.start_date = filterStartDate;
       if (filterEndDate) params.end_date = filterEndDate;
@@ -79,17 +129,17 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
       } else {
         response = await leaveRequestService.getMyLeaveRequests(params);
       }
-      
+
       if (response.data) {
-        setLeaveRequests(response.data);
-        setTotalPages(response.page?.total_pages || 1);
-        setTotalItems(response.page?.total || 0);
-        setCurrentPage(page);
+        setCompletedRequests(response.data);
+        setCompletedTotalPages(response.page?.total_pages || 1);
+        setCompletedTotalItems(response.page?.total || 0);
+        setCompletedCurrentPage(page);
       } else {
-        setLeaveRequests([]);
-        setTotalPages(1);
-        setTotalItems(0);
-        setCurrentPage(page);
+        setCompletedRequests([]);
+        setCompletedTotalPages(1);
+        setCompletedTotalItems(0);
+        setCompletedCurrentPage(page);
       }
     } catch (error: any) {
       const errorMessage = error.response?.data?.error || error.message || 'Veri çekme sırasında hata oluştu';
@@ -129,13 +179,14 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
   };
 
   useEffect(() => {
-    fetchLeaveRequests(1, sortConfig.key, sortConfig.direction);
+    fetchPendingRequests(1);
+    fetchCompletedRequests(1, sortConfig.key, sortConfig.direction);
     fetchLeaveBalance();
     fetchLeaveTypes();
   }, [employeeId]);
 
   useEffect(() => {
-    fetchLeaveRequests(1, sortConfig.key, sortConfig.direction);
+    fetchCompletedRequests(1, sortConfig.key, sortConfig.direction);
   }, [filterStatus, filterLeaveTypeId, filterStartDate, filterEndDate]);
 
   const handleSort = (key: 'name') => {
@@ -144,7 +195,7 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
       direction = 'DESC';
     }
     setSortConfig({ key, direction });
-    fetchLeaveRequests(1, key, direction);
+    fetchCompletedRequests(1, key, direction);
   };
 
   const getSortIcon = (columnKey: 'name') => {
@@ -162,7 +213,8 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
     try {
       await leaveRequestService.cancelLeaveRequest(selectedRequest.id);
       toast.success('İzin talebi iptal edildi');
-      fetchLeaveRequests(currentPage, sortConfig.key || undefined, sortConfig.direction);
+      fetchPendingRequests(pendingCurrentPage);
+      fetchCompletedRequests(completedCurrentPage, sortConfig.key, sortConfig.direction);
       setSelectedRequest(null);
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || error.message || 'İptal işlemi sırasında hata oluştu';
@@ -173,8 +225,12 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
     }
   };
 
-  const handlePageChange = (newPage: number) => {
-    fetchLeaveRequests(newPage, sortConfig.key || undefined, sortConfig.direction);
+  const handlePendingPageChange = (newPage: number) => {
+    fetchPendingRequests(newPage);
+  };
+
+  const handleCompletedPageChange = (newPage: number) => {
+    fetchCompletedRequests(newPage, sortConfig.key, sortConfig.direction);
   };
 
   const getStatusBadge = (status: string) => {
@@ -207,20 +263,14 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
     }
   };
 
-  // İptal butonunun gösterilip gösterilmeyeceğini kontrol et
   const canCancelRequest = (request: LeaveRequest): boolean => {
-    // Status APPROVED olmalı
     if (request.status !== 'APPROVED') return false;
-    
-    // Başlangıç tarihi bugünden sonra olmalı
-    const startDateStr = request.start_date || request.start_date;
+    const startDateStr = request.start_date;
     if (!startDateStr) return false;
-    
     const startDate = new Date(startDateStr);
     const today = new Date();
-    today.setHours(0, 0, 0, 0); // Bugünün başlangıcı
+    today.setHours(0, 0, 0, 0);
     startDate.setHours(0, 0, 0, 0);
-    
     return startDate > today;
   };
 
@@ -257,9 +307,15 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
   const handleDocumentModalClose = (updatedCount?: any) => {
     setShowDocumentModal(false);
     if (typeof updatedCount === 'number' && selectedRequest) {
-      setLeaveRequests(prev => 
-        prev.map(req => req.id === selectedRequest.id 
-          ? { ...req, document_count: updatedCount } 
+      setPendingRequests(prev =>
+        prev.map((req: LeaveRequest) => req.id === selectedRequest.id
+          ? { ...req, document_count: updatedCount }
+          : req
+        )
+      );
+      setCompletedRequests(prev =>
+        prev.map((req: LeaveRequest) => req.id === selectedRequest.id
+          ? { ...req, document_count: updatedCount }
           : req
         )
       );
@@ -267,20 +323,9 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
   };
 
   const handleModalSave = () => {
-    fetchLeaveRequests(currentPage, sortConfig.key || undefined, sortConfig.direction);
+    fetchPendingRequests(pendingCurrentPage);
+    fetchCompletedRequests(completedCurrentPage, sortConfig.key, sortConfig.direction);
   };
-
-  // Bekleyen talepler (PENDING veya iptal edilebilir APPROVED)
-  const pendingRequests = leaveRequests.filter(req => 
-    req.status === 'PENDING' || (req.status === 'APPROVED' && canCancelRequest(req))
-  );
-  
-  // Tamamlanmış talepler (iptal edilemeyen APPROVED, REJECTED, CANCELLED)
-  const completedRequests = leaveRequests.filter(req => 
-    (req.status === 'APPROVED' && !canCancelRequest(req)) || 
-    req.status === 'REJECTED' || 
-    req.status === 'CANCELLED'
-  );
 
   /**
    * Güvenli progress bar yüzdesi hesapla
@@ -487,6 +532,17 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
                   </div>
                 </Card.Body>
               </Card>
+              {pendingTotalPages > 1 && (
+                <div className="mt-3">
+                  <Pagination
+                    currentPage={pendingCurrentPage}
+                    totalPages={pendingTotalPages}
+                    onPageChange={handlePendingPageChange}
+                    totalItems={pendingTotalItems}
+                    itemsPerPage={itemsPerPage}
+                  />
+                </div>
+              )}
             </div>
 
             {/* Tamamlanmış Talepler */}
@@ -617,6 +673,17 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
                   </div>
                 </Card.Body>
               </Card>
+              {completedTotalPages > 1 && (
+                <div className="mt-3">
+                  <Pagination
+                    currentPage={completedCurrentPage}
+                    totalPages={completedTotalPages}
+                    onPageChange={handleCompletedPageChange}
+                    totalItems={completedTotalItems}
+                    itemsPerPage={itemsPerPage}
+                  />
+                </div>
+              )}
             </div>
           </Col>
         </Row>
