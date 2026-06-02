@@ -1,20 +1,19 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { Row, Col, Card, Table, Button, Container, Badge, Form } from 'react-bootstrap';
+import { Row, Col, Card, Table, Button, Badge, Form } from 'react-bootstrap';
 import { leaveRequestService } from '@/services/leave-request.service';
 import { leaveBalanceService } from '@/services/leave-balance.service';
 import { Employee, LeaveRequest, LeaveBalance } from '@/models/hr/hr-models';
 import { PageHeading } from '@/widgets';
 import LeaveRequestModal from '@/components/modals/LeaveRequestModal';
 import LeaveDocumentModal from '@/components/leave/LeaveDocumentModal';
-import { leaveTypeService } from '@/services/leave-type.service';
 import { lookupService } from '@/services/lookup.service';
 import DeleteModal from '@/components/DeleteModal';
 import Pagination from '@/components/Pagination';
 import LoadingOverlay from '@/components/LoadingOverlay';
 import FormSelectField from '@/components/FormSelectField';
 import FormDateField from '@/components/FormDateField';
-import { Edit, Plus, ChevronUp, ChevronDown, FileText, X } from 'react-feather';
+import { Edit, Plus, FileText, X } from 'react-feather';
 import { toast } from 'react-toastify';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
 import '@/styles/table-list.scss';
@@ -26,8 +25,7 @@ interface EmployeeLeaveRequestsProps {
 }
 
 const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeId, hideCreateButton = false }) => {
-  const [pendingRequests, setPendingRequests] = useState<LeaveRequest[]>([]);
-  const [completedRequests, setCompletedRequests] = useState<LeaveRequest[]>([]);
+  const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [showDocumentModal, setShowDocumentModal] = useState(false);
@@ -39,16 +37,9 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
   const [balanceLoading, setBalanceLoading] = useState(false);
 
   const itemsPerPage = 10;
-
-  // Bekleyen talepler pagination
-  const [pendingCurrentPage, setPendingCurrentPage] = useState(1);
-  const [pendingTotalPages, setPendingTotalPages] = useState(1);
-  const [pendingTotalItems, setPendingTotalItems] = useState(0);
-
-  // Tamamlanmış talepler pagination
-  const [completedCurrentPage, setCompletedCurrentPage] = useState(1);
-  const [completedTotalPages, setCompletedTotalPages] = useState(1);
-  const [completedTotalItems, setCompletedTotalItems] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
 
   const [filterStatus, setFilterStatus] = useState<string>('');
   const [filterLeaveTypeId, setFilterLeaveTypeId] = useState<string>('');
@@ -56,16 +47,7 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
   const [filterEndDate, setFilterEndDate] = useState<string>('');
   const [leaveTypes, setLeaveTypes] = useState<any[]>([]);
 
-  // Default sort: created_at DESC (en yeni talepleri göster)
-  const [sortConfig, setSortConfig] = useState<{
-    key: string;
-    direction: 'ASC' | 'DESC';
-  }>({
-    key: 'created_at',
-    direction: 'DESC'
-  });
-
-  const fetchPendingRequests = async (page: number = 1) => {
+  const fetchLeaveRequests = async (page: number = 1) => {
     try {
       setIsLoading(true);
       const params: any = {
@@ -73,52 +55,8 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
         limit: itemsPerPage,
         sort: 'created_at',
         direction: 'DESC',
-        status: 'PENDING',
       };
-
-      let response;
-      if (employeeId) {
-        response = await leaveRequestService.getAll({ ...params, employee_id: employeeId });
-      } else {
-        response = await leaveRequestService.getMyLeaveRequests(params);
-      }
-
-      if (response.data) {
-        setPendingRequests(response.data);
-        setPendingTotalPages(response.page?.total_pages || 1);
-        setPendingTotalItems(response.page?.total || 0);
-        setPendingCurrentPage(page);
-      } else {
-        setPendingRequests([]);
-        setPendingTotalPages(1);
-        setPendingTotalItems(0);
-        setPendingCurrentPage(page);
-      }
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.error || error.message || 'Veri çekme sırasında hata oluştu';
-      toast.error(translateErrorMessage(errorMessage));
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const fetchCompletedRequests = async (page: number = 1, sortKey: string = 'created_at', sortDir: 'ASC' | 'DESC' = 'DESC') => {
-    try {
-      setIsLoading(true);
-
-      const params: any = {
-        page,
-        limit: itemsPerPage,
-        sort: sortKey,
-        direction: sortDir,
-      };
-
-      // Tamamlanmış talepler: filtre yoksa APPROVED,REJECTED,CANCELLED'ı dışarıda bırak PENDING'i hariç tut
-      if (filterStatus) {
-        params.status = filterStatus;
-      } else {
-        params.exclude_status = 'PENDING';
-      }
+      if (filterStatus) params.status = filterStatus;
       if (filterLeaveTypeId) params.leave_type_id = filterLeaveTypeId;
       if (filterStartDate) params.start_date = filterStartDate;
       if (filterEndDate) params.end_date = filterEndDate;
@@ -131,15 +69,15 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
       }
 
       if (response.data) {
-        setCompletedRequests(response.data);
-        setCompletedTotalPages(response.page?.total_pages || 1);
-        setCompletedTotalItems(response.page?.total || 0);
-        setCompletedCurrentPage(page);
+        setLeaveRequests(response.data);
+        setTotalPages(response.page?.total_pages || 1);
+        setTotalItems(response.page?.total || 0);
+        setCurrentPage(page);
       } else {
-        setCompletedRequests([]);
-        setCompletedTotalPages(1);
-        setCompletedTotalItems(0);
-        setCompletedCurrentPage(page);
+        setLeaveRequests([]);
+        setTotalPages(1);
+        setTotalItems(0);
+        setCurrentPage(page);
       }
     } catch (error: any) {
       const errorMessage = error.response?.data?.error || error.message || 'Veri çekme sırasında hata oluştu';
@@ -170,42 +108,21 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
   const fetchLeaveTypes = async () => {
     try {
       const res = await lookupService.getLeaveTypesLookup();
-      if (res?.data) {
-        setLeaveTypes(res.data);
-      }
+      if (res?.data) setLeaveTypes(res.data);
     } catch (err) {
       console.error(err);
     }
   };
 
   useEffect(() => {
-    fetchPendingRequests(1);
-    fetchCompletedRequests(1, sortConfig.key, sortConfig.direction);
+    fetchLeaveRequests(1);
     fetchLeaveBalance();
     fetchLeaveTypes();
   }, [employeeId]);
 
   useEffect(() => {
-    fetchCompletedRequests(1, sortConfig.key, sortConfig.direction);
+    fetchLeaveRequests(1);
   }, [filterStatus, filterLeaveTypeId, filterStartDate, filterEndDate]);
-
-  const handleSort = (key: 'name') => {
-    let direction: 'ASC' | 'DESC' = 'ASC';
-    if (sortConfig.key === key && sortConfig.direction === 'ASC') {
-      direction = 'DESC';
-    }
-    setSortConfig({ key, direction });
-    fetchCompletedRequests(1, key, direction);
-  };
-
-  const getSortIcon = (columnKey: 'name') => {
-    if (sortConfig.key !== columnKey) {
-      return null;
-    }
-    return sortConfig.direction === 'ASC' ?
-      <ChevronUp size={16} className="ms-1" style={{ display: 'inline' }} /> :
-      <ChevronDown size={16} className="ms-1" style={{ display: 'inline' }} />;
-  };
 
   const handleCancelConfirm = async () => {
     if (!selectedRequest) return;
@@ -213,38 +130,24 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
     try {
       await leaveRequestService.cancelLeaveRequest(selectedRequest.id);
       toast.success('İzin talebi iptal edildi');
-      fetchPendingRequests(pendingCurrentPage);
-      fetchCompletedRequests(completedCurrentPage, sortConfig.key, sortConfig.direction);
+      fetchLeaveRequests(currentPage);
       setSelectedRequest(null);
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || error.message || 'İptal işlemi sırasında hata oluştu';
       toast.error(translateErrorMessage(errorMessage));
     } finally {
       setActionLoading(false);
-      setShowCancelConfirm(false)
+      setShowCancelConfirm(false);
     }
-  };
-
-  const handlePendingPageChange = (newPage: number) => {
-    fetchPendingRequests(newPage);
-  };
-
-  const handleCompletedPageChange = (newPage: number) => {
-    fetchCompletedRequests(newPage, sortConfig.key, sortConfig.direction);
   };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'PENDING':
-        return <span className="badge bg-warning">Onay Bekliyor</span>;
-      case 'APPROVED':
-        return <span className="badge bg-success">Onaylandı</span>;
-      case 'REJECTED':
-        return <span className="badge bg-danger">Reddedildi</span>;
-      case 'CANCELLED':
-        return <span className="badge bg-secondary">İptal Edildi</span>;
-      default:
-        return <span className="badge bg-light text-dark">{status}</span>;
+      case 'PENDING': return <span className="badge bg-warning">Onay Bekliyor</span>;
+      case 'APPROVED': return <span className="badge bg-success">Onaylandı</span>;
+      case 'REJECTED': return <span className="badge bg-danger">Reddedildi</span>;
+      case 'CANCELLED': return <span className="badge bg-secondary">İptal Edildi</span>;
+      default: return <span className="badge bg-light text-dark">{status}</span>;
     }
   };
 
@@ -253,95 +156,45 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
     try {
       const date = new Date(dateString);
       if (isNaN(date.getTime())) return '-';
-      return date.toLocaleDateString('tr-TR', { 
-        year: 'numeric', 
-        month: '2-digit', 
-        day: '2-digit' 
-      });
-    } catch (error) {
+      return date.toLocaleDateString('tr-TR', { year: 'numeric', month: '2-digit', day: '2-digit' });
+    } catch {
       return '-';
     }
   };
 
   const canCancelRequest = (request: LeaveRequest): boolean => {
     if (request.status !== 'APPROVED') return false;
-    const startDateStr = request.start_date;
-    if (!startDateStr) return false;
-    const startDate = new Date(startDateStr);
+    if (!request.start_date) return false;
+    const startDate = new Date(request.start_date);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     startDate.setHours(0, 0, 0, 0);
     return startDate > today;
   };
 
-  const getEmployeeName = (employee: Employee | undefined): string => {
-    if (!employee) return '-';
-    const firstName = employee.first_name || '';
-    const lastName = employee.last_name || '';
-    return `${firstName} ${lastName}`.trim();
-  };
-
-  const handleEdit = (request: LeaveRequest) => {
-    setSelectedRequest(request);
-    setIsEdit(true);
-    setShowModal(true);
-  };
-
-  const handleNew = () => {
-    setSelectedRequest(null);
-    setIsEdit(false);
-    setShowModal(true);
-  };
-
-  const handleCloseModal = () => {
-    setShowModal(false);
-    setSelectedRequest(null);
-    setIsEdit(false);
-  };
-
-  const handleShowDocuments = (request: LeaveRequest) => {
-    setSelectedRequest(request);
-    setShowDocumentModal(true);
-  };
+  const handleEdit = (request: LeaveRequest) => { setSelectedRequest(request); setIsEdit(true); setShowModal(true); };
+  const handleNew = () => { setSelectedRequest(null); setIsEdit(false); setShowModal(true); };
+  const handleCloseModal = () => { setShowModal(false); setSelectedRequest(null); setIsEdit(false); };
+  const handleShowDocuments = (request: LeaveRequest) => { setSelectedRequest(request); setShowDocumentModal(true); };
 
   const handleDocumentModalClose = (updatedCount?: any) => {
     setShowDocumentModal(false);
     if (typeof updatedCount === 'number' && selectedRequest) {
-      setPendingRequests(prev =>
-        prev.map((req: LeaveRequest) => req.id === selectedRequest.id
-          ? { ...req, document_count: updatedCount }
-          : req
-        )
-      );
-      setCompletedRequests(prev =>
-        prev.map((req: LeaveRequest) => req.id === selectedRequest.id
-          ? { ...req, document_count: updatedCount }
-          : req
+      setLeaveRequests(prev =>
+        prev.map((req: LeaveRequest) =>
+          req.id === selectedRequest.id ? { ...req, document_count: updatedCount } : req
         )
       );
     }
   };
 
-  const handleModalSave = () => {
-    fetchPendingRequests(pendingCurrentPage);
-    fetchCompletedRequests(completedCurrentPage, sortConfig.key, sortConfig.direction);
-  };
+  const handleModalSave = () => { fetchLeaveRequests(currentPage); };
 
-  /**
-   * Güvenli progress bar yüzdesi hesapla
-   * @param usedValue - Kullanılan gün sayısı
-   * @param totalValue - Toplam gün sayısı
-   * @returns Yüzde değeri (0-100)
-   */
   const calculateProgressPercentage = (usedValue: number | undefined | null, totalValue: number | undefined | null): number => {
     const used = usedValue ? Number(usedValue) : 0;
     const total = totalValue ? Number(totalValue) : 0;
-    
-    if (!total || total === 0) return 0;
-    if (used <= 0) return 0;
-    
-    const percentage = (used / total) * 100;
-    return Math.min(percentage, 100); // Max 100%
+    if (!total || total === 0 || used <= 0) return 0;
+    return Math.min((used / total) * 100, 100);
   };
 
   return (
@@ -351,7 +204,7 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
 
         {!employeeId && (
           <div className="page-heading-wrapper">
-            <PageHeading 
+            <PageHeading
               heading="İzin Taleplerim"
               showCreateButton={!hideCreateButton}
               showFilterButton={false}
@@ -360,7 +213,7 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
             />
           </div>
         )}
-        
+
         {employeeId && !hideCreateButton && (
           <div className="d-flex justify-content-between align-items-center mb-4">
             <h6 style={{ color: '#495057', fontWeight: 700, fontSize: '16px' }}>İzin Talepleri</h6>
@@ -377,11 +230,11 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
         )}
 
         <Row className="g-3">
-          {/* İzin Bakiyeleri (Tüm Ekranlar İçin) */}
+          {/* İzin Bakiyeleri */}
           <Col lg={3} md={12} sm={12} className="sidebar-wrapper mb-4 mb-lg-0">
             <h6 className="text-secondary mb-3 d-lg-none" style={{ fontSize: '14px', fontWeight: 700 }}>İZİN BAKİYE BİLGİSİ</h6>
             {balanceLoading ? (
-               <Card className="border-0 shadow-sm"><Card.Body className="text-center py-4 text-muted">Yükleniyor...</Card.Body></Card>
+              <Card className="border-0 shadow-sm"><Card.Body className="text-center py-4 text-muted">Yükleniyor...</Card.Body></Card>
             ) : leaveBalances.length > 0 ? (
               leaveBalances.map((balance, index) => (
                 <Card key={index} className="border-0 shadow-sm mb-3 position-relative" style={{ top: index === 0 ? '20px' : '0' }}>
@@ -389,37 +242,28 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
                     <h6 className="text-secondary mb-4" style={{ fontSize: '14px', fontWeight: 700 }}>
                       {(balance.leave_type?.name || 'Yıllık İzin').toUpperCase()} BAKİYESİ
                     </h6>
-                    
                     <div className="mb-4">
                       <div className="d-flex justify-content-between align-items-center mb-2">
                         <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>Hakedilen İzin</span>
-                        <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>
-                          {balance.total_days || 0}
-                        </span>
+                        <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>{balance.total_days || 0}</span>
                       </div>
                       <div style={{ width: '100%', height: '8px', backgroundColor: '#e5e7eb', borderRadius: '4px', overflow: 'hidden' }}>
                         <div style={{ height: '100%', backgroundColor: '#3b82f6', width: `${balance.total_days ? 100 : 0}%`, borderRadius: '4px' }}></div>
                       </div>
                     </div>
-
                     <div className="mb-4">
                       <div className="d-flex justify-content-between align-items-center mb-2">
                         <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>Kullanılan İzin</span>
-                        <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>
-                          {balance.used_days || 0}
-                        </span>
+                        <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>{balance.used_days || 0}</span>
                       </div>
                       <div style={{ width: '100%', height: '8px', backgroundColor: '#e5e7eb', borderRadius: '4px', overflow: 'hidden' }}>
                         <div style={{ height: '100%', backgroundColor: '#f59e0b', width: `${calculateProgressPercentage(balance.used_days, balance.total_days)}%`, borderRadius: '4px' }}></div>
                       </div>
                     </div>
-
                     <div>
                       <div className="d-flex justify-content-between align-items-center mb-2">
                         <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>Kalan İzin</span>
-                        <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>
-                          {balance.remaining_days || 0}
-                        </span>
+                        <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>{balance.remaining_days || 0}</span>
                       </div>
                       <div style={{ width: '100%', height: '8px', backgroundColor: '#e5e7eb', borderRadius: '4px', overflow: 'hidden' }}>
                         <div style={{ height: '100%', backgroundColor: '#10b981', width: `${calculateProgressPercentage(balance.remaining_days, balance.total_days)}%`, borderRadius: '4px' }}></div>
@@ -437,254 +281,154 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
             )}
           </Col>
 
-          {/* Content */}
+          {/* Talepler */}
           <Col lg={9} md={12} sm={12} className="content-wrapper">
+            <h6 className="mb-3" style={{ fontWeight: 700, fontSize: '16px' }}>
+              {employeeId ? 'İzin Talepleri' : 'Taleplerim'}
+            </h6>
 
-            {/* Bekleyen Talepler */}
-            <div className="mb-4">
-              <h6 className="mb-3" style={{ fontWeight: 700, fontSize: '16px' }}>{employeeId ? 'Bekleyen Talepler' : 'Bekleyen Taleplerim'}</h6>
-              <Card className="border-0 shadow-sm position-relative">
+            {/* Filtreler */}
+            <Card className="border-0 shadow-sm mb-3">
+              <Card.Body className="py-2 px-3">
+                <Row className="g-2 align-items-end">
+                  <Col md={3}>
+                    <FormSelectField
+                      label="Durum"
+                      name="filterStatus"
+                      value={filterStatus}
+                      onChange={(e: any) => setFilterStatus(e.target.value)}
+                    >
+                      <option value="">Tümü</option>
+                      <option value="PENDING">Onay Bekliyor</option>
+                      <option value="APPROVED">Onaylandı</option>
+                      <option value="REJECTED">Reddedildi</option>
+                      <option value="CANCELLED">İptal Edildi</option>
+                    </FormSelectField>
+                  </Col>
+                  <Col md={3}>
+                    <FormSelectField
+                      label="İzin Türü"
+                      name="filterLeaveTypeId"
+                      value={filterLeaveTypeId}
+                      onChange={(e: any) => setFilterLeaveTypeId(e.target.value)}
+                    >
+                      <option value="">Tümü</option>
+                      {leaveTypes.map(lt => (
+                        <option key={lt.id} value={lt.id}>{lt.name}</option>
+                      ))}
+                    </FormSelectField>
+                  </Col>
+                  <Col md={3}>
+                    <FormDateField
+                      label="Başlangıç Tarihi"
+                      name="filterStartDate"
+                      value={filterStartDate}
+                      onChange={(e: any) => setFilterStartDate(e.target.value)}
+                    />
+                  </Col>
+                  <Col md={3}>
+                    <FormDateField
+                      label="Bitiş Tarihi"
+                      name="filterEndDate"
+                      value={filterEndDate}
+                      onChange={(e: any) => setFilterEndDate(e.target.value)}
+                    />
+                  </Col>
+                </Row>
+              </Card.Body>
+            </Card>
 
-                <Card.Body className="p-0">
-                  <div className="table-box">
-                    <div className="table-responsive">
-                      <Table hover className="mb-0">
-                        <thead>
-                          <tr>
-                            <th>İzin Türü</th>
-                            <th>Başlangıç Tarihi</th>
-                            <th>Bitiş Tarihi</th>
-                            <th>Kullanılan Gün</th>
-                            <th>Durum</th>
-                            <th className="text-end">İşlemler</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {pendingRequests.length ? (
-                            pendingRequests.map((request: LeaveRequest) => {
-                              const leaveTypeName = request.leave_type?.name || request.leave_type?.name;
-                              const startDate = request.start_date || request.start_date;
-                              const endDate = request.end_date || request.end_date;
-                              const requestedDays = request.requested_days || request.requested_days;
-
-                              return (
-                                <tr key={request.id}>
-                                  <td>{leaveTypeName}</td>
-                                  <td>{formatDate(startDate)}</td>
-                                  <td>{formatDate(endDate)}</td>
-                                  <td>{requestedDays || '-'}</td>
-                                  <td>{getStatusBadge(request.status)}</td>
-                                  <td className="text-end">
-                                    <div className="d-flex justify-content-end gap-2">
-                                      {request.status === 'PENDING' && !employeeId && (
-                                        <Button
-                                          variant="outline-primary"
-                                          size="sm"
-                                          title="Düzenle"
-                                          onClick={() => handleEdit(request)}
-                                          disabled={isLoading || actionLoading}
-                                        >
-                                          <Edit size={14} />
-                                        </Button>
+            {/* Tablo */}
+            <Card className="border-0 shadow-sm position-relative">
+              <Card.Body className="p-0">
+                <div className="table-box">
+                  <div className="table-responsive">
+                    <Table hover className="mb-0">
+                      <thead>
+                        <tr>
+                          <th>İzin Türü</th>
+                          <th>Başlangıç Tarihi</th>
+                          <th>Bitiş Tarihi</th>
+                          <th>Kullanılan Gün</th>
+                          <th>Durum</th>
+                          <th className="text-end">İşlemler</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {leaveRequests.length ? (
+                          leaveRequests.map((request: LeaveRequest) => (
+                            <tr key={request.id}>
+                              <td>{request.leave_type?.name || '-'}</td>
+                              <td>{formatDate(request.start_date)}</td>
+                              <td>{formatDate(request.end_date)}</td>
+                              <td>{request.requested_days || '-'}</td>
+                              <td>{getStatusBadge(request.status)}</td>
+                              <td className="text-end">
+                                <div className="d-flex justify-content-end gap-2">
+                                  {request.status === 'PENDING' && !employeeId && (
+                                    <Button
+                                      variant="outline-primary"
+                                      size="sm"
+                                      title="Düzenle"
+                                      onClick={() => handleEdit(request)}
+                                      disabled={isLoading || actionLoading}
+                                    >
+                                      <Edit size={14} />
+                                    </Button>
+                                  )}
+                                  {request.leave_type?.is_required_document && (
+                                    <Button
+                                      variant="outline-secondary"
+                                      size="sm"
+                                      title="Dökümanlar"
+                                      onClick={() => handleShowDocuments(request)}
+                                    >
+                                      <FileText size={16} />
+                                      {(!request.document_count || request.document_count === 0) && (
+                                        <Badge bg="warning" className="ms-1" style={{ fontSize: '0.6em' }}>!</Badge>
                                       )}
-                                      {request.leave_type?.is_required_document && (
-                                        <Button
-                                          variant="outline-secondary"
-                                          size="sm"
-                                          title="Dökümanlar"
-                                          onClick={() => handleShowDocuments(request)}
-                                        >
-                                          <FileText size={16} />
-                                          {(!request.document_count || request.document_count === 0) && (
-                                            <Badge bg="warning" className="ms-1" style={{ fontSize: '0.6em' }}>!</Badge>
-                                          )}
-                                        </Button>
-                                      )}
-                                      {!employeeId && (
-                                        <Button
-                                          variant="outline-warning"
-                                          size="sm"
-                                          title="İptal Et"
-                                          onClick={() => {
-                                            setSelectedRequest(request);
-                                            setShowCancelConfirm(true);
-                                          }}
-                                          disabled={isLoading || actionLoading}
-                                        >
-                                          <X size={14} />
-                                        </Button>
-                                      )}
-                                    </div>
-                                  </td>
-                                </tr>
-                              );
-                            })
-                          ) : (
-                              <tr>
-                                <td colSpan={6} className="text-center py-4">
-                                  Bekleyen talep bulunamadı
-                                </td>
-                              </tr>
-                          )}
-                        </tbody>
-                      </Table>
-                    </div>
+                                    </Button>
+                                  )}
+                                  {!employeeId && (request.status === 'PENDING' || canCancelRequest(request)) && (
+                                    <Button
+                                      variant="outline-warning"
+                                      size="sm"
+                                      title="İptal Et"
+                                      onClick={() => { setSelectedRequest(request); setShowCancelConfirm(true); }}
+                                      disabled={isLoading || actionLoading}
+                                    >
+                                      <X size={14} />
+                                    </Button>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          !isLoading && (
+                            <tr>
+                              <td colSpan={6} className="text-center py-4">İzin talebi bulunamadı</td>
+                            </tr>
+                          )
+                        )}
+                      </tbody>
+                    </Table>
                   </div>
-                </Card.Body>
-              </Card>
-              {pendingTotalPages > 1 && (
-                <div className="mt-3">
-                  <Pagination
-                    currentPage={pendingCurrentPage}
-                    totalPages={pendingTotalPages}
-                    onPageChange={handlePendingPageChange}
-                    totalItems={pendingTotalItems}
-                    itemsPerPage={itemsPerPage}
-                  />
                 </div>
-              )}
-            </div>
+              </Card.Body>
+            </Card>
 
-            {/* Tamamlanmış Talepler */}
-            <div>
-              <div className="d-flex justify-content-between align-items-center mb-3">
-                <h6 className="mb-0" style={{ fontWeight: 700, fontSize: '16px' }}>{employeeId ? 'Tamamlanmış Talepler' : 'Tamamlanmış Taleplerim'}</h6>
+            {totalPages > 1 && (
+              <div className="mt-3">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={(page) => fetchLeaveRequests(page)}
+                  totalItems={totalItems}
+                  itemsPerPage={itemsPerPage}
+                />
               </div>
-              
-              <Card className="border-0 shadow-sm mb-3">
-                <Card.Body className="py-2 px-3">
-                  <Row className="g-2 align-items-end">
-                    <Col md={3}>
-                      <Form.Group>
-                        <FormSelectField
-                          label="Durum"
-                          name="filterStatus"
-                          value={filterStatus}
-                          onChange={(e: any) => setFilterStatus(e.target.value)}
-                        >
-                          <option value="">Tümü</option>
-                          <option value="APPROVED">Onaylandı</option>
-                          <option value="REJECTED">Reddedildi</option>
-                          <option value="CANCELLED">İptal Edildi</option>
-                        </FormSelectField>
-                      </Form.Group>
-                    </Col>
-                    <Col md={3}>
-                      <Form.Group>
-                        <FormSelectField
-                          label="İzin Türü"
-                          name="filterLeaveTypeId"
-                          value={filterLeaveTypeId}
-                          onChange={(e: any) => setFilterLeaveTypeId(e.target.value)}
-                        >
-                          <option value="">Tümü</option>
-                          {leaveTypes.map(lt => (
-                            <option key={lt.id} value={lt.id}>{lt.name}</option>
-                          ))}
-                        </FormSelectField>
-                      </Form.Group>
-                    </Col>
-                    <Col md={3}>
-                      <Form.Group>
-                        <FormDateField
-                          label="Başlangıç Tarihi"
-                          name="filterStartDate"
-                          value={filterStartDate}
-                          onChange={(e: any) => setFilterStartDate(e.target.value)}
-                        />
-                      </Form.Group>
-                    </Col>
-                    <Col md={3}>
-                      <Form.Group>
-                        <FormDateField
-                          label="Bitiş Tarihi"
-                          name="filterEndDate"
-                          value={filterEndDate}
-                          onChange={(e: any) => setFilterEndDate(e.target.value)}
-                        />
-                      </Form.Group>
-                    </Col>
-                  </Row>
-                </Card.Body>
-              </Card>
-
-              <Card className="border-0 shadow-sm position-relative">
-                <Card.Body className="p-0">
-                  <div className="table-box">
-                    <div className="table-responsive">
-                      <Table hover className="mb-0">
-                        <thead>
-                          <tr>
-                            <th>İzin Türü</th>
-                            <th>Başlangıç Tarihi</th>
-                            <th>Bitiş Tarihi</th>
-                            <th>Kullanılan Gün</th>
-                            <th>Durum</th>
-                            <th className="text-end">İşlemler</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {completedRequests.length ? (
-                            completedRequests.map((request: LeaveRequest) => {
-                              const leaveTypeName = request.leave_type?.name || request.leave_type?.name;
-                              const startDate = request.start_date || request.start_date;
-                              const endDate = request.end_date || request.end_date;
-                              const requestedDays = request.requested_days || request.requested_days;
-
-                              return (
-                                <tr key={request.id}>
-                                  <td>{leaveTypeName}</td>
-                                  <td>{formatDate(startDate)}</td>
-                                  <td>{formatDate(endDate)}</td>
-                                  <td>{requestedDays || '-'}</td>
-                                  <td>{getStatusBadge(request.status)}</td>
-                                  <td className="text-end">
-                                    <div className="d-flex justify-content-end gap-2">
-                                      {request.leave_type?.is_required_document && (
-                                        <Button
-                                          variant="outline-secondary"
-                                          size="sm"
-                                          title="Dökümanlar"
-                                          onClick={() => handleShowDocuments(request)}
-                                        >
-                                          <FileText size={16} />
-                                          {(!request.document_count || request.document_count === 0) && (
-                                            <Badge bg="warning" className="ms-1" style={{ fontSize: '0.6em' }}>!</Badge>
-                                          )}
-                                        </Button>
-                                      )}
-                                    </div>
-                                  </td>
-                                </tr>
-                              );
-                            })
-                          ) : (
-                            !isLoading && (
-                              <tr>
-                                <td colSpan={6} className="text-center py-4">
-                                  Tamamlanmış talep bulunamadı
-                                </td>
-                              </tr>
-                            )
-                          )}
-                        </tbody>
-                      </Table>
-                    </div>
-                  </div>
-                </Card.Body>
-              </Card>
-              {completedTotalPages > 1 && (
-                <div className="mt-3">
-                  <Pagination
-                    currentPage={completedCurrentPage}
-                    totalPages={completedTotalPages}
-                    onPageChange={handleCompletedPageChange}
-                    totalItems={completedTotalItems}
-                    itemsPerPage={itemsPerPage}
-                  />
-                </div>
-              )}
-            </div>
+            )}
           </Col>
         </Row>
       </div>
