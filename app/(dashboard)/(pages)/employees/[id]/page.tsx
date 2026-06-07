@@ -1063,15 +1063,21 @@ const EmployeeDetailPage = () => {
                                 <td>{doc.file_name || '-'}</td>
                                 <td>
                                   {doc.type === 1
-                                    ? 'Masraf '
+                                    ? 'Fatura'
                                     : doc.type === 2
-                                    ? 'İzin '
+                                    ? 'Sağlık Raporu'
                                     : doc.type === 3
-                                    ? 'Kullanıcı/Profil '
+                                    ? 'Profil Resmi'
                                     : doc.type === 4
-                                    ? 'Çalışan Özlük '
+                                    ? 'Makbuz'
                                     : doc.type === 5
-                                    ? 'Sözleşme '
+                                    ? 'Sözleşme'
+                                    : doc.type === 6
+                                    ? 'Kimlik'
+                                    : doc.type === 7
+                                    ? 'Diploma'
+                                    : doc.type === 8
+                                    ? 'Sertifika'
                                     : 'Diğer'
                                   }
                                 </td>
