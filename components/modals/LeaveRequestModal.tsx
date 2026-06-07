@@ -338,12 +338,6 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
               )}
             </Form.Group>
 
-            {selectedLeaveType?.is_required_document && (
-              <Alert variant="info">
-                <strong>Bilgi: </strong> Bu izin türü için döküman eklemek zorunludur. İzin kaydedildikten sonra döküman eklenebilir.
-              </Alert>
-            )}
-
             <Row>
               <Col md={6}>
                 <Form.Group className="mb-3">
@@ -437,6 +431,12 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
                 size="sm"
               />
             </Form.Group>
+
+            {selectedLeaveType?.is_required_document && (
+              <Alert variant="info">
+                <strong>Bilgi: </strong> Bu izin türü için döküman eklemek zorunludur. İzin kaydedildikten sonra döküman eklenebilir.
+              </Alert>
+            )}
           </Modal.Body>
 
           <Modal.Footer>
