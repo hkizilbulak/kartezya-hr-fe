@@ -7,6 +7,7 @@ import { PageHeading } from '@/widgets';
 import ExpenseRequestModal from '@/components/modals/ExpenseRequestModal';
 import ExpenseDocumentModal from '@/components/expense/ExpenseDocumentModal';
 import DeleteModal from '@/components/DeleteModal';
+import CustomPagination from '@/components/Pagination';
 import LoadingOverlay from '@/components/LoadingOverlay';
 import FormDateField from '@/components/FormDateField';
 import FormSelectField from '@/components/FormSelectField';
@@ -388,35 +389,14 @@ const EmployeeExpenseRequests: React.FC<EmployeeExpenseRequestsProps> = ({
                   </div>
 
                   {totalPages > 1 && (
-                    <div className="p-3 border-top">
-                      <div className="d-flex justify-content-between align-items-center">
-                        <div className="text-muted" style={{ fontSize: '14px' }}>
-                          Toplam {totalItems} kayıt
-                        </div>
-                        <div className="pagination gap-2">
-                          <Button
-                            variant="outline-primary"
-                            size="sm"
-                            disabled={currentPage === 1}
-                            onClick={() => fetchExpenseRequests(currentPage - 1)}
-                            style={{ borderRadius: '6px' }}
-                          >
-                            Önceki
-                          </Button>
-                          <span className="d-flex align-items-center mx-2" style={{ fontSize: '14px' }}>
-                            Sayfa {currentPage} / {totalPages}
-                          </span>
-                          <Button
-                            variant="outline-primary"
-                            size="sm"
-                            disabled={currentPage === totalPages}
-                            onClick={() => fetchExpenseRequests(currentPage + 1)}
-                            style={{ borderRadius: '6px' }}
-                          >
-                            Sonraki
-                          </Button>
-                        </div>
-                      </div>
+                    <div className="mt-3">
+                      <CustomPagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        totalItems={totalItems}
+                        itemsPerPage={itemsPerPage}
+                        onPageChange={(page) => fetchExpenseRequests(page)}
+                      />
                     </div>
                   )}
                 </Card.Body>

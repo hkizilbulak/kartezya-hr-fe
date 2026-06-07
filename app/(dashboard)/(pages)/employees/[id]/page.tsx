@@ -28,6 +28,7 @@ import '@/styles/components/table-common.scss';
 import { documentService } from '@/services/document.service';
 import { Download } from 'react-feather';
 import axiosInstance from '@/helpers/api/axiosInstance';
+import CustomPagination from '@/components/Pagination';
 
 const EmployeeDetailPage = () => {
   const router = useRouter();
@@ -39,6 +40,10 @@ const EmployeeDetailPage = () => {
   const [employeeGrades, setEmployeeGrades] = useState<any[]>([]);
   const [employeeContracts, setEmployeeContracts] = useState<any[]>([]);
   const [employeeDocuments, setEmployeeDocuments] = useState<any[]>([]);
+  const [docPage, setDocPage] = useState(1);
+  const [docTotalPages, setDocTotalPages] = useState(1);
+  const [docTotalItems, setDocTotalItems] = useState(0);
+  const [docLimit] = useState(10);
   const [isLoading, setIsLoading] = useState(true);
   const [showWorkInfoModal, setShowWorkInfoModal] = useState(false);
   const [showGradeModal, setShowGradeModal] = useState(false);
@@ -256,18 +261,23 @@ const EmployeeDetailPage = () => {
         sort,
         direction,
       });
-      if (response?.data) {
-        // Handle pagination response structure or flat array
-        if (response.data.items) {
-          setEmployeeDocuments(response.data.items);
-        } else {
-          setEmployeeDocuments(response.data);
-        }
+      // API response: { data: [...], page: { total_pages, page, total, ... } }
+      if (response?.data && Array.isArray(response.data)) {
+        setEmployeeDocuments(response.data);
+        setDocTotalPages(response.page?.total_pages ?? 1);
+        setDocTotalItems(response.page?.total ?? 0);
+        setDocPage(response.page?.page ?? page);
       } else {
         setEmployeeDocuments([]);
+        setDocTotalPages(1);
+        setDocTotalItems(0);
+        setDocPage(1);
       }
     } catch (error) {
       setEmployeeDocuments([]);
+      setDocTotalPages(1);
+      setDocTotalItems(0);
+      setDocPage(1);
     }
   };
 
@@ -1115,7 +1125,7 @@ const EmployeeDetailPage = () => {
                                         try {
                                           await documentService.delete(doc.id);
                                           toast.success('Doküman silindi');
-                                          fetchEmployeeDocuments(employee.id);
+                                          fetchEmployeeDocuments(employee.id, docPage, docLimit);
                                         } catch (error) {
                                           toast.error('Silme başarısız');
                                         }
@@ -1136,6 +1146,20 @@ const EmployeeDetailPage = () => {
                             <p className="text-muted mb-0">Doküman bilgisi kaydı bulunamadı</p>
                           </Card.Body>
                         </Card>
+                      )}
+                      {docTotalPages > 1 && (
+                        <div className="mt-3">
+                          <CustomPagination
+                            currentPage={docPage}
+                            totalPages={docTotalPages}
+                            totalItems={docTotalItems}
+                            itemsPerPage={docLimit}
+                            onPageChange={(page) => {
+                              setDocPage(page);
+                              fetchEmployeeDocuments(employee.id, page, docLimit);
+                            }}
+                          />
+                        </div>
                       )}
                     </div>
                   </Tab.Pane>
