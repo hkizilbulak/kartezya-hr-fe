@@ -22,8 +22,9 @@ const Login = () => {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   
-  // Email/password login'i aktif/pasif yapmak için flag
-  // true yaparsanız email/password formu görünür olur
+  // şifre sıfırlama modu kontrolü
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
+  
   const ENABLE_EMAIL_PASSWORD_LOGIN =  process.env.NEXT_PUBLIC_ENABLE_EMAIL_PASSWORD_LOGIN === "true";
 
   const [formData, setFormData] = useState<FormData>({
@@ -40,7 +41,8 @@ const Login = () => {
         if (!/\S+@\S+\.\S+/.test(value)) return "Geçerli bir e-posta adresi giriniz";
         break;
       case 'password':
-        if (!value) return "Şifre zorunludur";
+        // şifre sıfırlama modunda şifre alanını zorunlu kılma
+        if (!isForgotPassword && !value) return "Şifre zorunludur";
         break;
     }
     return undefined;
@@ -64,11 +66,18 @@ const Login = () => {
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
     newErrors.email = validateField('email', formData.email);
-    newErrors.password = validateField('password', formData.password);
+    
+    // şifre sıfırlama moduna göre form validation kontrolü
+    if (!isForgotPassword) {
+      newErrors.password = validateField('password', formData.password);
+    }
     
     setErrors(newErrors);
-    setTouched({ email: true, password: true });
+    setTouched({ email: true, password: !isForgotPassword });
     
+    if (isForgotPassword) {
+      return !newErrors.email;
+    }
     return !newErrors.email && !newErrors.password;
   };
 
@@ -97,7 +106,34 @@ const Login = () => {
     }
   };
 
-  const isFormValid = !errors.email && !errors.password && formData.email && formData.password;
+  // şifre sıfırlama bağlantısı isteği
+  const handleForgotPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateForm()) return;
+
+    try {
+      setIsLoading(true);
+      
+      const response = await authService.forgotPassword({ email: formData.email });
+
+      if (response.success) {
+        toast.success("Şifre sıfırlama bağlantısı e-posta adresinize gönderildi.");
+        setIsForgotPassword(false);
+        setFormData(prev => ({ ...prev, password: "" }));
+        setTouched({});
+      }
+    } catch (err: any) {
+      toast.error(err.message || "İşlem sırasında bir hata oluştu");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // mod durumuna göre dinamik form geçerlilik kontrolü
+  const isFormValid = isForgotPassword 
+    ? !errors.email && formData.email 
+    : !errors.email && !errors.password && formData.email && formData.password;
 
   const handleYandexLogin = () => {
     const clientId = 'eff28f055726491d86b6d64bbbbdc484';
@@ -126,10 +162,18 @@ const Login = () => {
             </div>
 
             {hasMounted && (
-              <Form noValidate onSubmit={handleSubmit}>
-                {/* Email/Password Login - İleride açmak için ENABLE_EMAIL_PASSWORD_LOGIN'i true yapın */}
+              <Form noValidate onSubmit={isForgotPassword ? handleForgotPasswordSubmit : handleSubmit}>
                 {ENABLE_EMAIL_PASSWORD_LOGIN && (
                   <>
+                    {/* şifre sıfırlama bilgilendirme metni */}
+                    {isForgotPassword && (
+                      <div className="text-center mb-4">
+                        <p className="text-muted" style={{ fontSize: '0.9rem' }}>
+                          Şifrenizi sıfırlamak için kayıtlı e-posta adresinizi giriniz. Size bir sıfırlama bağlantısı göndereceğiz.
+                        </p>
+                      </div>
+                    )}
+
                     <FormTextField
                       as={Col}
                       md={12}
@@ -146,31 +190,70 @@ const Login = () => {
                       labelStyle={{ color: '#fff' }}
                     />
                     
-                    <FormTextField
-                      as={Col}
-                      md={12}
-                      controlId="validationPassword"
-                      label="Şifre"
-                      type="password"
-                      name="password"
-                      placeholder="Şifrenizi giriniz"
-                      value={formData.password}
-                      onChange={(name, value) => handleInputChange(name, value)}
-                      onBlur={(name) => handleInputBlur(name)}
-                      error={touched.password ? errors.password : undefined}
-                      required
-                      labelStyle={{ color: '#fff' }}
-                    />
+                    {/* normal giriş modu alanları ve şifremi unuttum butonu */}
+                    {!isForgotPassword && (
+                      <>
+                        <FormTextField
+                          as={Col}
+                          md={12}
+                          controlId="validationPassword"
+                          label="Şifre"
+                          type="password"
+                          name="password"
+                          placeholder="Şifrenizi giriniz"
+                          value={formData.password}
+                          onChange={(name, value) => handleInputChange(name, value)}
+                          onBlur={(name) => handleInputBlur(name)}
+                          error={touched.password ? errors.password : undefined}
+                          required
+                          labelStyle={{ color: '#fff' }}
+                        />
 
-                    <div className="d-grid mt-4">
+                        <div className="d-flex justify-content-end mb-3 mt-1">
+                          <Button 
+                            variant="link" 
+                            className="p-0 text-decoration-none text-muted" 
+                            onClick={() => {
+                              setIsForgotPassword(true);
+                              setErrors({});
+                              setTouched({});
+                            }}
+                          >
+                            <small>Şifremi Unuttum</small>
+                          </Button>
+                        </div>
+                      </>
+                    )}
+
+                    <div className="d-grid mt-2">
                       <Button
                         disabled={!isFormValid || isLoading}
                         variant="primary"
                         type="submit"
                       >
-                        {isLoading ? "Giriş yapılıyor..." : "Giriş Yap"}
+                        {isLoading 
+                          ? "İşleniyor..." 
+                          : (isForgotPassword ? "Bağlantı Gönder" : "Giriş Yap")}
                       </Button>
                     </div>
+
+                    {/* giriş ekranına dönüş mekanizması */}
+                    {isForgotPassword && (
+                      <div className="text-center mt-3">
+                        <Button 
+                          variant="link" 
+                          className="text-decoration-none text-muted p-0" 
+                          onClick={() => {
+                            setIsForgotPassword(false);
+                            setErrors({});
+                            setTouched({});
+                          }}
+                          disabled={isLoading}
+                        >
+                          <small>Giriş ekranına dön</small>
+                        </Button>
+                      </div>
+                    )}
 
                     <div className="d-flex align-items-center my-3">
                       <hr className="flex-grow-1" />

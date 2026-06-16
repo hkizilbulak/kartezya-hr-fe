@@ -53,6 +53,7 @@ const ResetPasswordContent = () => {
           email: decodeURIComponent(email)
         };
         
+        // token doğrulama isteği
         const response = await authService.validateResetToken(request);
         
         if (response.success) {
@@ -135,6 +136,7 @@ const ResetPasswordContent = () => {
         new_password: formData.newPassword
       };
 
+      // şifre güncelleme isteği
       const response = await authService.resetPassword(request);
 
       if (response.success) {

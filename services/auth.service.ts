@@ -7,6 +7,11 @@ export interface LoginRequest {
   password: string;
 }
 
+// şifre sıfırlama isteği
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
 export interface ResetPasswordRequest {
   token: string;
   email: string;
@@ -116,6 +121,21 @@ export const authService = {
       const customError = new Error(String(errorMessage));
       (customError as any).originalError = error;
       throw customError;
+    }
+  },
+
+  // şifre sıfırlama mekanizması
+  forgotPassword: async (request: ForgotPasswordRequest): Promise<{ success: boolean; message: string }> => {
+    try {
+      const endpoint = (HR_ENDPOINTS.AUTH as any).FORGOT_PASSWORD || '/auth/forgot-password';
+      const response = await axiosInstance.post(endpoint, request);
+      return response.data;
+    } catch (error: any) {
+      let errorMessage = 'Şifre sıfırlama bağlantısı gönderilemedi';
+      if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      }
+      throw new Error(errorMessage);
     }
   },
 
