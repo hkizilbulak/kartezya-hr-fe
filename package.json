@@ -10,6 +10,8 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@ckeditor/ckeditor5-build-classic": "^41.4.2",
+    "@ckeditor/ckeditor5-react": "^11.2.0",
     "@types/node": "25.3.5",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
@@ -28,7 +30,7 @@
     "react-feather": "^2.0.10",
     "react-imask": "^7.6.1",
     "react-responsive": "^10.0.1",
-    "react-toastify": "^11.0.5",
+    "react-toastify": "^11.1.0",
     "recharts": "^3.7.0",
     "sass": "^1.65.1",
     "simplebar": "^6.2.5",

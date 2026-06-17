@@ -14,6 +14,9 @@ export const HR_ENDPOINTS = {
     SEND_PASSWORD_RESET_EMAIL: '/auth/send-password-reset-email',
     YANDEX_CALLBACK: '/auth/yandex/callback'
   },
+
+  FAQS: '/faqs',
+  
   // Companies
   COMPANIES: '/companies',
   // Departments

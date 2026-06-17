@@ -225,6 +225,15 @@ export interface User {
   modifiedBy: string;
 }
 
+export interface FAQ {
+    id: number;
+    title: string;
+    description: string;
+    status: 'ACTIVE' | 'INACTIVE';
+    created_at?: string;
+    updated_at?: string;
+}
+
 // Lookup Types
 export interface LookupItem {
   id: number;

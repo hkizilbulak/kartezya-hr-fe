@@ -16,3 +16,4 @@ export * from './report.service';
 export * from './base.service';
 export * from './cv-search.service';
 export * from './event.service';
+export * from './faq.service';
