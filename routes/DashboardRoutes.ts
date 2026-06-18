@@ -134,7 +134,13 @@ export const DashboardMenu: IMenuProps[] = [
 				name: 'Etkinlikler',
 				link: '/events',
 				requiredRoles: ['ADMIN']
-			}
+			},
+			{
+                id: 'faqs',
+                name: 'Sıkça Sorulan Sorular',
+                link: '/faqs',
+                requiredRoles: ['ADMIN']
+            }
 		]
 	},
 	{
