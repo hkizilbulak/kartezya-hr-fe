@@ -41,6 +41,7 @@ export const DashboardMenu: IMenuProps[] = [
 			}
 		]
 	},
+
 	{
 		id: 'employee-management',
 		title: 'Çalışan Yönetimi',
@@ -200,7 +201,14 @@ export const DashboardMenu: IMenuProps[] = [
 				requiredRoles: ['ADMIN']
 			}
 		]
-	}
+	},
+
+	{
+            id: 'employee-faqs',
+            title: 'Sıkça Sorulan Sorular',
+            icon: 'help-circle', 
+            link: '/employee-faqs'
+        }
 ];
 
 export default DashboardMenu;
