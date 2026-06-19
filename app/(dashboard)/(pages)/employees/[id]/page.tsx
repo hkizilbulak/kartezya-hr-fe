@@ -26,7 +26,8 @@ import LoadingOverlay from '@/components/LoadingOverlay';
 import '@/styles/table-list.scss';
 import '@/styles/components/table-common.scss';
 import { documentService } from '@/services/document.service';
-import { Download } from 'react-feather';
+import { ATTACHMENT_RELATED_TYPE_EMPLOYEE, ATTACHMENT_TYPE_CV } from '@/services/document.service';
+import { Download, Upload } from 'react-feather';
 import axiosInstance from '@/helpers/api/axiosInstance';
 import CustomPagination from '@/components/Pagination';
 
@@ -44,6 +45,17 @@ const EmployeeDetailPage = () => {
   const [docTotalPages, setDocTotalPages] = useState(1);
   const [docTotalItems, setDocTotalItems] = useState(0);
   const [docLimit] = useState(10);
+
+  // CV state
+  const [employeeCvDocuments, setEmployeeCvDocuments] = useState<any[]>([]);
+  const [cvPage, setCvPage] = useState(1);
+  const [cvTotalPages, setCvTotalPages] = useState(1);
+  const [cvTotalItems, setCvTotalItems] = useState(0);
+  const [cvLimit] = useState(10);
+  const [isCvUploading, setIsCvUploading] = useState(false);
+  const [cvSelectedFile, setCvSelectedFile] = useState<File | null>(null);
+  const [cvDragOver, setCvDragOver] = useState(false);
+  const cvFileInputRef = useRef<HTMLInputElement>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showWorkInfoModal, setShowWorkInfoModal] = useState(false);
   const [showGradeModal, setShowGradeModal] = useState(false);
@@ -117,6 +129,8 @@ const EmployeeDetailPage = () => {
         fetchEmployeeContracts(employee.id);
       } else if (activeTab === 'document-info') {
         fetchEmployeeDocuments(employee.id);
+      } else if (activeTab === 'cv-info') {
+        fetchEmployeeCvDocuments(employee.id);
       }
       fetchedTabs.current.add(activeTab);
     }
@@ -278,6 +292,90 @@ const EmployeeDetailPage = () => {
       setDocTotalPages(1);
       setDocTotalItems(0);
       setDocPage(1);
+    }
+  };
+
+  const fetchEmployeeCvDocuments = async (empId: number, page = 1, limit = 10) => {
+    try {
+      const response = await documentService.getRelatedDocuments(
+        ATTACHMENT_RELATED_TYPE_EMPLOYEE,
+        empId,
+        { page, limit, sort: 'created_at', direction: 'DESC' }
+      );
+      if (response?.data && Array.isArray(response.data)) {
+        setEmployeeCvDocuments(response.data);
+        setCvTotalPages(response.page?.total_pages ?? 1);
+        setCvTotalItems(response.page?.total ?? 0);
+        setCvPage(response.page?.page ?? page);
+      } else {
+        setEmployeeCvDocuments([]);
+        setCvTotalPages(1);
+        setCvTotalItems(0);
+        setCvPage(1);
+      }
+    } catch (error) {
+      setEmployeeCvDocuments([]);
+      setCvTotalPages(1);
+      setCvTotalItems(0);
+      setCvPage(1);
+    }
+  };
+
+  const handleCvFileSelect = (file: File) => {
+    const allowed = ['.pdf', '.doc', '.docx'];
+    const ext = '.' + file.name.split('.').pop()?.toLowerCase();
+    if (!allowed.includes(ext)) {
+      toast.error('Sadece PDF, DOC veya DOCX dosyaları yüklenebilir');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('Dosya boyutu 10 MB\'ı geçemez');
+      return;
+    }
+    setCvSelectedFile(file);
+  };
+
+  const handleCvUpload = async () => {
+    if (!cvSelectedFile || !employee) return;
+    setIsCvUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', cvSelectedFile);
+      formData.append('related_type', String(ATTACHMENT_RELATED_TYPE_EMPLOYEE));
+      formData.append('type', String(ATTACHMENT_TYPE_CV));
+
+      const uploadRes = await documentService.uploadDocument(formData);
+      if (!uploadRes?.data?.id) throw new Error('Yükleme başarısız');
+
+      await documentService.linkDocuments(
+        [uploadRes.data.id],
+        ATTACHMENT_RELATED_TYPE_EMPLOYEE,
+        employee.id
+      );
+
+      toast.success('CV başarıyla yüklendi');
+      setCvSelectedFile(null);
+      if (cvFileInputRef.current) cvFileInputRef.current.value = '';
+      fetchedTabs.current.delete('cv-info');
+      fetchEmployeeCvDocuments(employee.id, cvPage, cvLimit);
+      fetchedTabs.current.add('cv-info');
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || error.message || 'CV yükleme başarısız');
+    } finally {
+      setIsCvUploading(false);
+    }
+  };
+
+  const handleCvDelete = async (docId: string) => {
+    if (!employee) return;
+    try {
+      await documentService.delete(docId);
+      toast.success('CV silindi');
+      fetchedTabs.current.delete('cv-info');
+      fetchEmployeeCvDocuments(employee.id, cvPage, cvLimit);
+      fetchedTabs.current.add('cv-info');
+    } catch (error: any) {
+      toast.error('CV silinemedi');
     }
   };
 
@@ -629,6 +727,13 @@ const EmployeeDetailPage = () => {
                       eventKey="employee-info"
                     >
                       Çalışan Bilgileri
+                    </Nav.Link>
+                  </Nav.Item>
+                  <Nav.Item style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>
+                    <Nav.Link
+                      eventKey="cv-info"
+                    >
+                      CV Bilgileri
                     </Nav.Link>
                   </Nav.Item>
                   <Nav.Item style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>
@@ -1088,6 +1193,8 @@ const EmployeeDetailPage = () => {
                                     ? 'Diploma'
                                     : doc.type === 8
                                     ? 'Sertifika'
+                                    : doc.type === 9
+                                    ? 'CV / Özgeçmiş'
                                     : 'Diğer'
                                   }
                                 </td>
@@ -1355,6 +1462,172 @@ const EmployeeDetailPage = () => {
                       {activeTab === 'expense-info' && (
                         <EmployeeExpenseRequests employeeId={employeeId} hideCreateButton={true} />
                       )}
+                    </div>
+                  </Tab.Pane>
+
+                  {/* CV Bilgileri Tab */}
+                  <Tab.Pane eventKey="cv-info">
+                    <div className={styles.section}>
+
+                      {/* Upload Alanı */}
+                      <div
+                        onDragOver={(e) => { e.preventDefault(); setCvDragOver(true); }}
+                        onDragLeave={() => setCvDragOver(false)}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          setCvDragOver(false);
+                          const file = e.dataTransfer.files?.[0];
+                          if (file) handleCvFileSelect(file);
+                        }}
+                        onClick={() => cvFileInputRef.current?.click()}
+                        style={{
+                          border: `2px dashed ${cvDragOver ? '#0d6efd' : '#dee2e6'}`,
+                          borderRadius: '8px',
+                          padding: '2rem',
+                          textAlign: 'center',
+                          cursor: 'pointer',
+                          background: cvDragOver ? '#f0f5ff' : '#fafafa',
+                          transition: 'all 0.2s',
+                          marginBottom: '1.5rem',
+                        }}
+                      >
+                        <input
+                          ref={cvFileInputRef}
+                          type="file"
+                          accept=".pdf,.doc,.docx"
+                          style={{ display: 'none' }}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleCvFileSelect(file);
+                          }}
+                        />
+                        <Upload size={32} color="#6c757d" style={{ marginBottom: '0.75rem' }} />
+                        <p className="mb-1" style={{ fontWeight: 600, color: '#495057' }}>
+                          {cvSelectedFile ? cvSelectedFile.name : 'CV dosyasını buraya sürükleyin veya tıklayın'}
+                        </p>
+                        <p className="text-muted mb-0" style={{ fontSize: '0.85rem' }}>
+                          PDF, DOC, DOCX · Maks 10 MB
+                        </p>
+                      </div>
+
+                      {cvSelectedFile && (
+                        <div className="d-flex justify-content-end gap-2 mb-4">
+                          <Button
+                            variant="outline-secondary"
+                            size="sm"
+                            onClick={() => {
+                              setCvSelectedFile(null);
+                              if (cvFileInputRef.current) cvFileInputRef.current.value = '';
+                            }}
+                          >
+                            Vazgeç
+                          </Button>
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            onClick={handleCvUpload}
+                            disabled={isCvUploading}
+                            className="d-flex align-items-center gap-2"
+                          >
+                            <Upload size={14} />
+                            {isCvUploading ? 'Yükleniyor...' : 'Yükle'}
+                          </Button>
+                        </div>
+                      )}
+
+                      {/* CV Listesi */}
+                      {employeeCvDocuments.length > 0 ? (
+                        <Table responsive className="table-list">
+                          <thead>
+                            <tr>
+                              <th>Dosya Adı</th>
+                              <th>Boyut</th>
+                              <th>Yüklenme Tarihi</th>
+                              <th></th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {employeeCvDocuments.map((doc: any) => (
+                              <tr key={doc.id}>
+                                <td>
+                                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <span style={{
+                                      background: '#e9ecef',
+                                      borderRadius: '4px',
+                                      padding: '2px 6px',
+                                      fontSize: '0.75rem',
+                                      fontWeight: 600,
+                                      textTransform: 'uppercase',
+                                    }}>
+                                      {doc.file_name?.split('.').pop()?.toUpperCase() || 'DOC'}
+                                    </span>
+                                    {doc.file_name || '-'}
+                                  </span>
+                                </td>
+                                <td>
+                                  {doc.file_size
+                                    ? doc.file_size < 1024 * 1024
+                                      ? `${(doc.file_size / 1024).toFixed(1)} KB`
+                                      : `${(doc.file_size / (1024 * 1024)).toFixed(2)} MB`
+                                    : '-'}
+                                </td>
+                                <td>{doc.created_at ? formatDate(doc.created_at) : '-'}</td>
+                                <td>
+                                  <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                                    <Button
+                                      variant="outline-primary"
+                                      size="sm"
+                                      title="İndir"
+                                      onClick={async () => {
+                                        try {
+                                          const response = await axiosInstance.get(`/documents/${doc.id}/download`);
+                                          if (response.data.success && response.data.data?.url) {
+                                            window.open(response.data.data.url, '_blank');
+                                          }
+                                        } catch {
+                                          toast.error('Dosya indirilemedi');
+                                        }
+                                      }}
+                                    >
+                                      <Download size={14} />
+                                    </Button>
+                                    <Button
+                                      variant="outline-danger"
+                                      size="sm"
+                                      title="Sil"
+                                      onClick={() => handleCvDelete(doc.id)}
+                                    >
+                                      <Trash2 size={14} />
+                                    </Button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </Table>
+                      ) : (
+                        <Card className="border-0 shadow-sm">
+                          <Card.Body className="py-5 text-center">
+                            <p className="text-muted mb-0">CV dokümanı bulunamadı</p>
+                          </Card.Body>
+                        </Card>
+                      )}
+
+                      {cvTotalPages > 1 && (
+                        <div className="mt-3">
+                          <CustomPagination
+                            currentPage={cvPage}
+                            totalPages={cvTotalPages}
+                            totalItems={cvTotalItems}
+                            itemsPerPage={cvLimit}
+                            onPageChange={(page) => {
+                              setCvPage(page);
+                              fetchEmployeeCvDocuments(employee.id, page, cvLimit);
+                            }}
+                          />
+                        </div>
+                      )}
+
                     </div>
                   </Tab.Pane>
                 </Tab.Content>
