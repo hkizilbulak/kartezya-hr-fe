@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Form, Button, Row, Col, Alert } from 'react-bootstrap';
 import { IMaskInput } from 'react-imask';
-import { ExpenseRequest, Currency } from '@/models/hr/expense-models';
+import { ExpenseRequest } from '@/models/hr/expense-models';
 import expenseService from '@/services/expense.service';
 import { toast } from 'react-toastify';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
 import LoadingOverlay from '@/components/LoadingOverlay';
 import FormDateField from '@/components/FormDateField';
 import FormSelectField from '@/components/FormSelectField';
+import { useRouter } from 'next/navigation';
 
 interface ExpenseRequestModalProps {
   show: boolean;
@@ -24,6 +25,7 @@ const ExpenseRequestModal: React.FC<ExpenseRequestModalProps> = ({
   isEdit = false,
   onSave
 }) => {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     expense_type_id: '',
     amount: '',
@@ -110,7 +112,6 @@ const ExpenseRequestModal: React.FC<ExpenseRequestModalProps> = ({
       errors.description = 'Açıklama giriniz';
     }
 
-    // Check max amount if expense type has limit
     const selectedType = expenseTypes.find(t => t.id.toString() === formData.expense_type_id);
     if (selectedType?.max_amount && parseFloat(formData.amount) > selectedType.max_amount) {
       errors.amount = `Maksimum tutar: ${selectedType.max_amount} ${formData.currency}`;
@@ -138,6 +139,7 @@ const ExpenseRequestModal: React.FC<ExpenseRequestModalProps> = ({
       };
   
       await onSave(submitData);
+      router.refresh();
     } finally {
       setLoading(false);
     }
