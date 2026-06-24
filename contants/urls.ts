@@ -17,6 +17,10 @@ export const HR_ENDPOINTS = {
 
   FAQS: '/faqs',
   
+  // Other Requests
+  OTHER_REQUESTS: '/other-requests',
+  REQUEST_TYPES: '/request-types',
+  
   // Companies
   COMPANIES: '/companies',
   // Departments
