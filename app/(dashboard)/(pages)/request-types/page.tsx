@@ -1,11 +1,15 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Card, Table, Button, Modal, Form, Spinner } from 'react-bootstrap';
+import { Card, Table, Button, Modal, Form, Spinner, Container } from 'react-bootstrap';
 import { Plus, Edit, Trash2 } from 'react-feather';
 import { toast } from 'react-toastify';
 import axiosInstance from '@/helpers/api/axiosInstance';
 import { HR_ENDPOINTS } from '@/contants/urls';
+import { PageHeading } from '@/widgets';
+import LoadingOverlay from '@/components/LoadingOverlay';
+import '@/styles/table-list.scss';
+import '@/styles/components/table-common.scss';
 
 interface RequestType {
     id: number;
@@ -21,6 +25,10 @@ export default function RequestTypesPage() {
     const [editingType, setEditingType] = useState<RequestType | null>(null);
     const [formData, setFormData] = useState({ name: '', description: '' });
     const [submitting, setSubmitting] = useState(false);
+
+    // Silme Onay Modalı State'leri
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
 
     useEffect(() => {
         fetchTypes();
@@ -70,61 +78,90 @@ export default function RequestTypesPage() {
         }
     };
 
-    const handleDelete = async (id: number) => {
-        if (!window.confirm('Bu talep türünü silmek istediğinize emin misiniz?')) return;
+    const askForDeleteConfirm = (id: number) => {
+        setDeleteTargetId(id);
+        setShowDeleteModal(true);
+    };
+
+    const handleDelete = async () => {
+        if (!deleteTargetId) return;
         try {
-            await axiosInstance.delete(`${HR_ENDPOINTS.REQUEST_TYPES}/${id}`);
+            setShowDeleteModal(false);
+            setLoading(true);
+            await axiosInstance.delete(`${HR_ENDPOINTS.REQUEST_TYPES}/${deleteTargetId}`);
             toast.success('Talep türü silindi.');
             fetchTypes();
         } catch (error: any) {
             toast.error(error?.response?.data?.error || 'Silinemedi.');
+        } finally {
+            setLoading(false);
+            setDeleteTargetId(null);
         }
     };
 
     return (
-        <div className="page-content">
-            <div className="d-flex justify-content-between align-items-center mb-4">
-                <h4 className="mb-0">Talep Türleri Yönetimi</h4>
-                <Button variant="primary" onClick={handleShowAdd} className="d-flex align-items-center gap-2">
-                    <Plus size={18} /> Yeni Ekle
-                </Button>
+        <Container fluid className="page-container">
+            <LoadingOverlay show={loading} />
+            
+            <PageHeading 
+                heading="Talep Türleri Yönetimi"
+                showCreateButton={false}
+                showFilterButton={false}
+            />
+
+            <div className="content-wrapper">
+                <div className="content-header d-flex justify-content-end mb-3">
+                    <Button variant="primary" onClick={handleShowAdd} className="d-flex align-items-center gap-2">
+                        <Plus size={18} /> Yeni Ekle
+                    </Button>
+                </div>
+
+                <Card className="border-0 shadow-sm position-relative">
+                    <Card.Body className="p-0">
+                        <div className="table-box">
+                            <div className="table-responsive">
+                                <Table hover className="mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Talep Tipi Adı</th>
+                                            <th>Açıklama</th>
+                                            <th className="text-end">İşlemler</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {types.length === 0 ? (
+                                            <tr>
+                                                <td colSpan={3} className="text-center py-4">
+                                                    Talep türü bulunamadı
+                                                </td>
+                                            </tr>
+                                        ) : (
+                                            types.map(t => (
+                                                <tr key={t.id}>
+                                                    <td className="fw-medium">{t.name}</td>
+                                                    <td>{t.description || '-'}</td>
+                                                    <td className="text-end">
+                                                        <div className="d-flex justify-content-end gap-2">
+                                                            <Button variant="outline-primary" size="sm" onClick={() => handleShowEdit(t)}>
+                                                                <Edit size={14} />
+                                                            </Button>
+                                                            <Button variant="outline-danger" size="sm" onClick={() => askForDeleteConfirm(t.id)}>
+                                                                <Trash2 size={14} />
+                                                            </Button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </Table>
+                            </div>
+                        </div>
+                    </Card.Body>
+                </Card>
             </div>
 
-            <Card>
-                <Card.Body>
-                    {loading ? (
-                        <div className="text-center p-5"><Spinner animation="border" /></div>
-                    ) : (
-                        <Table responsive hover className="align-middle mb-0">
-                            <thead>
-                                <tr>
-                                    <th>Talep Tipi Adı</th>
-                                    <th>Açıklama</th>
-                                    <th className="text-end">İşlemler</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {types.map(t => (
-                                    <tr key={t.id}>
-                                        <td className="fw-medium">{t.name}</td>
-                                        <td>{t.description || '-'}</td>
-                                        <td className="text-end">
-                                            <Button variant="outline-primary" size="sm" className="me-2" onClick={() => handleShowEdit(t)}>
-                                                <Edit size={16} />
-                                            </Button>
-                                            <Button variant="outline-danger" size="sm" onClick={() => handleDelete(t.id)}>
-                                                <Trash2 size={16} />
-                                            </Button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </Table>
-                    )}
-                </Card.Body>
-            </Card>
-
-            <Modal show={showModal} onHide={() => setShowModal(false)}>
+            <Modal show={showModal} onHide={() => setShowModal(false)} backdrop="static" centered>
                 <Form onSubmit={handleSubmit}>
                     <Modal.Header closeButton>
                         <Modal.Title>{editingType ? 'Talep Türünü Düzenle' : 'Yeni Talep Türü Ekle'}</Modal.Title>
@@ -156,6 +193,26 @@ export default function RequestTypesPage() {
                     </Modal.Footer>
                 </Form>
             </Modal>
-        </div>
+
+            {/* Silme Onay */}
+            <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} size="sm">
+                <Modal.Header closeButton className="border-0 pb-0">
+                    <Modal.Title className="h5 fw-bold text-dark">Masraf Türünü Sil</Modal.Title>
+                </Modal.Header>
+                <Modal.Body className="pt-2 pb-3">
+                    <p className="text-muted mb-0" style={{ fontSize: '14px' }}>
+                        Bu masraf türünü silmek istediğinizden emin misiniz?
+                    </p>
+                </Modal.Body>
+                <Modal.Footer className="border-0 pt-0 d-flex justify-content-end gap-2">
+                    <Button variant="secondary" className="px-3 bg-secondary border-0" onClick={() => setShowDeleteModal(false)}>
+                        Kapat
+                    </Button>
+                    <Button variant="danger" className="px-3 border-0" onClick={handleDelete}>
+                        Sil
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+        </Container>
     );
 }

@@ -1,12 +1,16 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Card, Table, Button, Badge, Spinner, Modal, Form } from 'react-bootstrap';
-import { CheckCircle, MessageCircle, FileText, Upload, Trash } from 'react-feather';
+import { Card, Table, Button, Badge, Modal, Spinner, Container } from 'react-bootstrap';
+import { MessageCircle, FileText, Upload, Trash, Check } from 'react-feather';
 import { toast } from 'react-toastify';
 import dayjs from 'dayjs';
 import axiosInstance from '@/helpers/api/axiosInstance';
 import { HR_ENDPOINTS } from '@/contants/urls';
+import { PageHeading } from '@/widgets';
+import LoadingOverlay from '@/components/LoadingOverlay';
+import '@/styles/table-list.scss';
+import '@/styles/components/table-common.scss';
 
 interface Employee { id: number; first_name: string; last_name: string; phone: string; }
 interface Attachment { id: string; file_name: string; }
@@ -19,16 +23,21 @@ interface OtherRequest {
 export default function OtherRequestsManagementPage() {
     const [requests, setRequests] = useState<OtherRequest[]>([]);
     const [loading, setLoading] = useState(true);
-    const [processing, setProcessing] = useState<number | null>(null);
     
-    // Dosya Modal State'leri
+    // Doküman Modal State'leri
     const [showDocModal, setShowDocModal] = useState(false);
     const [selectedReqId, setSelectedReqId] = useState<number | null>(null);
     const [attachments, setAttachments] = useState<Attachment[]>([]);
     const [file, setFile] = useState<File | null>(null);
     const [uploading, setUploading] = useState(false);
 
-    useEffect(() => { fetchRequests(); }, []);
+    // Onay Modalı State'leri
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [confirmTargetId, setConfirmTargetId] = useState<number | null>(null);
+
+    useEffect(() => { 
+        fetchRequests(); 
+    }, []);
 
     const fetchRequests = async () => {
         try {
@@ -40,16 +49,27 @@ export default function OtherRequestsManagementPage() {
         } finally { setLoading(false); }
     };
 
-    const handleComplete = async (id: number) => {
-        if (!window.confirm('Bu talebi tamamlandı işaretliyorsunuz?')) return;
+    // Onay modalını tetikleyen fonksiyon
+    const askForCompletionConfirm = (id: number) => {
+        setConfirmTargetId(id);
+        setShowConfirmModal(true);
+    };
+
+    // Modalda 'Tamamla' butonuna basınca çalışacak fonksiyon
+    const handleComplete = async () => {
+        if (!confirmTargetId) return;
         try {
-            setProcessing(id);
-            await axiosInstance.patch(`${HR_ENDPOINTS.OTHER_REQUESTS}/${id}/complete`);
+            setShowConfirmModal(false);
+            setLoading(true);
+            await axiosInstance.patch(`${HR_ENDPOINTS.OTHER_REQUESTS}/${confirmTargetId}/complete`);
             toast.success('Başarıyla tamamlandı.');
             fetchRequests();
         } catch (error: any) {
             toast.error(error?.response?.data?.error || 'İşlem başarısız.');
-        } finally { setProcessing(null); }
+        } finally { 
+            setLoading(false); 
+            setConfirmTargetId(null);
+        }
     };
 
     const openWhatsApp = (phone: string) => {
@@ -61,7 +81,6 @@ export default function OtherRequestsManagementPage() {
         window.open(`https://wa.me/${cleanPhone}`, '_blank');
     };
 
-    // --- Doküman Yönetimi Fonksiyonları  ---
     const openDocs = (req: OtherRequest) => {
         setSelectedReqId(req.id);
         setAttachments(req.attachments || []);
@@ -77,14 +96,22 @@ export default function OtherRequestsManagementPage() {
 
         try {
             setUploading(true);
-            await axiosInstance.post(`${HR_ENDPOINTS.OTHER_REQUESTS}/${selectedReqId}/documents`, formData, {
+            const res = await axiosInstance.post(`${HR_ENDPOINTS.OTHER_REQUESTS}/${selectedReqId}/documents`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
+            
             toast.success('Dosya başarıyla yüklendi.');
+            
+            if (res.data && res.data.success) {
+                const newDoc = {
+                    id: res.data.data?.id || res.data.data?.ID || String(Date.now()),
+                    file_name: res.data.data?.file_name || res.data.data?.name || res.data.data?.FileName || file.name
+                };
+                setAttachments(prev => [...prev, newDoc]);
+            }
+
             setFile(null);
-            // Listeyi tazele
             fetchRequests();
-            setShowDocModal(false);
         } catch (error: any) {
             toast.error(error?.response?.data?.error || 'Dosya yüklenemedi.');
         } finally {
@@ -104,78 +131,108 @@ export default function OtherRequestsManagementPage() {
         }
     };
 
+    const getStatusBadge = (status: string) => {
+        if (status === 'COMPLETED') {
+            return <Badge bg="success">Tamamlandı</Badge>;
+        }
+        if (status === 'CANCELLED') {
+            return <Badge bg="danger">İptal Edildi</Badge>;
+        }
+        return <Badge bg="warning">Bekliyor</Badge>;
+    };
+
     return (
-        <div className="page-content">
-            <h4 className="mb-4">Personel Talepleri Yönetimi (İK)</h4>
-            <Card>
-                <Card.Body>
-                    {loading ? (
-                        <div className="text-center p-5"><Spinner animation="border" /></div>
-                    ) : (
-                        <Table responsive hover className="align-middle mb-0">
-                            <thead className="table-light">
-                                <tr>
-                                    <th>Çalışan Adı</th>
-                                    <th>Tip</th>
-                                    <th>Açıklama</th>
-                                    <th>Tarih</th>
-                                    <th>Durum</th>
-                                    <th className="text-end">İşlemler</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {requests.map(req => (
-                                    <tr key={req.id}>
-                                        <td className="fw-medium">
-                                            {req.employee ? `${req.employee.first_name} ${req.employee.last_name}` : 'Bilinmiyor'}
-                                        </td>
-                                        <td>{req.request_type?.name}</td>
-                                        <td style={{ maxWidth: '200px' }} className="text-truncate">{req.description}</td>
-                                        <td>{dayjs(req.created_at).format('DD.MM.YYYY HH:mm')}</td>
-                                        <td>
-                                            {req.status === 'ACTIVE' && <Badge bg="warning">Bekliyor</Badge>}
-                                            {req.status === 'COMPLETED' && <Badge bg="success">Tamamlandı</Badge>}
-                                        </td>
-                                        <td className="text-end">
-                                            {/* Dosya Yükleme / Görüntüleme İkonu */}
-                                            <Button 
-                                                variant="outline-primary" size="sm" className="me-2"
-                                                title="Doküman Yönetimi"
-                                                onClick={() => openDocs(req)}
-                                            >
-                                                <FileText size={16} />
-                                            </Button>
+        <Container fluid className="page-container">
+            <LoadingOverlay show={loading} />
+            
+            <PageHeading 
+                heading="Personel Talepleri Yönetimi (İK)"
+                showCreateButton={false}
+                showFilterButton={false}
+            />
 
-                                            {/* WhatsApp İletişim Butonu */}
-                                            {req.employee?.phone && (
-                                                <Button 
-                                                    variant="outline-success" size="sm" className="me-2"
-                                                    onClick={() => openWhatsApp(req.employee?.phone || '')}
-                                                    title="WhatsApp ile İletişime Geç"
-                                                >
-                                                    <MessageCircle size={16} />
-                                                </Button>
-                                            )}
-                                            
-                                            {req.status === 'ACTIVE' && (
-                                                <Button 
-                                                    variant="success" size="sm"
-                                                    onClick={() => handleComplete(req.id)}
-                                                    disabled={processing === req.id}
-                                                >
-                                                    {processing === req.id ? <Spinner size="sm" animation="border"/> : <CheckCircle size={16}/>}
-                                                </Button>
-                                            )}
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </Table>
-                    )}
-                </Card.Body>
-            </Card>
+            <div className="content-wrapper">
+                <div className="content-header">
+                </div>
 
-            <Modal show={showDocModal} onHide={() => setShowDocModal(false)}>
+                <Card className="border-0 shadow-sm position-relative">
+                    <Card.Body className="p-0">
+                        <div className="table-box">
+                            <div className="table-responsive">
+                                <Table hover className="mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Çalışan Adı Soyadı</th>
+                                            <th>Talep Tipi</th>
+                                            <th>Talep Açıklaması</th>
+                                            <th>Oluşturma Tarihi</th>
+                                            <th>Talep Durumu</th>
+                                            <th className="text-end">İşlemler</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {requests.length === 0 ? (
+                                            <tr>
+                                                <td colSpan={6} className="text-center py-4">
+                                                    Talep talebi bulunamadı
+                                                </td>
+                                            </tr>
+                                        ) : (
+                                            requests.map(req => (
+                                                <tr key={req.id}>
+                                                    <td>
+                                                        {req.employee ? `${req.employee.first_name} ${req.employee.last_name}` : '-'}
+                                                    </td>
+                                                    <td>{req.request_type?.name || '-'}</td>
+                                                    <td>{req.description}</td>
+                                                    <td>{dayjs(req.created_at).format('DD.MM.YYYY HH:mm')}</td>
+                                                    <td>{getStatusBadge(req.status)}</td>
+                                                    <td className="text-end">
+                                                        <div className="d-flex justify-content-end gap-2">
+                                                            <Button 
+                                                                variant="outline-secondary" 
+                                                                size="sm"
+                                                                title="Dökümanlar"
+                                                                onClick={() => openDocs(req)}
+                                                            >
+                                                                <FileText size={14} />
+                                                            </Button>
+
+                                                            <Button 
+                                                                variant="outline-success" 
+                                                                size="sm"
+                                                                onClick={() => openWhatsApp(req.employee?.phone || '')}
+                                                                title="WhatsApp Mesaj Gönderme"
+                                                                disabled={!req.employee?.phone}
+                                                            >
+                                                                <MessageCircle size={14} />
+                                                            </Button>
+                                                            
+                                                            {req.status === 'ACTIVE' && (
+                                                                <Button 
+                                                                    variant="outline-success" 
+                                                                    size="sm"
+                                                                    onClick={() => askForCompletionConfirm(req.id)}
+                                                                    title="Tamamla"
+                                                                >
+                                                                    <Check size={14} />
+                                                                </Button>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </Table>
+                            </div>
+                        </div>
+                    </Card.Body>
+                </Card>
+            </div>
+
+            {/* Doküman */}
+            <Modal show={showDocModal} onHide={() => setShowDocModal(false)} centered>
                 <Modal.Header closeButton>
                     <Modal.Title>Talep Doküman Yönetimi</Modal.Title>
                 </Modal.Header>
@@ -197,27 +254,45 @@ export default function OtherRequestsManagementPage() {
                             </ul>
                         )}
                     </div>
-                    <Form onSubmit={handleFileUpload}>
-                        <Form.Group className="mb-3">
-                            <Form.Label>Yeni Belge Yükle</Form.Label>
-                            <Form.Control type="file" onChange={(e) => {
-    const files = (e.target as HTMLInputElement).files;
-    if (files && files.length > 0) {
-        setFile(files[0]);
-    }
-}} />
-                        </Form.Group>
+                    <form onSubmit={handleFileUpload}>
+                        <div className="mb-3">
+                            <label className="form-label">Yeni Belge Yükle</label>
+                            <input type="file" className="form-control" onChange={(e) => {
+                                const files = e.target.files;
+                                if (files && files.length > 0) {
+                                    setFile(files[0]);
+                                }
+                            }} />
+                        </div>
                         <div className="d-flex justify-content-end gap-2">
                             <Button variant="secondary" onClick={() => setShowDocModal(false)}>Kapat</Button>
                             <Button variant="primary" type="submit" disabled={uploading}>
-                                {uploading ? <Spinner size="sm" animation="border" /> : <><Upload size={16} className="me-1"/> Yükle</>}
+                                {uploading ? <Spinner size="sm" animation="border" /> : <>Yükle</>}
                             </Button>
                         </div>
-                    </Form>
+                    </form>
                 </Modal.Body>
             </Modal>
-        </div>
+
+            {/* Onay */}
+            <Modal show={showConfirmModal} onHide={() => setShowConfirmModal(false)} size="sm">
+                <Modal.Header closeButton className="border-0 pb-0">
+                    <Modal.Title className="h5 fw-bold text-dark">Talebi Tamamla</Modal.Title>
+                </Modal.Header>
+                <Modal.Body className="pt-2 pb-3">
+                    <p className="text-muted mb-0" style={{ fontSize: '14px' }}>
+                        Bu talebi tamamlandı olarak işaretlemek istediğinizden emin misiniz?
+                    </p>
+                </Modal.Body>
+                <Modal.Footer className="border-0 pt-0 d-flex justify-content-end gap-2">
+                    <Button variant="secondary" className="px-3 bg-secondary border-0" onClick={() => setShowConfirmModal(false)}>
+                        Kapat
+                    </Button>
+                    <Button variant="success" className="px-3 border-0" onClick={handleComplete}>
+                        Tamamla
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+        </Container>
     );
 }
-
-const ReqId = 1;
