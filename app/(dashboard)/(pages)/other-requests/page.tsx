@@ -1,13 +1,17 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Card, Table, Button, Modal, Form, Badge, Spinner } from 'react-bootstrap';
+import { Card, Table, Button, Modal, Form, Badge, Spinner, Container } from 'react-bootstrap';
 import { Plus, XCircle, Edit2 } from 'react-feather';
 import { toast } from 'react-toastify';
 import { useRouter } from 'next/navigation';
 import dayjs from 'dayjs';
 import axiosInstance from '@/helpers/api/axiosInstance';
 import { HR_ENDPOINTS } from '@/contants/urls';
+import { PageHeading } from '@/widgets';
+import LoadingOverlay from '@/components/LoadingOverlay';
+import '@/styles/table-list.scss';
+import '@/styles/components/table-common.scss';
 
 interface RequestType {
     id: number;
@@ -33,6 +37,10 @@ export default function OtherRequestsPage() {
     const [editing, setEditing] = useState<OtherRequest | null>(null);
     const [formData, setFormData] = useState({ request_type_id: 0, description: '' });
     const [submitting, setSubmitting] = useState(false);
+
+    // İptal Modalı State'leri
+    const [showCancelModal, setShowCancelModal] = useState(false);
+    const [cancelTargetId, setCancelTargetId] = useState<number | null>(null);
 
     useEffect(() => {
         let isMounted = true;
@@ -103,76 +111,103 @@ export default function OtherRequestsPage() {
         }
     };
 
-    const handleCancel = async (id: number) => {
-        if (!window.confirm('Bu talebi iptal etmek istediğinize emin misiniz?')) return;
+    const askForCancelConfirm = (id: number) => {
+        setCancelTargetId(id);
+        setShowCancelModal(true);
+    };
+
+    const handleCancel = async () => {
+        if (!cancelTargetId) return;
         try {
-            await axiosInstance.patch(`${HR_ENDPOINTS.OTHER_REQUESTS}/${id}/cancel`);
+            setShowCancelModal(false);
+            setLoading(true);
+            await axiosInstance.patch(`${HR_ENDPOINTS.OTHER_REQUESTS}/${cancelTargetId}/cancel`);
             toast.success('Talep iptal edildi.');
             await fetchData();
             router.refresh();
         } catch (error: any) {
             toast.error(error?.response?.data?.error || 'İşlem başarısız.');
+        } finally {
+            setLoading(false);
+            setCancelTargetId(null);
         }
     };
 
     return (
-        <div className="page-content">
-            <div className="d-flex justify-content-between align-items-center mb-4">
-                <h4 className="mb-0">Diğer Taleplerim</h4>
-                <Button variant="primary" onClick={handleAddClick} className="d-flex align-items-center gap-2">
-                    <Plus size={18} /> Yeni Talep Ekle
-                </Button>
+        <Container fluid className="page-container">
+            <LoadingOverlay show={loading} />
+            
+            <PageHeading 
+                heading="Diğer Taleplerim"
+                showCreateButton={false}
+                showFilterButton={false}
+            />
+
+            <div className="content-wrapper">
+                <div className="content-header d-flex justify-content-end mb-3">
+                    <Button variant="primary" onClick={handleAddClick} className="d-flex align-items-center gap-2">
+                        <Plus size={18} /> Yeni Talep Ekle
+                    </Button>
+                </div>
+
+                <Card className="border-0 shadow-sm position-relative">
+                    <Card.Body className="p-0">
+                        <div className="table-box">
+                            <div className="table-responsive">
+                                <Table hover className="mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Talep Türü</th>
+                                            <th>Açıklama</th>
+                                            <th>Tarih</th>
+                                            <th>Durum</th>
+                                            <th className="text-end">İşlemler</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {requests.length === 0 ? (
+                                            <tr>
+                                                <td colSpan={5} className="text-center py-4">
+                                                    Henüz talebiniz yok.
+                                                </td>
+                                            </tr>
+                                        ) : (
+                                            requests.map((req) => (
+                                                <tr key={req.id}>
+                                                    <td className="fw-medium">{req.request_type?.name || 'Bilinmiyor'}</td>
+                                                    <td>{req.description}</td>
+                                                    <td>{dayjs(req.created_at).format('DD.MM.YYYY HH:mm')}</td>
+                                                    <td>
+                                                        {req.status === 'ACTIVE' && <Badge bg="warning">Bekliyor</Badge>}
+                                                        {req.status === 'COMPLETED' && <Badge bg="success">Tamamlandı</Badge>}
+                                                        {req.status === 'CANCELLED' && <Badge bg="danger">İptal Edildi</Badge>}
+                                                    </td>
+                                                    <td className="text-end">
+                                                        <div className="d-flex justify-content-end gap-2">
+                                                            {req.status !== 'COMPLETED' && (
+                                                                <Button variant="outline-secondary" size="sm" onClick={() => handleEditClick(req)}>
+                                                                    <Edit2 size={14} />
+                                                                </Button>
+                                                            )}
+                                                            {req.status === 'ACTIVE' && (
+                                                                <Button variant="outline-danger" size="sm" onClick={() => askForCancelConfirm(req.id)}>
+                                                                    <XCircle size={14} />
+                                                                </Button>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </Table>
+                            </div>
+                        </div>
+                    </Card.Body>
+                </Card>
             </div>
 
-            <Card>
-                <Card.Body>
-                    {loading ? (
-                        <div className="text-center p-5"><Spinner animation="border" /></div>
-                    ) : requests.length === 0 ? (
-                        <div className="text-center p-5 text-muted">Henüz talebiniz yok.</div>
-                    ) : (
-                        <Table responsive hover className="mb-0 align-middle">
-                            <thead>
-                                <tr>
-                                    <th>Talep Türü</th>
-                                    <th>Açıklama</th>
-                                    <th>Tarih</th>
-                                    <th>Durum</th>
-                                    <th className="text-end">İşlemler</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {requests.map((req) => (
-                                    <tr key={req.id}>
-                                        <td className="fw-medium">{req.request_type?.name || 'Bilinmiyor'}</td>
-                                        <td style={{ maxWidth: '250px' }} className="text-truncate">{req.description}</td>
-                                        <td>{dayjs(req.created_at).format('DD.MM.YYYY HH:mm')}</td>
-                                        <td>
-                                            {req.status === 'ACTIVE' && <Badge bg="warning" className="text-white">Aktif</Badge>}
-                                            {req.status === 'COMPLETED' && <Badge bg="success" className="text-white">Tamamlandı</Badge>}
-                                            {req.status === 'CANCELLED' && <Badge bg="danger" className="text-white">İptal Edildi</Badge>}
-                                        </td>
-                                        <td className="text-end">
-                                            {req.status !== 'COMPLETED' && (
-                                                <Button variant="outline-secondary" size="sm" className="me-2" onClick={() => handleEditClick(req)}>
-                                                    <Edit2 size={16} />
-                                                </Button>
-                                            )}
-                                            {req.status === 'ACTIVE' && (
-                                                <Button variant="outline-danger" size="sm" onClick={() => handleCancel(req.id)}>
-                                                    <XCircle size={16} />
-                                                </Button>
-                                            )}
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </Table>
-                    )}
-                </Card.Body>
-            </Card>
-
-            <Modal show={showModal} onHide={() => setShowModal(false)} backdrop="static">
+            <Modal show={showModal} onHide={() => setShowModal(false)} backdrop="static" centered>
                 <Form onSubmit={handleSubmit}>
                     <Modal.Header closeButton>
                         <Modal.Title>{editing ? 'Talebi Düzenle' : 'Yeni Talep Oluştur'}</Modal.Title>
@@ -207,6 +242,26 @@ export default function OtherRequestsPage() {
                     </Modal.Footer>
                 </Form>
             </Modal>
-        </div>
+
+            {/* İptal Onay */}
+            <Modal show={showCancelModal} onHide={() => setShowCancelModal(false)} size="sm">
+                <Modal.Header closeButton className="border-0 pb-0">
+                    <Modal.Title className="h5 fw-bold text-dark">Talebi İptal Et</Modal.Title>
+                </Modal.Header>
+                <Modal.Body className="pt-2 pb-3">
+                    <p className="text-muted mb-0" style={{ fontSize: '14px' }}>
+                        Bu talebi iptal etmek istediğinizden emin misiniz?
+                    </p>
+                </Modal.Body>
+                <Modal.Footer className="border-0 pt-0 d-flex justify-content-end gap-2">
+                    <Button variant="secondary" className="px-3 bg-secondary border-0" onClick={() => setShowCancelModal(false)}>
+                        Kapat
+                    </Button>
+                    <Button variant="danger" className="px-3 border-0" onClick={handleCancel}>
+                        İptal Et
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+        </Container>
     );
 }
