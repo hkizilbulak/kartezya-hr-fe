@@ -110,7 +110,7 @@ export default function RequestTypesPage() {
             />
 
             <div className="content-wrapper">
-                <div className="content-header d-flex justify-content-end mb-3">
+                <div className="content-header d-flex flex-column align-items-start gap-2 mb-3">
                     <Button variant="primary" onClick={handleShowAdd} className="d-flex align-items-center gap-2">
                         <Plus size={18} /> Yeni Ekle
                     </Button>
@@ -197,11 +197,11 @@ export default function RequestTypesPage() {
             {/* Silme Onay */}
             <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} size="sm">
                 <Modal.Header closeButton className="border-0 pb-0">
-                    <Modal.Title className="h5 fw-bold text-dark">Masraf Türünü Sil</Modal.Title>
+                    <Modal.Title className="h5 fw-bold text-dark">Talep Türünü Sil</Modal.Title>
                 </Modal.Header>
                 <Modal.Body className="pt-2 pb-3">
                     <p className="text-muted mb-0" style={{ fontSize: '14px' }}>
-                        Bu masraf türünü silmek istediğinizden emin misiniz?
+                        Bu talep türünü silmek istediğinizden emin misiniz?
                     </p>
                 </Modal.Body>
                 <Modal.Footer className="border-0 pt-0 d-flex justify-content-end gap-2">

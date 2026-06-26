@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, Table, Button, Modal, Form, Badge, Spinner, Container } from 'react-bootstrap';
-import { Plus, XCircle, Edit2 } from 'react-feather';
+import { Plus, XCircle, Edit2, Eye } from 'react-feather';
 import { toast } from 'react-toastify';
 import { useRouter } from 'next/navigation';
 import dayjs from 'dayjs';
@@ -19,6 +19,8 @@ interface RequestType {
     description: string;
 }
 
+interface Attachment { id: string; file_name: string; }
+
 interface OtherRequest {
     id: number;
     description: string;
@@ -26,6 +28,7 @@ interface OtherRequest {
     created_at: string;
     request_type_id: number;
     request_type?: RequestType;
+    attachments?: Attachment[];
 }
 
 export default function OtherRequestsPage() {
@@ -41,6 +44,9 @@ export default function OtherRequestsPage() {
     // İptal Modalı State'leri
     const [showCancelModal, setShowCancelModal] = useState(false);
     const [cancelTargetId, setCancelTargetId] = useState<number | null>(null);
+
+    const [showDocModal, setShowDocModal] = useState(false);
+    const [attachments, setAttachments] = useState<Attachment[]>([]);
 
     useEffect(() => {
         let isMounted = true;
@@ -133,6 +139,30 @@ export default function OtherRequestsPage() {
         }
     };
 
+    const openDocs = (req: OtherRequest) => {
+        setAttachments(req.attachments || []);
+        setShowDocModal(true);
+    };
+
+    const handleDownloadDoc = async (docId: string, fileName: string) => {
+        try {
+            const response = await axiosInstance.get(`/documents/${docId}/download`, {
+                responseType: 'blob'
+            });
+            const fileBlob = new Blob([response.data], { type: response.data.type });
+            const url = window.URL.createObjectURL(fileBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', fileName);
+            document.body.appendChild(link);
+            link.click();
+            link.parentNode?.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            toast.error('Dosya indirilirken bir hata oluştu.');
+        }
+    };
+
     return (
         <Container fluid className="page-container">
             <LoadingOverlay show={loading} />
@@ -144,7 +174,7 @@ export default function OtherRequestsPage() {
             />
 
             <div className="content-wrapper">
-                <div className="content-header d-flex justify-content-end mb-3">
+                <div className="content-header d-flex flex-column align-items-start gap-2 mb-3">
                     <Button variant="primary" onClick={handleAddClick} className="d-flex align-items-center gap-2">
                         <Plus size={18} /> Yeni Talep Ekle
                     </Button>
@@ -184,6 +214,14 @@ export default function OtherRequestsPage() {
                                                     </td>
                                                     <td className="text-end">
                                                         <div className="d-flex justify-content-end gap-2">
+                                                            <Button 
+                                                                variant="outline-secondary" 
+                                                                size="sm"
+                                                                title="Belgeleri Görüntüle"
+                                                                onClick={() => openDocs(req)}
+                                                            >
+                                                                <Eye size={14} />
+                                                            </Button>
                                                             {req.status !== 'COMPLETED' && (
                                                                 <Button variant="outline-secondary" size="sm" onClick={() => handleEditClick(req)}>
                                                                     <Edit2 size={14} />
@@ -260,6 +298,39 @@ export default function OtherRequestsPage() {
                     <Button variant="danger" className="px-3 border-0" onClick={handleCancel}>
                         İptal Et
                     </Button>
+                </Modal.Footer>
+            </Modal>
+
+            {/* Doküman Görüntüleme Modalı */}
+            <Modal show={showDocModal} onHide={() => setShowDocModal(false)}>
+                <Modal.Header closeButton>
+                    <Modal.Title>Talep Doküman Görüntüleme</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <div className="mb-2">
+                        <h6>Yüklü Belgeler:</h6>
+                        {attachments.length === 0 ? (
+                            <p className="text-muted small">Bu talebe ait yüklü belge bulunmuyor.</p>
+                        ) : (
+                            <ul className="list-group mb-2">
+                                {attachments.map(doc => (
+                                    <li key={doc.id} className="list-group-item d-flex justify-content-between align-items-center py-2">
+                                        <span 
+                                            onClick={() => handleDownloadDoc(doc.id, doc.file_name)}
+                                            className="small text-truncate text-primary fw-medium"
+                                            style={{ maxWidth: '350px', cursor: 'pointer', textDecoration: 'underline' }}
+                                            title="Dosyayı İndir"
+                                        >
+                                            {doc.file_name}
+                                        </span>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </div>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => setShowDocModal(false)}>Kapat</Button>
                 </Modal.Footer>
             </Modal>
         </Container>
