@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, Table, Button, Badge, Modal, Spinner, Container } from 'react-bootstrap';
-import { MessageCircle, FileText, Upload, Trash, Check } from 'react-feather';
+import { MessageCircle, FileText, Upload, Trash, Check, XCircle } from 'react-feather';
 import { toast } from 'react-toastify';
 import dayjs from 'dayjs';
 import axiosInstance from '@/helpers/api/axiosInstance';
@@ -18,6 +18,7 @@ interface OtherRequest {
     id: number; description: string; status: string; created_at: string;
     employee?: Employee; request_type?: { name: string };
     attachments?: Attachment[];
+    request_type_id: number;
 }
 
 export default function OtherRequestsManagementPage() {
@@ -34,6 +35,12 @@ export default function OtherRequestsManagementPage() {
     // Onay Modalı State'leri
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [confirmTargetId, setConfirmTargetId] = useState<number | null>(null);
+
+    const [showDocDeleteModal, setShowDocDeleteModal] = useState(false);
+    const [deleteDocTargetId, setDeleteDocTargetId] = useState<string | null>(null);
+
+    const [showCancelModal, setShowCancelModal] = useState(false);
+    const [cancelTargetReq, setCancelTargetReq] = useState<OtherRequest | null>(null);
 
     useEffect(() => { 
         fetchRequests(); 
@@ -69,6 +76,28 @@ export default function OtherRequestsManagementPage() {
         } finally { 
             setLoading(false); 
             setConfirmTargetId(null);
+        }
+    };
+
+    const askForCancelConfirm = (req: OtherRequest) => {
+        setCancelTargetReq(req);
+        setShowCancelModal(true);
+    };
+
+    const handleCancel = async () => {
+        if (!cancelTargetReq) return;
+        try {
+            setShowCancelModal(false);
+            setLoading(true);
+            
+            await axiosInstance.patch(`${HR_ENDPOINTS.OTHER_REQUESTS}/${cancelTargetReq.id}/rollback`);
+            toast.success('Talep başarıyla geri alındı ve Bekliyor durumuna çekildi.');
+            fetchRequests();
+        } catch (error: any) {
+            toast.error(error?.response?.data?.error || 'İşlem başarısız.');
+        } finally {
+            setLoading(false);
+            setCancelTargetReq(null);
         }
     };
 
@@ -119,15 +148,42 @@ export default function OtherRequestsManagementPage() {
         }
     };
 
-    const handleDeleteDoc = async (docId: string) => {
-        if (!window.confirm('Bu dokümanı silmek istediğinize emin misiniz?')) return;
+    const askForDocDeleteConfirm = (docId: string) => {
+        setDeleteDocTargetId(docId);
+        setShowDocDeleteModal(true);
+    };
+
+    const handleDeleteDoc = async () => {
+        if (!deleteDocTargetId) return;
         try {
-            await axiosInstance.delete(`${HR_ENDPOINTS.OTHER_REQUESTS}/documents/${docId}`);
+            setShowDocDeleteModal(false);
+            await axiosInstance.delete(`${HR_ENDPOINTS.OTHER_REQUESTS}/documents/${deleteDocTargetId}`);
             toast.success('Doküman silindi.');
-            setAttachments(attachments.filter(d => d.id !== docId));
+            setAttachments(attachments.filter(d => d.id !== deleteDocTargetId));
             fetchRequests();
         } catch (error: any) {
             toast.error(error?.response?.data?.error || 'Silinemedi.');
+        } finally {
+            setDeleteDocTargetId(null);
+        }
+    };
+
+    const handleDownloadDoc = async (docId: string, fileName: string) => {
+        try {
+            const response = await axiosInstance.get(`/documents/${docId}/download`, {
+                responseType: 'blob'
+            });
+            const fileBlob = new Blob([response.data], { type: response.data.type });
+            const url = window.URL.createObjectURL(fileBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', fileName);
+            document.body.appendChild(link);
+            link.click();
+            link.parentNode?.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            toast.error('Dosya indirilirken bir hata oluştu.');
         }
     };
 
@@ -218,6 +274,17 @@ export default function OtherRequestsManagementPage() {
                                                                     <Check size={14} />
                                                                 </Button>
                                                             )}
+
+                                                            {req.status === 'COMPLETED' && (
+                                                                <Button 
+                                                                    variant="outline-danger" 
+                                                                    size="sm"
+                                                                    onClick={() => askForCancelConfirm(req)}
+                                                                    title="İptal Et"
+                                                                >
+                                                                    <XCircle size={14} />
+                                                                </Button>
+                                                            )}
                                                         </div>
                                                     </td>
                                                 </tr>
@@ -245,8 +312,15 @@ export default function OtherRequestsManagementPage() {
                             <ul className="list-group mb-3">
                                 {attachments.map(doc => (
                                     <li key={doc.id} className="list-group-item d-flex justify-content-between align-items-center py-2">
-                                        <span className="small text-truncate" style={{ maxWidth: '250px' }}>{doc.file_name}</span>
-                                        <Button variant="link" size="sm" className="text-danger p-0" onClick={() => handleDeleteDoc(doc.id)}>
+                                        <span 
+                                            onClick={() => handleDownloadDoc(doc.id, doc.file_name)}
+                                            className="small text-truncate text-primary fw-medium"
+                                            style={{ maxWidth: '250px', cursor: 'pointer', textDecoration: 'underline' }}
+                                            title="Dosyayı İndir"
+                                        >
+                                            {doc.file_name}
+                                        </span>
+                                        <Button variant="link" size="sm" className="text-danger p-0" onClick={() => askForDocDeleteConfirm(doc.id)}>
                                             <Trash size={16} />
                                         </Button>
                                     </li>
@@ -290,6 +364,44 @@ export default function OtherRequestsManagementPage() {
                     </Button>
                     <Button variant="success" className="px-3 border-0" onClick={handleComplete}>
                         Tamamla
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+
+            <Modal show={showDocDeleteModal} onHide={() => setShowDocDeleteModal(false)} size="sm">
+                <Modal.Header closeButton className="border-0 pb-0">
+                    <Modal.Title className="h5 fw-bold text-dark">Dokümanı Sil</Modal.Title>
+                </Modal.Header>
+                <Modal.Body className="pt-2 pb-3">
+                    <p className="text-muted mb-0" style={{ fontSize: '14px' }}>
+                        Bu dokümanı silmek istediğinizden emin misiniz?
+                    </p>
+                </Modal.Body>
+                <Modal.Footer className="border-0 pt-0 d-flex justify-content-end gap-2">
+                    <Button variant="secondary" className="px-3 bg-secondary border-0" onClick={() => setShowDocDeleteModal(false)}>
+                        Kapat
+                    </Button>
+                    <Button variant="danger" className="px-3 border-0" onClick={handleDeleteDoc}>
+                        Sil
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+
+            <Modal show={showCancelModal} onHide={() => setShowCancelModal(false)} size="sm">
+                <Modal.Header closeButton className="border-0 pb-0">
+                    <Modal.Title className="h5 fw-bold text-dark">Talebi İptal Et</Modal.Title>
+                </Modal.Header>
+                <Modal.Body className="pt-2 pb-3">
+                    <p className="text-muted mb-0" style={{ fontSize: '14px' }}>
+                        Bu talebi iptal etmek istediğinizden emin misiniz?
+                    </p>
+                </Modal.Body>
+                <Modal.Footer className="border-0 pt-0 d-flex justify-content-end gap-2">
+                    <Button variant="secondary" className="px-3 bg-secondary border-0" onClick={() => setShowCancelModal(false)}>
+                        Kapat
+                    </Button>
+                    <Button variant="danger" className="px-3 border-0" onClick={handleCancel}>
+                        İptal Et
                     </Button>
                 </Modal.Footer>
             </Modal>
