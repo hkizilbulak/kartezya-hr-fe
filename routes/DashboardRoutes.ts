@@ -38,11 +38,6 @@ export const DashboardMenu: IMenuProps[] = [
                 id: 'my-expense-requests',
                 link: '/my-requests/expense',
                 name: 'Masraf Taleplerim'
-            },
-            {
-                id: 'other-requests',
-                link: '/other-requests',
-                name: 'Diğer Talepler'
             }
         ]
     },
@@ -82,12 +77,6 @@ export const DashboardMenu: IMenuProps[] = [
                 id: 'expense-requests',
                 link: '/expense-management/requests',
                 name: 'Masraf Talepleri',
-                requiredRoles: ['ADMIN']
-            },
-            {
-                id: 'other-requests-management',
-                link: '/other-requests-management',
-                name: 'Diğer Talepler (İK)',
                 requiredRoles: ['ADMIN']
             }
         ]
