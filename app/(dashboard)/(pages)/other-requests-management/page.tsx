@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, Table, Button, Badge, Modal, Spinner, Container } from 'react-bootstrap';
-import { MessageCircle, FileText, Upload, Trash, Check, XCircle } from 'react-feather';
+import { MessageCircle, FileText, Trash, Check, XCircle } from 'react-feather';
 import { toast } from 'react-toastify';
 import dayjs from 'dayjs';
 import axiosInstance from '@/helpers/api/axiosInstance';
@@ -170,18 +170,21 @@ export default function OtherRequestsManagementPage() {
 
     const handleDownloadDoc = async (docId: string, fileName: string) => {
         try {
-            const response = await axiosInstance.get(`/documents/${docId}/download`, {
-                responseType: 'blob'
-            });
-            const fileBlob = new Blob([response.data], { type: response.data.type });
-            const url = window.URL.createObjectURL(fileBlob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', fileName);
-            document.body.appendChild(link);
-            link.click();
-            link.parentNode?.removeChild(link);
-            window.URL.revokeObjectURL(url);
+            const response = await axiosInstance.get(`${HR_ENDPOINTS.OTHER_REQUESTS}/documents/${docId}/download`);
+            const downloadUrl = response.data?.data?.url;
+
+            if (downloadUrl) {
+                const link = document.createElement('a');
+                link.href = downloadUrl;
+                link.target = '_blank';
+                link.setAttribute('download', fileName);
+                
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } else {
+                toast.error('İndirme bağlantısı alınamadı.');
+            }
         } catch (error) {
             toast.error('Dosya indirilirken bir hata oluştu.');
         }
