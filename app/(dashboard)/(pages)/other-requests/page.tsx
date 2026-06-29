@@ -146,18 +146,12 @@ export default function OtherRequestsPage() {
 
     const handleDownloadDoc = async (docId: string, fileName: string) => {
         try {
-            const response = await axiosInstance.get(`/documents/${docId}/download`, {
-                responseType: 'blob'
-            });
-            const fileBlob = new Blob([response.data], { type: response.data.type });
-            const url = window.URL.createObjectURL(fileBlob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', fileName);
-            document.body.appendChild(link);
-            link.click();
-            link.parentNode?.removeChild(link);
-            window.URL.revokeObjectURL(url);
+            const response = await axiosInstance.get(`${HR_ENDPOINTS.OTHER_REQUESTS}/documents/${docId}/download`);
+            if (response.data && response.data.data && response.data.data.url) {
+                window.open(response.data.data.url, '_blank');
+            } else {
+                toast.error('İndirme bağlantısı alınamadı.');
+            }
         } catch (error) {
             toast.error('Dosya indirilirken bir hata oluştu.');
         }
