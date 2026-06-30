@@ -19,6 +19,8 @@ const ADMIN_REQUIRED_ROUTES = [
   '/reports/work-day',
   '/cv-upload',
   '/cv-search',
+  '/other-requests-management',
+  '/request-types',
 ];
 
 export default function DashboardLayout({

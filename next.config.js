@@ -26,6 +26,25 @@ const nextConfig = {
         }
         return config;
     },
+    async rewrites() {
+        return [
+            {
+                // Çalışanların "Diğer Taleplerim" menüsüne tıkladığında gideceği yer
+                source: '/other-requests',
+                destination: '/my-requests/other',
+            },
+            {
+                // Adminlerin "Talep Yönetimi" menüsüne tıkladığında gideceği yer
+                source: '/other-requests-management',
+                destination: '/other-requests-management/requests',
+            },
+            {
+                // Talep Türleri sayfası
+                source: '/request-types',
+                destination: '/other-requests-management/types',
+            },
+        ];
+    },
 }
 
 module.exports = nextConfig
