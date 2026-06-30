@@ -1,15 +1,14 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Card, Table, Button, Modal, Form, Spinner, Container } from 'react-bootstrap';
-import { Plus, Edit, Trash2 } from 'react-feather';
+import { Card, Table, Button, Modal, Form, Spinner } from 'react-bootstrap';
+import { Edit, Trash2 } from 'react-feather';
 import { toast } from 'react-toastify';
 import axiosInstance from '@/helpers/api/axiosInstance';
 import { HR_ENDPOINTS } from '@/contants/urls';
 import { PageHeading } from '@/widgets';
 import LoadingOverlay from '@/components/LoadingOverlay';
-import '@/styles/table-list.scss';
-import '@/styles/components/table-common.scss';
+
 
 interface RequestType {
     id: number;
@@ -18,7 +17,7 @@ interface RequestType {
     active: boolean;
 }
 
-export default function RequestTypesPage() {
+const OtherRequestTypeManagement = () => {
     const [types, setTypes] = useState<RequestType[]>([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
@@ -100,22 +99,18 @@ export default function RequestTypesPage() {
     };
 
     return (
-        <Container fluid className="page-container">
+        <>
             <LoadingOverlay show={loading} />
-            
-            <PageHeading 
+
+            <PageHeading
                 heading="Talep Türleri Yönetimi"
-                showCreateButton={false}
+                showCreateButton={true}
+                createButtonText="Yeni Ekle"
+                onCreate={handleShowAdd}
                 showFilterButton={false}
             />
 
             <div className="content-wrapper">
-                <div className="content-header d-flex flex-column align-items-start gap-2 mb-3">
-                    <Button variant="primary" onClick={handleShowAdd} className="d-flex align-items-center gap-2">
-                        <Plus size={18} /> Yeni Ekle
-                    </Button>
-                </div>
-
                 <Card className="border-0 shadow-sm position-relative">
                     <Card.Body className="p-0">
                         <div className="table-box">
@@ -169,19 +164,19 @@ export default function RequestTypesPage() {
                     <Modal.Body>
                         <Form.Group className="mb-3">
                             <Form.Label>Talep Tipi Adı *</Form.Label>
-                            <Form.Control 
+                            <Form.Control
                                 value={formData.name}
-                                onChange={e => setFormData({...formData, name: e.target.value})}
-                                required 
+                                onChange={e => setFormData({ ...formData, name: e.target.value })}
+                                required
                             />
                         </Form.Group>
                         <Form.Group className="mb-3">
                             <Form.Label>Açıklama</Form.Label>
-                            <Form.Control 
+                            <Form.Control
                                 as="textarea"
                                 rows={3}
                                 value={formData.description}
-                                onChange={e => setFormData({...formData, description: e.target.value})}
+                                onChange={e => setFormData({ ...formData, description: e.target.value })}
                             />
                         </Form.Group>
                     </Modal.Body>
@@ -213,6 +208,8 @@ export default function RequestTypesPage() {
                     </Button>
                 </Modal.Footer>
             </Modal>
-        </Container>
+        </>
     );
-}
+};
+
+export default OtherRequestTypeManagement;
