@@ -6,21 +6,8 @@ import { toast } from 'react-toastify';
 import axiosInstance from '@/helpers/api/axiosInstance';
 import { HR_ENDPOINTS } from '@/contants/urls';
 import { useRouter } from 'next/navigation';
-
-interface RequestType {
-    id: number;
-    name: string;
-    description: string;
-}
-
-interface OtherRequest {
-    id: number;
-    description: string;
-    status: 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
-    created_at: string;
-    request_type_id: number;
-    request_type?: RequestType;
-}
+import { OtherRequest, RequestType } from '@/models/hr/hr-requests';
+import FormSelectField from '@/components/FormSelectField';
 
 interface OtherRequestModalProps {
     show: boolean;
@@ -32,31 +19,54 @@ interface OtherRequestModalProps {
 
 const OtherRequestModal: React.FC<OtherRequestModalProps> = ({ show, onHide, editing, types, onSuccess }) => {
     const router = useRouter();
-    const [formData, setFormData] = useState({ request_type_id: 0, description: '' });
+    const [formData, setFormData] = useState({ request_type_id: '', description: '' });
     const [submitting, setSubmitting] = useState(false);
+
+    const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
     useEffect(() => {
         if (show) {
+            setErrors({});
             if (editing) {
-                setFormData({ request_type_id: editing.request_type_id, description: editing.description });
+                setFormData({
+                    request_type_id: editing.request_type_id?.toString() || '',
+                    description: editing.description
+                });
             } else {
-                setFormData({ request_type_id: 0, description: '' });
+                setFormData({ request_type_id: '', description: '' });
             }
         }
     }, [show, editing]);
 
+    const validate = () => {
+        const newErrors: { [key: string]: string } = {};
+        if (!formData.request_type_id || Number(formData.request_type_id) <= 0) {
+            newErrors.request_type_id = "Lütfen bir talep türü seçin.";
+        }
+        if (!formData.description.trim()) newErrors.description = "Açıklama alanı boş bırakılamaz.";
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (!validate()) return;
         if (submitting) return;
 
         try {
             setSubmitting(true);
+            const payload = {
+                ...formData,
+                request_type_id: Number(formData.request_type_id)
+            };
+
             if (editing) {
-                const payload = { ...formData, status: 'ACTIVE' };
-                await axiosInstance.put(`${HR_ENDPOINTS.OTHER_REQUESTS}/${editing.id}`, payload);
-                toast.success('Talep güncellendi ve durumu Aktif\'e çekildi.');
+                await axiosInstance.put(`${HR_ENDPOINTS.OTHER_REQUESTS}/${editing.id}`, { ...payload, status: 'ACTIVE' });
+                toast.success('Talep güncellendi.');
             } else {
-                await axiosInstance.post(HR_ENDPOINTS.OTHER_REQUESTS, formData);
+                await axiosInstance.post(HR_ENDPOINTS.OTHER_REQUESTS, payload);
                 toast.success('Talep oluşturuldu.');
             }
 
@@ -71,37 +81,58 @@ const OtherRequestModal: React.FC<OtherRequestModalProps> = ({ show, onHide, edi
     };
 
     return (
-        <Modal show={show} onHide={onHide} backdrop="static" centered>
+        <Modal show={show} onHide={onHide} backdrop="static" centered enforceFocus={false}>
             <Form onSubmit={handleSubmit}>
                 <Modal.Header closeButton>
-                    <Modal.Title>{editing ? 'Talebi Düzenle' : 'Yeni Talep Oluştur'}</Modal.Title>
+                    <Modal.Title>{editing ? 'Talebi Düzenle' : 'Yeni Talep Ekle'}</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
                     <Form.Group className="mb-3">
-                        <Form.Label>Talep Türü *</Form.Label>
-                        <Form.Select
+                        <Form.Label>Talep Türü <span className="text-danger">*</span></Form.Label>
+                        <FormSelectField
+                            name="request_type_id"
                             value={formData.request_type_id}
-                            onChange={(e) => setFormData({ ...formData, request_type_id: Number(e.target.value) })}
-                            required
+                            onChange={(e: any) => {
+                                setFormData({ ...formData, request_type_id: e.target.value });
+                                setErrors({ ...errors, request_type_id: '' });
+                            }}
+                            isInvalid={!!errors.request_type_id}
                         >
-                            <option value={0}>Seçiniz...</option>
-                            {types.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-                        </Form.Select>
+                            <option value="">Seçiniz...</option>
+                            {[...types]
+                                .sort((a, b) => (b.id || 0) - (a.id || 0))
+                                .map((t) => (
+                                    <option key={t.id} value={t.id.toString()}>{t.name}</option>
+                                ))}
+                        </FormSelectField>
+
+                        {errors.request_type_id && (
+                            <div className="invalid-feedback d-block">
+                                {errors.request_type_id}
+                            </div>
+                        )}
                     </Form.Group>
+
                     <Form.Group className="mb-3">
-                        <Form.Label>Açıklama *</Form.Label>
+                        <Form.Label>Açıklama <span className="text-danger">*</span></Form.Label>
                         <Form.Control
                             as="textarea" rows={4}
                             value={formData.description}
-                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                            required
+                            onChange={(e) => {
+                                setFormData({ ...formData, description: e.target.value });
+                                setErrors({ ...errors, description: '' });
+                            }}
+                            isInvalid={!!errors.description}
                         />
+                        <Form.Control.Feedback type="invalid">
+                            {errors.description}
+                        </Form.Control.Feedback>
                     </Form.Group>
                 </Modal.Body>
                 <Modal.Footer>
-                    <Button variant="secondary" onClick={onHide}>Vazgeç</Button>
+                    <Button variant="secondary" onClick={onHide}>İptal</Button>
                     <Button variant="primary" type="submit" disabled={submitting}>
-                        {submitting ? <Spinner size="sm" animation="border" /> : 'Kaydet'}
+                        {submitting ? <Spinner size="sm" animation="border" /> : 'Talep Oluştur'}
                     </Button>
                 </Modal.Footer>
             </Form>
