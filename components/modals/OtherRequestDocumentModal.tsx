@@ -28,7 +28,6 @@ interface UploadingFile {
 const OtherRequestDocumentModal: React.FC<OtherRequestDocumentModalProps> = ({
     show, onHide, reqId, initialAttachments, onSuccess, canDelete = true
 }) => {
-    // Stateler
     const [documents, setDocuments] = useState<Attachment[]>([]);
     const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
     const [loading, setLoading] = useState(false);
@@ -60,6 +59,36 @@ const OtherRequestDocumentModal: React.FC<OtherRequestDocumentModalProps> = ({
         }
     };
 
+    const handleDragEnter = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(true); };
+    const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); };
+    const handleDragLeave = (e: React.DragEvent) => { setIsDragging(false); };
+
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragging(false);
+        if (e.dataTransfer.files) {
+            uploadFiles(Array.from(e.dataTransfer.files));
+        }
+    };
+
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files) {
+            uploadFiles(Array.from(e.target.files));
+        }
+    };
+
+    const removeUploadingFile = (id: string) => {
+        setUploadingFiles(prev => prev.filter(f => f.id !== id));
+    };
+
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'error': return 'danger';
+            case 'success': return 'success';
+            default: return 'info';
+        }
+    };
+
     const uploadFiles = async (files: File[]) => {
         const newUploads: UploadingFile[] = files.map(f => ({
             id: `${Date.now()}-${Math.random()}`, file: f, progress: 0, status: 'pending'
@@ -75,7 +104,7 @@ const OtherRequestDocumentModal: React.FC<OtherRequestDocumentModalProps> = ({
                 await axiosInstance.post(
                     `${HR_ENDPOINTS.OTHER_REQUESTS}/${reqId}/documents`,
                     formData,
-                    { headers: { 'Content-Type': undefined } }
+                    { headers: { 'Content-Type': 'multipart/form-data' } }
                 );
 
                 setUploadingFiles(prev => prev.map(p => p.id === uf.id ? { ...p, status: 'success', progress: 100 } : p));
@@ -84,7 +113,7 @@ const OtherRequestDocumentModal: React.FC<OtherRequestDocumentModalProps> = ({
                 onSuccess();
 
                 setTimeout(() => setUploadingFiles(prev => prev.filter(p => p.id !== uf.id)), 2000);
-            } catch (err) {
+            } catch (err: any) {
                 setUploadingFiles(prev => prev.map(p => p.id === uf.id ? { ...p, status: 'error', error: 'Yükleme başarısız' } : p));
                 toast.error("Yükleme başarısız oldu.");
             }
@@ -93,42 +122,27 @@ const OtherRequestDocumentModal: React.FC<OtherRequestDocumentModalProps> = ({
 
     const handleDownload = async (documentId: string, fileName: string) => {
         try {
-            // 1. URL bilgisini al
             const response = await axiosInstance.get(`${HR_ENDPOINTS.OTHER_REQUESTS}/documents/${documentId}/download`);
             const fileUrl = response.data?.data?.url;
+            if (!fileUrl) { toast.error('Dosya linki alınamadı.'); return; }
 
-            if (!fileUrl) {
-                toast.error('Dosya linki alınamadı.');
-                return;
-            }
-
-            // 2. Aldığın URL'e gidip gerçek dosyayı indir
             const fileResponse = await fetch(fileUrl);
-
-            if (!fileResponse.ok) {
-                throw new Error('Dosya sunucudan çekilemedi.');
-            }
+            if (!fileResponse.ok) throw new Error('Dosya sunucudan çekilemedi.');
 
             const blob = await fileResponse.blob();
-
-            // 3. İndir
             const url = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
             link.setAttribute('download', fileName);
             document.body.appendChild(link);
             link.click();
-
-            // Temizlik
             document.body.removeChild(link);
             window.URL.revokeObjectURL(url);
-            toast.success('Dosya başarıyla indirildi.');
-
         } catch (err: any) {
-            console.error("İndirme hatası:", err);
             toast.error('Dosya indirilemedi.');
         }
     };
+
     const handleDelete = async (documentId: string) => {
         try {
             await axiosInstance.delete(`${HR_ENDPOINTS.OTHER_REQUESTS}/documents/${documentId}`);
@@ -143,37 +157,71 @@ const OtherRequestDocumentModal: React.FC<OtherRequestDocumentModalProps> = ({
     return (
         <Modal show={show} onHide={onHide} size="lg" centered>
             <Modal.Header closeButton>
-                <Modal.Title><FileText size={20} className="me-2" /> Talep Doküman Yönetimi</Modal.Title>
+                <Modal.Title><FileText size={20} className="me-2" /> Talep Dokümanları</Modal.Title>
             </Modal.Header>
             <Modal.Body>
                 {canDelete && (
-                    <>
+                    <div className="mb-4">
                         <div
-                            className={`border rounded p-4 text-center mb-4 ${isDragging ? 'border-primary bg-light' : 'border-secondary'}`}
-                            onDragEnter={() => setIsDragging(true)}
-                            onDragLeave={() => setIsDragging(false)}
-                            onDrop={(e) => { e.preventDefault(); setIsDragging(false); const files = e.dataTransfer.files; if (files.length > 0) uploadFiles(Array.from(files)); }}
-                            onDragOver={(e) => e.preventDefault()}
+                            className={`border rounded p-4 text-center ${isDragging ? 'border-primary bg-light' : 'border-secondary'}`}
+                            onDragEnter={handleDragEnter}
+                            onDragOver={handleDragOver}
+                            onDragLeave={handleDragLeave}
+                            onDrop={handleDrop}
                             onClick={() => fileInputRef.current?.click()}
-                            style={{ cursor: 'pointer', borderStyle: 'dashed' }}
+                            style={{ cursor: 'pointer', borderStyle: 'dashed', transition: 'all 0.2s' }}
                         >
                             <Upload size={40} className="text-secondary mb-3" />
                             <p className="mb-2"><strong>Dosyaları buraya sürükleyin veya tıklayarak seçin</strong></p>
-
                             <p className="text-muted small mb-0">Desteklenen formatlar: PDF, JPG, PNG, GIF (Maks. 10MB)</p>
                             <p className="text-muted small mb-0">Birden fazla dosya seçebilirsiniz</p>
+                            <input
+                                type="file"
+                                ref={fileInputRef}
+                                onChange={handleFileSelect}
+                                hidden
+                                multiple
+                                accept=".pdf,.jpg,.jpeg,.png,.gif"
+                            />
                         </div>
-                        <input type="file" ref={fileInputRef} onChange={(e) => e.target.files && uploadFiles(Array.from(e.target.files))} hidden multiple />
-                    </>
+
+                        {uploadingFiles.length > 0 && (
+                            <div className="mt-3">
+                                <h6 className="mb-2">Yükleniyor...</h6>
+                                {uploadingFiles.map((uf) => (
+                                    <div key={uf.id} className="mb-3 p-3 border rounded">
+                                        <div className="d-flex justify-content-between align-items-center mb-2">
+                                            <div className="d-flex align-items-center">
+                                                <span className="me-2">{getFileIcon(uf.file.type)}</span>
+                                                <div>
+                                                    <div className="fw-bold">{uf.file.name}</div>
+                                                    <small className="text-muted">{formatFileSize(uf.file.size)}</small>
+                                                </div>
+                                            </div>
+                                            {uf.status === 'error' && (
+                                                <Button variant="link" size="sm" onClick={() => removeUploadingFile(uf.id)} className="text-danger p-0">
+                                                    <X size={20} />
+                                                </Button>
+                                            )}
+                                        </div>
+                                        {uf.status !== 'success' && (
+                                            <ProgressBar
+                                                now={uf.progress}
+                                                variant={getStatusColor(uf.status)}
+                                                striped={uf.status === 'uploading'}
+                                                animated={uf.status === 'uploading'}
+                                            />
+                                        )}
+                                        {uf.status === 'success' && <div className="text-success"><small>✓ Başarıyla yüklendi</small></div>}
+                                        {uf.status === 'error' && <div className="text-danger"><small>✗ {uf.error}</small></div>}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 )}
 
-                {uploadingFiles.map(uf => (
-                    <div key={uf.id} className="mb-2">
-                        <ProgressBar now={uf.progress} label={`${uf.file.name} - ${uf.progress}%`} variant={uf.status === 'error' ? 'danger' : 'info'} />
-                    </div>
-                ))}
-
-                <h6>Yüklü Belgeler ({documents.length}):</h6>
+                <h6 className="mb-3">Yüklenen Dokümanlar ({documents.length}):</h6>
                 {loading ? <p>Yükleniyor...</p> : (
                     <ListGroup className="mb-3">
                         {documents.map(doc => (

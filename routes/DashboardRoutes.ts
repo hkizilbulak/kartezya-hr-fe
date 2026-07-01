@@ -87,7 +87,7 @@ export const DashboardMenu: IMenuProps[] = [
             {
                 id: 'other-requests-management',
                 link: '/other-requests-management',
-                name: 'Diğer Talepler (İK)',
+                name: 'Diğer Talepler',
                 requiredRoles: ['ADMIN']
             }
         ]
