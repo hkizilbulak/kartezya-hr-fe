@@ -1,0 +1,269 @@
+.page {
+  background-color: #f5f7fa;
+  min-height: 100vh;
+}
+
+/* ── Panel Grid ─────────────────────────────────────── */
+.panelGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 360px;
+  gap: 1.25rem;
+  align-items: start;
+
+  @media (max-width: 1199px) {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  @media (max-width: 767px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Panels ─────────────────────────────────────────── */
+.panel {
+  background: #fff;
+  border-radius: 10px;
+  border: 1px solid #e9ecef;
+  padding: 1.5rem;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+.panelTitle {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6c757d;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+/* ── Search Input ───────────────────────────────────── */
+.searchWrapper {
+  position: relative;
+}
+
+.searchDropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  z-index: 1000;
+  max-height: 260px;
+  overflow-y: auto;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.searchItem {
+  padding: 0.65rem 1rem;
+  cursor: pointer;
+  transition: background 0.15s;
+  border-bottom: 1px solid #f5f5f5;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:hover {
+    background: #f0f4ff;
+  }
+}
+
+.searchItemName {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #212529;
+}
+
+.searchItemSub {
+  font-size: 0.78rem;
+  color: #6c757d;
+  margin-top: 1px;
+}
+
+/* ── Selected Employee Badge ────────────────────────── */
+.selectedEmployee {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: #f0f4ff;
+  border: 1px solid #c7d7ff;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-top: 0.75rem;
+}
+
+.avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #624bff;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.selectedName {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #212529;
+}
+
+.selectedEmail {
+  font-size: 0.78rem;
+  color: #624bff;
+}
+
+.clearBtn {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: #adb5bd;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: color 0.15s;
+
+  &:hover {
+    color: #dc3545;
+  }
+}
+
+/* ── Data Fields ────────────────────────────────────── */
+.fieldLabel {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 0.3rem;
+}
+
+.readonlyBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.7rem;
+  background: #e9ecef;
+  color: #6c757d;
+  border-radius: 4px;
+  padding: 1px 6px;
+  margin-left: 0.4rem;
+  font-weight: 500;
+}
+
+.readonlyInput {
+  background: #f8f9fa !important;
+  color: #495057 !important;
+  border-color: #e9ecef !important;
+  cursor: not-allowed;
+}
+
+/* ── Dynamic Rows ───────────────────────────────────── */
+.dynamicRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr 32px;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.removeRowBtn {
+  background: none;
+  border: none;
+  color: #adb5bd;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s, background 0.15s;
+
+  &:hover {
+    color: #dc3545;
+    background: #fff5f5;
+  }
+}
+
+.addRowBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  background: none;
+  border: 1.5px dashed #ced4da;
+  border-radius: 6px;
+  padding: 0.45rem 0.9rem;
+  color: #6c757d;
+  cursor: pointer;
+  margin-top: 0.5rem;
+  width: 100%;
+  justify-content: center;
+  transition: border-color 0.15s, color 0.15s;
+
+  &:hover {
+    border-color: #624bff;
+    color: #624bff;
+  }
+}
+
+/* ── Preview Panel ──────────────────────────────────── */
+.previewBox {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 1rem;
+  min-height: 180px;
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 0.78rem;
+  color: #495057;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-all;
+  overflow-y: auto;
+  max-height: 400px;
+}
+
+.previewKey {
+  color: #624bff;
+  font-weight: 600;
+}
+
+.previewEmpty {
+  color: #adb5bd;
+  font-style: italic;
+  font-size: 0.82rem;
+  text-align: center;
+  padding: 2rem 0;
+}
+
+.sendBtn {
+  width: 100%;
+  margin-top: 1rem;
+  font-weight: 600;
+  padding: 0.65rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+/* ── Validation ─────────────────────────────────────── */
+.requiredMark {
+  color: #dc3545;
+  margin-left: 2px;
+}
+
+.validationMsg {
+  font-size: 0.78rem;
+  color: #dc3545;
+  margin-top: 0.25rem;
+}
