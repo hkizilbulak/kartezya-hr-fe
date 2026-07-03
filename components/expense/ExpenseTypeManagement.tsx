@@ -182,7 +182,7 @@ const ExpenseTypeManagement: React.FC = () => {
       <LoadingOverlay show={isLoading} />
       
       <PageHeading 
-        heading="Masraf Türleri Yönetimi"
+        heading="Masraf Türleri"
         showCreateButton={true}
         showFilterButton={false}
         createButtonText="Yeni Masraf Türü"
@@ -236,23 +236,24 @@ const ExpenseTypeManagement: React.FC = () => {
                       </td>
                       <td className="text-end">
                         <Button
-                          variant="link"
+                          variant="outline-primary"
                           size="sm"
+                          className="me-2"
                           onClick={() => handleShowModal(type)}
-                          className="p-1 me-2"
+                          title="Düzenle"
                         >
-                          <Edit size={16} />
+                          <Edit size={14} />
                         </Button>
                         <Button
-                          variant="link"
+                          variant="outline-danger"
                           size="sm"
-                          className="p-1 text-danger"
                           onClick={() => {
                             setSelectedType(type);
                             setShowDeleteModal(true);
                           }}
+                          title="Sil"
                         >
-                          <Trash2 size={16} />
+                          <Trash2 size={14} />
                         </Button>
                       </td>
                     </tr>

@@ -162,7 +162,7 @@ const EmployeeOtherRequests = () => {
                                         <Col md={3}>
                                             <Form.Group>
                                                 <FormSelectField
-                                                    label="Durum"
+                                                    label="Talep Durumu"
                                                     name="filterStatus"
                                                     value={filterStatus}
                                                     onChange={(e: any) => setFilterStatus(e.target.value)}
