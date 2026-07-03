@@ -2,10 +2,11 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Container, Form, Button, Spinner } from "react-bootstrap";
 import { toast } from "react-toastify";
-import { Plus, X, Send, Lock } from "react-feather";
+import { Plus, X, Send, Lock, RefreshCw } from "react-feather";
 import axiosInstance from "@/helpers/api/axiosInstance";
-import { emailService } from "@/services/email.service";
+import { emailService, ResendTemplate } from "@/services/email.service";
 import { PageHeading } from "@/widgets";
+import FormSelectField from "@/components/FormSelectField";
 import styles from "./page.module.scss";
 
 // ── Types ──────────────────────────────────────────────────────
@@ -53,9 +54,13 @@ let fieldSeq = 0;
 const nextId = () => ++fieldSeq;
 
 export default function SendMailPage() {
-  // ── Top panel state ──
+  // ── Template state ──
+  const [templates, setTemplates] = useState<ResendTemplate[]>([]);
+  const [isLoadingTemplates, setIsLoadingTemplates] = useState(false);
   const [templateCode, setTemplateCode] = useState("");
   const [subject, setSubject] = useState("");
+
+  // ── Employee search state ──
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<EmployeeResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -76,6 +81,21 @@ export default function SendMailPage() {
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchWrapperRef = useRef<HTMLDivElement>(null);
+
+  // ── Fetch Resend templates on mount ──
+  const fetchTemplates = useCallback(async () => {
+    setIsLoadingTemplates(true);
+    try {
+      const data = await emailService.getTemplates();
+      setTemplates(data);
+    } catch {
+      toast.error("Şablon listesi alınamadı");
+    } finally {
+      setIsLoadingTemplates(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchTemplates(); }, [fetchTemplates]);
 
   // ── Close dropdown on outside click ──
   useEffect(() => {
@@ -232,26 +252,45 @@ export default function SendMailPage() {
 
             {/* Template Code */}
             <Form.Group className="mb-3">
-              <Form.Label className={styles.fieldLabel}>
-                Resend Şablon Kodu
-                <span className={styles.requiredMark}>*</span>
-              </Form.Label>
-              <Form.Control
-                type="text"
-                placeholder="örn: welcome-email"
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.3rem" }}>
+                <Form.Label className={styles.fieldLabel} style={{ margin: 0 }}>
+                  Resend Şablonu
+                  <span className={styles.requiredMark}>*</span>
+                </Form.Label>
+                <Button
+                  variant="link"
+                  size="sm"
+                  onClick={fetchTemplates}
+                  disabled={isLoadingTemplates}
+                  title="Listeyi yenile"
+                  style={{ padding: 0, color: "#6c757d", lineHeight: 1 }}
+                >
+                  {isLoadingTemplates
+                    ? <Spinner animation="border" size="sm" style={{ width: "0.85rem", height: "0.85rem", borderWidth: "2px" }} />
+                    : <RefreshCw size={13} />}
+                </Button>
+              </div>
+              <FormSelectField
+                name="templateCode"
                 value={templateCode}
                 onChange={(e) => {
                   setTemplateCode(e.target.value);
                   if (errors.templateCode)
                     setErrors((p) => ({ ...p, templateCode: "" }));
                 }}
+                disabled={isLoadingTemplates}
                 isInvalid={!!errors.templateCode}
-              />
-              {errors.templateCode && (
-                <Form.Control.Feedback type="invalid">
-                  {errors.templateCode}
-                </Form.Control.Feedback>
-              )}
+                errorMessage={errors.templateCode}
+              >
+                <option value="">
+                  {isLoadingTemplates ? "Yükleniyor…" : "Şablon seçin"}
+                </option>
+                {templates.map((t) => (
+                  <option key={t.id} value={t.name}>
+                    {t.name}{t.status === "draft" ? " (taslak)" : ""}
+                  </option>
+                ))}
+              </FormSelectField>
             </Form.Group>
 
             {/* Subject (optional) */}
