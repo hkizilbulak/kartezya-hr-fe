@@ -88,7 +88,7 @@ export const DashboardMenu: IMenuProps[] = [
                 id: 'other-requests-management',
                 link: '/other-requests-management',
                 name: 'Diğer Talepler',
-                requiredRoles: ['ADMIN']
+                requiredRoles: ['ADMIN', 'HR']
             }
         ]
     },
@@ -132,7 +132,7 @@ export const DashboardMenu: IMenuProps[] = [
                 id: 'request-types',
                 name: 'Talep Türleri',
                 link: '/request-types',
-                requiredRoles: ['ADMIN']
+                requiredRoles: ['ADMIN', 'HR']
             },
             {
                 id: 'kspeaker-vouchers',

@@ -43,7 +43,7 @@ const OtherRequestTypeManagement = () => {
 
     const validate = () => {
         const newErrors: { [key: string]: string } = {};
-        if (!formData.name.trim()) newErrors.name = "Talep tipi adı zorunludur.";
+        if (!formData.name.trim()) newErrors.name = "Talep türü girmek zorunludur.";
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -112,7 +112,7 @@ const OtherRequestTypeManagement = () => {
             <LoadingOverlay show={loading} />
 
             <PageHeading
-                heading="Talep Türleri Yönetimi"
+                heading="Talep Türleri"
                 showCreateButton={true}
                 createButtonText="Yeni Talep Türü"
                 onCreate={handleShowAdd}
@@ -127,7 +127,7 @@ const OtherRequestTypeManagement = () => {
                                 <Table hover className="mb-0">
                                     <thead>
                                         <tr>
-                                            <th>Talep Tipi Adı</th>
+                                            <th>Talep Türü</th>
                                             <th>Açıklama</th>
                                             <th className="text-end">İşlemler</th>
                                         </tr>
@@ -144,22 +144,21 @@ const OtherRequestTypeManagement = () => {
                                                     <td>{t.description || '-'}</td>
                                                     <td className="text-end">
                                                         <Button
-                                                            variant="link"
+                                                            variant="outline-primary"
                                                             size="sm"
-                                                            className="p-1 me-2"
+                                                            className="me-2"
                                                             onClick={() => handleShowEdit(t)}
                                                             title="Düzenle"
                                                         >
-                                                            <Edit size={16} />
+                                                            <Edit size={14} />
                                                         </Button>
                                                         <Button
-                                                            variant="link"
+                                                            variant="outline-danger"
                                                             size="sm"
-                                                            className="p-1 text-danger"
                                                             onClick={() => askForDeleteConfirm(t.id)}
                                                             title="Sil"
                                                         >
-                                                            <Trash2 size={16} />
+                                                            <Trash2 size={14} />
                                                         </Button>
                                                     </td>
                                                 </tr>
@@ -181,7 +180,7 @@ const OtherRequestTypeManagement = () => {
                     <Modal.Body>
                         <Form.Group className="mb-3">
                             <Form.Label>
-                                Talep Tipi Adı <span className="text-danger">*</span>
+                                Talep Türü <span className="text-danger">*</span>
                             </Form.Label>
                             <Form.Control
                                 value={formData.name}

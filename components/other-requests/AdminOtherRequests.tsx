@@ -138,7 +138,7 @@ const AdminOtherRequests = () => {
     return (
         <>
             <LoadingOverlay show={loading} />
-            <PageHeading heading="Personel Talepleri Yönetimi" showCreateButton={false} showFilterButton={false} />
+            <PageHeading heading="Diğer Talepler" showCreateButton={false} showFilterButton={false} />
 
             <div className="content-wrapper">
                 <Card className="border-0 shadow-sm mb-3">
