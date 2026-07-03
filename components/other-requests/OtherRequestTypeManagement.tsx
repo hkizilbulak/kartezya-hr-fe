@@ -8,14 +8,7 @@ import axiosInstance from '@/helpers/api/axiosInstance';
 import { HR_ENDPOINTS } from '@/contants/urls';
 import { PageHeading } from '@/widgets';
 import LoadingOverlay from '@/components/LoadingOverlay';
-
-
-interface RequestType {
-    id: number;
-    name: string;
-    description: string;
-    active: boolean;
-}
+import { RequestType } from '@/models/hr/hr-requests';
 
 const OtherRequestTypeManagement = () => {
     const [types, setTypes] = useState<RequestType[]>([]);
@@ -24,6 +17,9 @@ const OtherRequestTypeManagement = () => {
     const [editingType, setEditingType] = useState<RequestType | null>(null);
     const [formData, setFormData] = useState({ name: '', description: '' });
     const [submitting, setSubmitting] = useState(false);
+
+    // Validasyon hataları için state
+    const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
     // Silme Onay Modalı State'leri
     const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -36,7 +32,7 @@ const OtherRequestTypeManagement = () => {
     const fetchTypes = async () => {
         try {
             setLoading(true);
-            const res = await axiosInstance.get(HR_ENDPOINTS.REQUEST_TYPES);
+            const res = await axiosInstance.get(`${HR_ENDPOINTS.REQUEST_TYPES}?sort=created_at&direction=DESC`);
             setTypes(res.data.data || []);
         } catch (error: any) {
             toast.error(error?.response?.data?.error || 'Talep türleri yüklenemedi.');
@@ -45,20 +41,33 @@ const OtherRequestTypeManagement = () => {
         }
     };
 
+    const validate = () => {
+        const newErrors: { [key: string]: string } = {};
+        if (!formData.name.trim()) newErrors.name = "Talep tipi adı zorunludur.";
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
     const handleShowAdd = () => {
         setEditingType(null);
         setFormData({ name: '', description: '' });
+        setErrors({});
         setShowModal(true);
     };
 
     const handleShowEdit = (type: RequestType) => {
         setEditingType(type);
         setFormData({ name: type.name, description: type.description });
+        setErrors({});
         setShowModal(true);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (!validate()) return;
+
         try {
             setSubmitting(true);
             if (editingType) {
@@ -105,7 +114,7 @@ const OtherRequestTypeManagement = () => {
             <PageHeading
                 heading="Talep Türleri Yönetimi"
                 showCreateButton={true}
-                createButtonText="Yeni Ekle"
+                createButtonText="Yeni Talep Türü"
                 onCreate={handleShowAdd}
                 showFilterButton={false}
             />
@@ -126,9 +135,7 @@ const OtherRequestTypeManagement = () => {
                                     <tbody>
                                         {types.length === 0 ? (
                                             <tr>
-                                                <td colSpan={3} className="text-center py-4">
-                                                    Talep türü bulunamadı
-                                                </td>
+                                                <td colSpan={3} className="text-center py-4">Talep türü bulunamadı</td>
                                             </tr>
                                         ) : (
                                             types.map(t => (
@@ -136,14 +143,24 @@ const OtherRequestTypeManagement = () => {
                                                     <td className="fw-medium">{t.name}</td>
                                                     <td>{t.description || '-'}</td>
                                                     <td className="text-end">
-                                                        <div className="d-flex justify-content-end gap-2">
-                                                            <Button variant="outline-primary" size="sm" onClick={() => handleShowEdit(t)}>
-                                                                <Edit size={14} />
-                                                            </Button>
-                                                            <Button variant="outline-danger" size="sm" onClick={() => askForDeleteConfirm(t.id)}>
-                                                                <Trash2 size={14} />
-                                                            </Button>
-                                                        </div>
+                                                        <Button
+                                                            variant="link"
+                                                            size="sm"
+                                                            className="p-1 me-2"
+                                                            onClick={() => handleShowEdit(t)}
+                                                            title="Düzenle"
+                                                        >
+                                                            <Edit size={16} />
+                                                        </Button>
+                                                        <Button
+                                                            variant="link"
+                                                            size="sm"
+                                                            className="p-1 text-danger"
+                                                            onClick={() => askForDeleteConfirm(t.id)}
+                                                            title="Sil"
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </Button>
                                                     </td>
                                                 </tr>
                                             ))
@@ -157,18 +174,26 @@ const OtherRequestTypeManagement = () => {
             </div>
 
             <Modal show={showModal} onHide={() => setShowModal(false)} backdrop="static" centered>
-                <Form onSubmit={handleSubmit}>
+                <Form onSubmit={handleSubmit} noValidate>
                     <Modal.Header closeButton>
                         <Modal.Title>{editingType ? 'Talep Türünü Düzenle' : 'Yeni Talep Türü Ekle'}</Modal.Title>
                     </Modal.Header>
                     <Modal.Body>
                         <Form.Group className="mb-3">
-                            <Form.Label>Talep Tipi Adı *</Form.Label>
+                            <Form.Label>
+                                Talep Tipi Adı <span className="text-danger">*</span>
+                            </Form.Label>
                             <Form.Control
                                 value={formData.name}
-                                onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                required
+                                onChange={e => {
+                                    setFormData({ ...formData, name: e.target.value });
+                                    setErrors({ ...errors, name: '' });
+                                }}
+                                isInvalid={!!errors.name}
                             />
+                            <Form.Control.Feedback type="invalid">
+                                {errors.name}
+                            </Form.Control.Feedback>
                         </Form.Group>
                         <Form.Group className="mb-3">
                             <Form.Label>Açıklama</Form.Label>
@@ -183,13 +208,17 @@ const OtherRequestTypeManagement = () => {
                     <Modal.Footer>
                         <Button variant="secondary" onClick={() => setShowModal(false)}>İptal</Button>
                         <Button variant="primary" type="submit" disabled={submitting}>
-                            {submitting ? <Spinner size="sm" animation="border" /> : 'Kaydet'}
+                            {submitting ? (
+                                <Spinner size="sm" animation="border" />
+                            ) : (
+                                editingType ? 'Güncelle' : 'Oluştur'
+                            )}
                         </Button>
                     </Modal.Footer>
                 </Form>
             </Modal>
 
-            {/* Silme Onay */}
+            {/* Silme Modalı */}
             <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} size="sm">
                 <Modal.Header closeButton className="border-0 pb-0">
                     <Modal.Title className="h5 fw-bold text-dark">Talep Türünü Sil</Modal.Title>
@@ -200,12 +229,8 @@ const OtherRequestTypeManagement = () => {
                     </p>
                 </Modal.Body>
                 <Modal.Footer className="border-0 pt-0 d-flex justify-content-end gap-2">
-                    <Button variant="secondary" className="px-3 bg-secondary border-0" onClick={() => setShowDeleteModal(false)}>
-                        Kapat
-                    </Button>
-                    <Button variant="danger" className="px-3 border-0" onClick={handleDelete}>
-                        Sil
-                    </Button>
+                    <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>Kapat</Button>
+                    <Button variant="danger" onClick={handleDelete}>Sil</Button>
                 </Modal.Footer>
             </Modal>
         </>

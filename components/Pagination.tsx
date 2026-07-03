@@ -22,9 +22,9 @@ const CustomPagination = ({
 }: IProps) => {
 
     // If no page size change and only one page, don't show pagination at all
-    if (totalPages <= 1 && !onPageSizeChange) {
-        return null;
-    }
+    if (totalPages < 1 && !onPageSizeChange && !totalItems) {
+    return null;
+}
 
     const onNext = () => {
         if (currentPage < totalPages) {

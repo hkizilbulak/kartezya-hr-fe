@@ -1,4 +1,33 @@
-// HR API Request Models
+import { Attachment } from '../common/attachment-models';
+
+// --- Other Request Modülü Interface'leri ---
+export interface RequestType {
+    id: number;
+    name: string;
+    description: string;
+}
+
+// Employee Arayüzü
+export interface Employee { 
+    id: number; 
+    first_name: string; 
+    last_name: string; 
+    phone: string; 
+}
+
+export interface OtherRequest {
+    id: number;
+    description: string;
+    status: 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
+    created_at: string;
+    employee?: Employee;
+    request_type?: RequestType;
+    attachments?: Attachment[];
+    request_type_id: number;
+}
+
+// --- HR API Request Models ---
+
 export interface LoginRequest {
   username: string;
   password: string;
