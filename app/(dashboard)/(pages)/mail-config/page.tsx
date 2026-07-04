@@ -68,6 +68,14 @@ const recipientTypeBadge = (t: RecipientType) => {
   return <Badge bg={map[t]} style={{ fontSize: "0.7rem", minWidth: 32 }}>{t}</Badge>;
 };
 
+/** Bir recipient_value içindeki virgül/noktalı virgül ayrılmış adresleri dizi olarak döner */
+const splitAddresses = (value: string): string[] =>
+  value.split(/[,;]/).map((s) => s.trim()).filter(Boolean);
+
+/** Tüm recipient satırlarındaki gerçek adres sayısını hesaplar */
+const countTotalAddresses = (recipients: MailRecipient[]): number =>
+  recipients.reduce((sum, r) => sum + splitAddresses(r.recipient_value).length, 0);
+
 // ── Main Component ─────────────────────────────────────────────
 export default function MailConfigPage() {
   const [configs, setConfigs] = useState<MailConfiguration[]>([]);
@@ -272,7 +280,7 @@ export default function MailConfigPage() {
                             onClick={() => setExpandedId(expandedId === cfg.id ? null : cfg.id)}
                             style={{ fontSize: "0.8rem", textDecoration: "none", display: "flex", alignItems: "center", gap: 4 }}
                           >
-                            {cfg.recipients.length} alıcı
+                            {countTotalAddresses(cfg.recipients)} alıcı
                             {expandedId === cfg.id ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
                           </Button>
                         ) : (
@@ -300,26 +308,45 @@ export default function MailConfigPage() {
                       <tr key={`${cfg.id}-recipients`} style={{ background: "#fafbff" }}>
                         <td colSpan={7} style={{ padding: "0.75rem 1.5rem" }}>
                           <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
-                            {cfg.recipients.map((r, i) => (
-                              <span
-                                key={i}
-                                style={{
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  gap: "0.35rem",
-                                  background: "#fff",
-                                  border: "1px solid #dee2e6",
-                                  borderRadius: 20,
-                                  padding: "3px 10px 3px 6px",
-                                  fontSize: "0.78rem",
-                                }}
-                              >
-                                {recipientTypeBadge(r.recipient_type)}
-                                <span style={{ color: r.value_type === "DYNAMIC" ? "#624bff" : "#212529" }}>
-                                  {r.recipient_value}
-                                </span>
-                              </span>
-                            ))}
+                            {cfg.recipients.flatMap((r, i) =>
+                              r.value_type === "DYNAMIC"
+                                ? [(
+                                  <span
+                                    key={`${i}-dynamic`}
+                                    style={{
+                                      display: "inline-flex",
+                                      alignItems: "center",
+                                      gap: "0.35rem",
+                                      background: "#fff",
+                                      border: "1px solid #dee2e6",
+                                      borderRadius: 20,
+                                      padding: "3px 10px 3px 6px",
+                                      fontSize: "0.78rem",
+                                    }}
+                                  >
+                                    {recipientTypeBadge(r.recipient_type)}
+                                    <span style={{ color: "#624bff" }}>{r.recipient_value}</span>
+                                  </span>
+                                )]
+                                : splitAddresses(r.recipient_value).map((addr, j) => (
+                                  <span
+                                    key={`${i}-${j}`}
+                                    style={{
+                                      display: "inline-flex",
+                                      alignItems: "center",
+                                      gap: "0.35rem",
+                                      background: "#fff",
+                                      border: "1px solid #dee2e6",
+                                      borderRadius: 20,
+                                      padding: "3px 10px 3px 6px",
+                                      fontSize: "0.78rem",
+                                    }}
+                                  >
+                                    {recipientTypeBadge(r.recipient_type)}
+                                    <span style={{ color: "#212529" }}>{addr}</span>
+                                  </span>
+                                ))
+                            )}
                           </div>
                         </td>
                       </tr>
