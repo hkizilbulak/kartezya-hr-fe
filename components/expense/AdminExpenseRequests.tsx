@@ -516,6 +516,11 @@ const AdminExpenseRequests: React.FC = () => {
                   <strong>Onaylanma Tarihi: </strong> {formatDate(selectedRequest.approved_at)}
                 </div>
               )}
+              {(selectedRequest.status === 'APPROVED' || selectedRequest.status === 'PAID') && selectedRequest.approver && (
+                <div>
+                  <strong>Onaylayan: </strong> {selectedRequest.approver.email}
+                </div>
+              )}
               {selectedRequest.status === 'REJECTED' && (
                 <>
                   {selectedRequest.rejected_at && (

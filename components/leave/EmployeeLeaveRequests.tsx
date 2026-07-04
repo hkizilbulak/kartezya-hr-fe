@@ -240,7 +240,7 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
                 <Card key={index} className="border-0 shadow-sm mb-3 position-relative" style={{ top: index === 0 ? '20px' : '0' }}>
                   <Card.Body>
                     <h6 className="text-secondary mb-4" style={{ fontSize: '14px', fontWeight: 700 }}>
-                      {(balance.leave_type?.name || 'Yıllık İzin').toUpperCase()} BAKİYESİ
+                      {(balance.leave_type?.name || 'YILLIK İZİN')} BAKİYESİ
                     </h6>
                     <div className="mb-4">
                       <div className="d-flex justify-content-between align-items-center mb-2">
