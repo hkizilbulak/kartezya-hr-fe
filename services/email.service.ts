@@ -3,6 +3,7 @@ import axiosInstance from '@/helpers/api/axiosInstance';
 export interface SendDynamicEmailPayload {
   to: string;
   template_code: string;
+  mail_key?: string;
   subject?: string;
   template_data: Record<string, string>;
 }

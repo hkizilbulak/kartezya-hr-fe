@@ -26,8 +26,7 @@ import "@/styles/components/table-common.scss";
 
 // ── Dynamic placeholder options ────────────────────────────────
 const DYNAMIC_PLACEHOLDERS = [
-  { value: "{{TRIGGER_USER}}", label: "{{TRIGGER_USER}} — İşlemi yapan çalışanın e-postası" },
-  { value: "{{KARTEZYA_MANAGER}}", label: "{{KARTEZYA_MANAGER}} — Çalışanın yöneticisinin e-postası" },
+  { value: "{{TRIGGER_USER}}", label: "{{TRIGGER_USER}} — İşlemi yapan / hedef kullanıcının e-postası" },
 ];
 
 const RECIPIENT_TYPES: RecipientType[] = ["TO", "CC", "BCC"];

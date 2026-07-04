@@ -4,7 +4,8 @@ import { Container, Form, Button, Spinner } from "react-bootstrap";
 import { toast } from "react-toastify";
 import { Plus, X, Send, Lock, RefreshCw } from "react-feather";
 import axiosInstance from "@/helpers/api/axiosInstance";
-import { emailService, ResendTemplate } from "@/services/email.service";
+import { emailService } from "@/services/email.service";
+import { mailConfigService, MailConfiguration } from "@/services/mail-config.service";
 import { PageHeading } from "@/widgets";
 import FormSelectField from "@/components/FormSelectField";
 import styles from "./page.module.scss";
@@ -55,9 +56,10 @@ const nextId = () => ++fieldSeq;
 
 export default function SendMailPage() {
   // ── Template state ──
-  const [templates, setTemplates] = useState<ResendTemplate[]>([]);
+  const [templates, setTemplates] = useState<MailConfiguration[]>([]);
   const [isLoadingTemplates, setIsLoadingTemplates] = useState(false);
   const [templateCode, setTemplateCode] = useState("");
+  const [selectedMailKey, setSelectedMailKey] = useState("");
   const [subject, setSubject] = useState("");
 
   // ── Employee search state ──
@@ -82,14 +84,14 @@ export default function SendMailPage() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchWrapperRef = useRef<HTMLDivElement>(null);
 
-  // ── Fetch Resend templates on mount ──
+  // ── Fetch mail configs on mount ──
   const fetchTemplates = useCallback(async () => {
     setIsLoadingTemplates(true);
     try {
-      const data = await emailService.getTemplates();
-      setTemplates(data);
+      const data = await mailConfigService.getAll();
+      setTemplates(data.filter((c) => c.is_active));
     } catch {
-      toast.error("Şablon listesi alınamadı");
+      toast.error("Mail konfigürasyonları alınamadı");
     } finally {
       setIsLoadingTemplates(false);
     }
@@ -204,7 +206,6 @@ export default function SendMailPage() {
     const errs: Record<string, string> = {};
     if (!templateCode.trim()) errs.templateCode = "Şablon kodu zorunludur";
     if (!selectedEmployee) errs.employee = "Çalışan seçimi zorunludur";
-    if (!kartezyaManager.trim()) errs.kartezyaManager = "Kartezya yöneticisi zorunludur";
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -217,12 +218,14 @@ export default function SendMailPage() {
       await emailService.sendDynamicTemplate({
         to: selectedEmployee.email,
         template_code: templateCode.trim(),
+        mail_key: selectedMailKey || undefined,
         subject: subject.trim() || undefined,
         template_data: templateData,
       });
       toast.success(`Mail başarıyla gönderildi → ${selectedEmployee.email}`);
       // Reset form
       setTemplateCode("");
+      setSelectedMailKey("");
       setSubject("");
       clearEmployee();
       setKartezyaManager("");
@@ -250,11 +253,11 @@ export default function SendMailPage() {
           <div className={styles.panel}>
             <p className={styles.panelTitle}>Şablon & Alıcı</p>
 
-            {/* Template Code */}
+            {/* Mail Konfigürasyonu */}
             <Form.Group className="mb-3">
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.3rem" }}>
                 <Form.Label className={styles.fieldLabel} style={{ margin: 0 }}>
-                  Resend Şablonu
+                  Mail Konfigürasyonu
                   <span className={styles.requiredMark}>*</span>
                 </Form.Label>
                 <Button
@@ -274,7 +277,10 @@ export default function SendMailPage() {
                 name="templateCode"
                 value={templateCode}
                 onChange={(e) => {
-                  setTemplateCode(e.target.value);
+                  const code = e.target.value;
+                  setTemplateCode(code);
+                  const found = templates.find((t) => t.resend_template_code === code);
+                  setSelectedMailKey(found?.mail_key ?? "");
                   if (errors.templateCode)
                     setErrors((p) => ({ ...p, templateCode: "" }));
                 }}
@@ -283,11 +289,11 @@ export default function SendMailPage() {
                 errorMessage={errors.templateCode}
               >
                 <option value="">
-                  {isLoadingTemplates ? "Yükleniyor…" : "Şablon seçin"}
+                  {isLoadingTemplates ? "Yükleniyor…" : "Konfigürasyon seçin"}
                 </option>
                 {templates.map((t) => (
-                  <option key={t.id} value={t.name}>
-                    {t.name}{t.status === "draft" ? " (taslak)" : ""}
+                  <option key={t.id} value={t.resend_template_code}>
+                    {t.description || t.mail_key}
                   </option>
                 ))}
               </FormSelectField>
