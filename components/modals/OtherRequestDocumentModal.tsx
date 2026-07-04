@@ -124,20 +124,22 @@ const OtherRequestDocumentModal: React.FC<OtherRequestDocumentModalProps> = ({
         try {
             const response = await axiosInstance.get(`${HR_ENDPOINTS.OTHER_REQUESTS}/documents/${documentId}/download`);
             const fileUrl = response.data?.data?.url;
-            if (!fileUrl) { toast.error('Dosya linki alınamadı.'); return; }
+            
+            if (!fileUrl) { 
+                toast.error('Dosya linki alınamadı.'); 
+                return; 
+            }
 
-            const fileResponse = await fetch(fileUrl);
-            if (!fileResponse.ok) throw new Error('Dosya sunucudan çekilemedi.');
-
-            const blob = await fileResponse.blob();
-            const url = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', fileName);
+            link.href = fileUrl;
+            link.setAttribute('download', fileName); 
+            link.setAttribute('target', '_blank');  
+            link.setAttribute('rel', 'noopener noreferrer');
+            
             document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            window.URL.revokeObjectURL(url);
+            link.click(); 
+            document.body.removeChild(link); 
+            
         } catch (err: any) {
             toast.error('Dosya indirilemedi.');
         }
