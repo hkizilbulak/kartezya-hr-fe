@@ -13,7 +13,7 @@ import Pagination from '@/components/Pagination';
 import LoadingOverlay from '@/components/LoadingOverlay';
 import FormSelectField from '@/components/FormSelectField';
 import FormDateField from '@/components/FormDateField';
-import { Edit, Plus, FileText, X } from 'react-feather';
+import { Edit, Plus, FileText, X, Info } from 'react-feather';
 import { toast } from 'react-toastify';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
 import '@/styles/table-list.scss';
@@ -29,6 +29,7 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
   const [isLoading, setIsLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [showDocumentModal, setShowDocumentModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<LeaveRequest | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
@@ -176,6 +177,7 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
   const handleNew = () => { setSelectedRequest(null); setIsEdit(false); setShowModal(true); };
   const handleCloseModal = () => { setShowModal(false); setSelectedRequest(null); setIsEdit(false); };
   const handleShowDocuments = (request: LeaveRequest) => { setSelectedRequest(request); setShowDocumentModal(true); };
+  const handleShowDetail = (request: LeaveRequest) => { setSelectedRequest(request); setShowDetailModal(true); };
 
   const handleDocumentModalClose = (updatedCount?: any) => {
     setShowDocumentModal(false);
@@ -400,6 +402,14 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
                                       <X size={14} />
                                     </Button>
                                   )}
+                                  <Button
+                                    variant="outline-info"
+                                    size="sm"
+                                    title="Detaylar"
+                                    onClick={() => handleShowDetail(request)}
+                                  >
+                                    <Info size={14} />
+                                  </Button>
                                 </div>
                               </td>
                             </tr>
@@ -440,6 +450,106 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
         leaveRequest={selectedRequest}
         isEdit={isEdit}
       />
+
+      {/* Detail Modal */}
+      {selectedRequest && showDetailModal && (
+        <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">İzin Detayları</h5>
+                <button type="button" className="btn-close" onClick={() => setShowDetailModal(false)}></button>
+              </div>
+              <div className="modal-body">
+                <div className="d-flex flex-column gap-3">
+                  <div>
+                    <strong>İzin Türü: </strong> {selectedRequest.leave_type?.name || '-'}
+                  </div>
+                  <div>
+                    <strong>Durum: </strong> {getStatusBadge(selectedRequest.status)}
+                  </div>
+                  <div>
+                    <strong>Başlangıç Tarihi: </strong> {formatDate(selectedRequest.start_date)}
+                  </div>
+                  <div>
+                    <strong>Bitiş Tarihi: </strong> {formatDate(selectedRequest.end_date)}
+                  </div>
+                  <div>
+                    <strong>Kullanılan Gün: </strong> {selectedRequest.requested_days || '-'}
+                  </div>
+                  <div>
+                    <strong>Ücretli: </strong> {selectedRequest.is_paid ? 'Evet' : 'Hayır'}
+                  </div>
+                  {selectedRequest.reason && (
+                    <div>
+                      <strong>Açıklama: </strong> {selectedRequest.reason}
+                    </div>
+                  )}
+                  <div>
+                    <strong>Talep Tarihi: </strong> {formatDate(selectedRequest.created_at)}
+                  </div>
+                  {selectedRequest.status === 'APPROVED' && (
+                    <>
+                      {selectedRequest.approved_at && (
+                        <div>
+                          <strong>Onay Tarihi: </strong> {formatDate(selectedRequest.approved_at)}
+                        </div>
+                      )}
+                      {selectedRequest.approver && (
+                        <div>
+                          <strong>Onaylayan: </strong>{' '}
+                          {[
+                            selectedRequest.approver.employee?.first_name,
+                            selectedRequest.approver.employee?.last_name,
+                          ].filter(Boolean).join(' ') || selectedRequest.approver.email || '-'}
+                        </div>
+                      )}
+                    </>
+                  )}
+                  {selectedRequest.status === 'REJECTED' && (
+                    <>
+                      {selectedRequest.rejected_at && (
+                        <div>
+                          <strong>Red Tarihi: </strong> {formatDate(selectedRequest.rejected_at)}
+                        </div>
+                      )}
+                      {selectedRequest.rejection_reason && (
+                        <div>
+                          <strong>Red Nedeni: </strong> {selectedRequest.rejection_reason}
+                        </div>
+                      )}
+                    </>
+                  )}
+                  {selectedRequest.status === 'CANCELLED' && (
+                    <>
+                      {selectedRequest.cancelled_at && (
+                        <div>
+                          <strong>İptal Tarihi: </strong> {formatDate(selectedRequest.cancelled_at)}
+                        </div>
+                      )}
+                      {selectedRequest.cancel_reason && (
+                        <div>
+                          <strong>İptal Nedeni: </strong> {selectedRequest.cancel_reason}
+                        </div>
+                      )}
+                    </>
+                  )}
+                  {selectedRequest.comments && (
+                    <div>
+                      <strong>Yorumlar: </strong> {selectedRequest.comments}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="modal-footer">
+                <Button variant="secondary" onClick={() => setShowDetailModal(false)}>
+                  Kapat
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showCancelConfirm && (
         <DeleteModal

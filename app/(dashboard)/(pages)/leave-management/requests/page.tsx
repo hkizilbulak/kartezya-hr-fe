@@ -10,7 +10,7 @@ import Pagination from '@/components/Pagination';
 import LoadingOverlay from '@/components/LoadingOverlay';
 import FormSelectField from '@/components/FormSelectField';
 import FormDateField from '@/components/FormDateField';
-import { Check, X, Edit, ChevronUp, ChevronDown, FileText } from 'react-feather';
+import { Check, X, Edit, ChevronUp, ChevronDown, FileText, Info } from 'react-feather';
 import { toast } from 'react-toastify';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
 import '@/styles/table-list.scss';
@@ -32,6 +32,8 @@ const LeaveRequestsPage = () => {
   const [approveWarningRequest, setApproveWarningRequest] = useState<LeaveRequest | null>(null);
   const [showDocumentModal, setShowDocumentModal] = useState(false);
   const [selectedDocumentRequest, setSelectedDocumentRequest] = useState<LeaveRequest | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [selectedDetailRequest, setSelectedDetailRequest] = useState<LeaveRequest | null>(null);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -169,6 +171,11 @@ const LeaveRequestsPage = () => {
   const handleShowDocuments = (request: LeaveRequest) => {
     setSelectedDocumentRequest(request);
     setShowDocumentModal(true);
+  };
+
+  const handleShowDetail = (request: LeaveRequest) => {
+    setSelectedDetailRequest(request);
+    setShowDetailModal(true);
   };
 
   const handleCloseDocumentModal = () => {
@@ -459,6 +466,14 @@ const LeaveRequestsPage = () => {
                                               <X size={14} />
                                             </Button>
                                           ) : null}
+                                          <Button
+                                            variant="outline-info"
+                                            size="sm"
+                                            title="Detaylar"
+                                            onClick={() => handleShowDetail(request)}
+                                          >
+                                            <Info size={14} />
+                                          </Button>
                                         </div>
                                       </div>
                                     </td>
@@ -596,22 +611,32 @@ const LeaveRequestsPage = () => {
                                     <td className="text-center">{requestedDays || '-'}</td>
                                     <td>{getStatusBadge(request.status)}</td>
                                     <td className="text-end">
-                                      {request.leave_type?.is_required_document && (
+                                      <div className="d-flex justify-content-end gap-2">
+                                        {request.leave_type?.is_required_document && (
+                                          <Button
+                                            variant="outline-secondary"
+                                            size="sm"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleShowDocuments(request);
+                                            }}
+                                            title="Dökümanlar"
+                                          >
+                                            <FileText size={16} />
+                                            {(!request.document_count || request.document_count === 0) && (
+                                              <Badge bg="warning" className="ms-1" style={{ fontSize: '0.6em' }}>!</Badge>
+                                            )}
+                                          </Button>
+                                        )}
                                         <Button
-                                          variant="outline-secondary"
+                                          variant="outline-info"
                                           size="sm"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleShowDocuments(request);
-                                          }}
-                                          title="Dökümanlar"
+                                          title="Detaylar"
+                                          onClick={() => handleShowDetail(request)}
                                         >
-                                          <FileText size={16} />
-                                          {(!request.document_count || request.document_count === 0) && (
-                                            <Badge bg="warning" className="ms-1" style={{ fontSize: '0.6em' }}>!</Badge>
-                                          )}
+                                          <Info size={14} />
                                         </Button>
-                                      )}
+                                      </div>
                                     </td>
                                   </tr>
                                 );
@@ -748,6 +773,77 @@ const LeaveRequestsPage = () => {
           leaveRequest={selectedRequest}
           isEdit={isEdit}
         />
+
+        {/* İzin Detay Modal */}
+        {selectedDetailRequest && showDetailModal && (
+          <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+            <div className="modal-dialog modal-dialog-centered">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">İzin Detayları</h5>
+                  <button type="button" className="btn-close" onClick={() => setShowDetailModal(false)}></button>
+                </div>
+                <div className="modal-body">
+                  <div className="d-flex flex-column gap-3">
+                    <div><strong>Personel: </strong>{getEmployeeName(selectedDetailRequest.employee)}</div>
+                    <div><strong>İzin Türü: </strong>{selectedDetailRequest.leave_type?.name || '-'}</div>
+                    <div><strong>Durum: </strong>{getStatusBadge(selectedDetailRequest.status)}</div>
+                    <div><strong>Talep Tarihi: </strong>{formatDate(selectedDetailRequest.created_at)}</div>
+                    <div><strong>Başlangıç Tarihi: </strong>{formatDate(selectedDetailRequest.start_date)}</div>
+                    <div><strong>Bitiş Tarihi: </strong>{formatDate(selectedDetailRequest.end_date)}</div>
+                    <div><strong>Kullanılan Gün: </strong>{selectedDetailRequest.requested_days || '-'}</div>
+                    <div><strong>Ücretli: </strong>{selectedDetailRequest.is_paid ? 'Evet' : 'Hayır'}</div>
+                    {selectedDetailRequest.reason && (
+                      <div><strong>Açıklama: </strong>{selectedDetailRequest.reason}</div>
+                    )}
+                    {selectedDetailRequest.status === 'APPROVED' && (
+                      <>
+                        {selectedDetailRequest.approved_at && (
+                          <div><strong>Onay Tarihi: </strong>{formatDate(selectedDetailRequest.approved_at)}</div>
+                        )}
+                        {selectedDetailRequest.approver && (
+                          <div>
+                            <strong>Onaylayan: </strong>
+                            {[
+                              selectedDetailRequest.approver.employee?.first_name,
+                              selectedDetailRequest.approver.employee?.last_name,
+                            ].filter(Boolean).join(' ') || selectedDetailRequest.approver.email || '-'}
+                          </div>
+                        )}
+                      </>
+                    )}
+                    {selectedDetailRequest.status === 'REJECTED' && (
+                      <>
+                        {selectedDetailRequest.rejected_at && (
+                          <div><strong>Red Tarihi: </strong>{formatDate(selectedDetailRequest.rejected_at)}</div>
+                        )}
+                        {selectedDetailRequest.rejection_reason && (
+                          <div><strong>Red Nedeni: </strong>{selectedDetailRequest.rejection_reason}</div>
+                        )}
+                      </>
+                    )}
+                    {selectedDetailRequest.status === 'CANCELLED' && (
+                      <>
+                        {selectedDetailRequest.cancelled_at && (
+                          <div><strong>İptal Tarihi: </strong>{formatDate(selectedDetailRequest.cancelled_at)}</div>
+                        )}
+                        {selectedDetailRequest.cancel_reason && (
+                          <div><strong>İptal Nedeni: </strong>{selectedDetailRequest.cancel_reason}</div>
+                        )}
+                      </>
+                    )}
+                    {selectedDetailRequest.comments && (
+                      <div><strong>Yorumlar: </strong>{selectedDetailRequest.comments}</div>
+                    )}
+                  </div>
+                </div>
+                <div className="modal-footer">
+                  <Button variant="secondary" onClick={() => setShowDetailModal(false)}>Kapat</Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <LeaveDocumentModal
           show={showDocumentModal}
