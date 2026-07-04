@@ -63,11 +63,25 @@ export const DashboardMenu: IMenuProps[] = [
                 name: 'Kurumsal Sözleşmeler',
                 link: '/contracts',
                 requiredRoles: ['ADMIN']
-            },
+            }
+        ]
+    },
+    {
+        id: 'notification-management',
+        title: 'Bildirim Yönetimi',
+        icon: 'mail',
+        requiredRoles: ['ADMIN'],
+        children: [
             {
                 id: 'send-mail',
                 name: 'Dinamik Mail Gönder',
                 link: '/send-mail',
+                requiredRoles: ['ADMIN']
+            },
+            {
+                id: 'mail-config',
+                name: 'Mail Konfigürasyonları',
+                link: '/mail-config',
                 requiredRoles: ['ADMIN']
             }
         ]
