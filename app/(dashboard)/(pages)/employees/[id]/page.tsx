@@ -685,7 +685,7 @@ const EmployeeDetailPage = () => {
               email: employee.email,
               phone: employee.phone || '-',
               address: employee.address || '-',
-             
+              totalExperience: getDisplayExperience(),
             }}
           />
 
