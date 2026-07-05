@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Modal, Form, Button, Row, Col, Alert } from 'react-bootstrap';
 import { IMaskInput } from 'react-imask';
 import { ExpenseRequest } from '@/models/hr/expense-models';
@@ -38,9 +38,17 @@ const ExpenseRequestModal: React.FC<ExpenseRequestModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<{[key: string]: string}>({});
 
+  // Exchange rates: TRY per 1 unit of currency
+  const [tryRates, setTryRates] = useState<Record<string, number>>({ TRY: 1 });
+  const ratesFetchedRef = useRef(false);
+
   useEffect(() => {
     if (show) {
       fetchExpenseTypes();
+      if (!ratesFetchedRef.current) {
+        fetchExchangeRates();
+        ratesFetchedRef.current = true;
+      }
     }
   }, [show]);
 
@@ -79,6 +87,23 @@ const ExpenseRequestModal: React.FC<ExpenseRequestModalProps> = ({
     }
   };
 
+  const fetchExchangeRates = async () => {
+    try {
+      const res = await fetch('https://open.er-api.com/v6/latest/TRY');
+      const data = await res.json();
+      if (data.result === 'success' && data.rates) {
+        // Invert: rates[USD]=0.0277 → 1 USD = 1/0.0277 TRY
+        const inverted: Record<string, number> = { TRY: 1 };
+        for (const [cur, rate] of Object.entries(data.rates as Record<string, number>)) {
+          if (rate > 0) inverted[cur] = 1 / rate;
+        }
+        setTryRates(inverted);
+      }
+    } catch {
+      // Kur alınamazsa sessizce devam et; validasyon ham karşılaştırma yapar
+    }
+  };
+
   const handleChange = (name: string, value: any) => {
     setFormData(prev => ({
       ...prev,
@@ -113,8 +138,15 @@ const ExpenseRequestModal: React.FC<ExpenseRequestModalProps> = ({
     }
 
     const selectedType = expenseTypes.find(t => t.id.toString() === formData.expense_type_id);
-    if (selectedType?.max_amount && parseFloat(formData.amount) > selectedType.max_amount) {
-      errors.amount = `Maksimum tutar: ${selectedType.max_amount} ${formData.currency}`;
+    if (selectedType?.max_amount && parseFloat(formData.amount) > 0) {
+      const rate = tryRates[formData.currency] ?? 1;
+      const amountInTRY = parseFloat(formData.amount) * rate;
+      if (amountInTRY > selectedType.max_amount) {
+        const maxInCurrency = formData.currency === 'TRY'
+          ? `${selectedType.max_amount.toFixed(2)} TRY`
+          : `${(selectedType.max_amount / rate).toFixed(2)} ${formData.currency} (≈ ${selectedType.max_amount.toFixed(2)} TRY)`;
+        errors.amount = `Maksimum tutar aşıldı: ${maxInCurrency}`;
+      }
     }
 
     setFieldErrors(errors);
@@ -175,7 +207,7 @@ const ExpenseRequestModal: React.FC<ExpenseRequestModalProps> = ({
                 <option value="">Seçiniz...</option>
                 {expenseTypes.map(type => (
                   <option key={type.id} value={type.id.toString()}>
-                    {type.name}{type.max_amount ? ` (Max: ${type.max_amount})` : ''}
+                    {type.name}{type.max_amount ? ` (Max: ${type.max_amount.toFixed(2)} TRY)` : ''}
                   </option>
                 ))}
               </FormSelectField>
