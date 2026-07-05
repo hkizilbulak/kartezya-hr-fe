@@ -184,6 +184,13 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
         ...prev,
         [name]: (e.target as HTMLInputElement).checked
       }));
+    } else if (name === 'startDate') {
+      setFormData(prev => ({
+        ...prev,
+        startDate: value,
+        // Bitiş tarihi başlangıçtan önceyse bitiş tarihini de güncelle
+        endDate: prev.endDate && prev.endDate < value ? value : prev.endDate,
+      }));
     } else {
       setFormData(prev => ({
         ...prev,
