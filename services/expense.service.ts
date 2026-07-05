@@ -219,7 +219,7 @@ class ExpenseService extends BaseService<ExpenseRequest> {
       name?: string;
       description?: string;
       requires_receipt?: boolean;
-      max_amount?: number;
+      max_amount?: number | null;
       active?: boolean;
       role_id?: number | null;
     }

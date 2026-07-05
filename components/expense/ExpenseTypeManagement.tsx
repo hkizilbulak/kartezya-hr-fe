@@ -127,7 +127,7 @@ const ExpenseTypeManagement: React.FC = () => {
         name: formData.name,
         description: formData.description,
         requires_receipt: formData.requires_receipt,
-        max_amount: formData.max_amount ? parseFloat(formData.max_amount as string) : undefined,
+        max_amount: formData.max_amount ? parseFloat(formData.max_amount as string) : null,
         active: formData.active,
         role_id: formData.role_id !== '' ? Number(formData.role_id) : null
       };
