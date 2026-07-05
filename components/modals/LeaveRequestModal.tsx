@@ -34,7 +34,8 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
     isStartDateFullDay: true,
     isFinishDateFullDay: true,
     reason: '',
-    teamApprovalReceived: false
+    teamApprovalReceived: false,
+    managerApprovalReceived: false
   });
   const [leaveTypes, setLeaveTypes] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -66,7 +67,8 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
         isStartDateFullDay: leaveRequest.is_start_date_full_day !== undefined ? leaveRequest.is_start_date_full_day : (leaveRequest.is_finish_date_full_day ?? true),
         isFinishDateFullDay: leaveRequest.is_finish_date_full_day !== undefined ? leaveRequest.is_finish_date_full_day : (leaveRequest.is_finish_date_full_day ?? true),
         reason: leaveRequest.reason || '',
-        teamApprovalReceived: false
+        teamApprovalReceived: false,
+        managerApprovalReceived: false
       });
       setFieldErrors({});
     }
@@ -85,7 +87,8 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
         isStartDateFullDay: true,
         isFinishDateFullDay: true,
         reason: '',
-        teamApprovalReceived: false
+        teamApprovalReceived: false,
+        managerApprovalReceived: false
       });
       setCalculatedDays(0);
       setFieldErrors({});
@@ -416,6 +419,15 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
                 checked={formData.teamApprovalReceived}
                 onChange={(e) => setFormData(prev => ({ ...prev, teamApprovalReceived: e.target.checked }))}
               />
+              <Form.Check
+                type="checkbox"
+                name="managerApprovalReceived"
+                id="managerApprovalReceived"
+                label={<span>Yönetici onayı alındı <span className="text-danger">*</span></span>}
+                checked={formData.managerApprovalReceived}
+                onChange={(e) => setFormData(prev => ({ ...prev, managerApprovalReceived: e.target.checked }))}
+                className="mt-2"
+              />
             </Form.Group>
 
             {/* Reason */}
@@ -446,7 +458,7 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
             <Button 
               variant="primary"
               type="submit"
-              disabled={loading || !formData.teamApprovalReceived || calculatedDays === 0}
+              disabled={loading || !formData.teamApprovalReceived || !formData.managerApprovalReceived || calculatedDays === 0}
             >
               {loading ? 'Kaydediliyor...' : isEdit ? 'Güncelle' : 'Talep Oluştur'}
             </Button>
