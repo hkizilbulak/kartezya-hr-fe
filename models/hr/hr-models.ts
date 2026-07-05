@@ -277,6 +277,7 @@ export enum UserRole {
 export enum EventStatus {
   DRAFT = 'DRAFT',
   PUBLISHED = 'PUBLISHED',
+  COMPLETED = 'COMPLETED',
   CANCELLED = 'CANCELLED'
 }
 

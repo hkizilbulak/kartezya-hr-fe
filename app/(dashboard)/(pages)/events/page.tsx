@@ -189,6 +189,8 @@ const EventsPage = () => {
                                     <Badge bg="success">Yayınlandı</Badge>
                                   ) : event.status === EventStatus.DRAFT ? (
                                     <Badge bg="secondary">Taslak</Badge>
+                                  ) : event.status === EventStatus.COMPLETED ? (
+                                    <Badge bg="info">Tamamlandı</Badge>
                                   ) : (
                                     <Badge bg="danger">İptal</Badge>
                                   )}
