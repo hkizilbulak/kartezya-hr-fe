@@ -1,10 +1,11 @@
 "use client";
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Container, Row, Col, Card, Table, Button, Badge,
-  Modal, Form, Spinner,
+  Modal, Form, Spinner, InputGroup,
 } from "react-bootstrap";
-import { Plus, Edit, Trash2, ChevronDown, ChevronUp, X } from "react-feather";
+import { Plus, Edit, Trash2, ChevronDown, ChevronUp, X, Search } from "react-feather";
+import CustomPagination from "@/components/Pagination";
 import { toast } from "react-toastify";
 import {
   mailConfigService,
@@ -81,6 +82,16 @@ export default function MailConfigPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
+  // Search / filter state
+  const [searchKey, setSearchKey] = useState("");
+  const [searchDesc, setSearchDesc] = useState("");
+  const [filterProvider, setFilterProvider] = useState<"" | MailProvider>("");
+  const [filterStatus, setFilterStatus] = useState<"" | "active" | "inactive">("");
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
   // Modal state
   const [showModal, setShowModal] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
@@ -126,6 +137,39 @@ export default function MailConfigPage() {
     fetchConfigs();
     fetchResendTemplates();
   }, [fetchConfigs, fetchResendTemplates]);
+
+  // ── Filtering & pagination ─────────────────────────────────
+  const filteredConfigs = useMemo(() => {
+    const keyLower = searchKey.toLowerCase();
+    const descLower = searchDesc.toLowerCase();
+    return configs.filter((c) => {
+      if (keyLower && !c.mail_key.toLowerCase().includes(keyLower)) return false;
+      if (descLower && !(c.description ?? "").toLowerCase().includes(descLower)) return false;
+      if (filterProvider && c.provider !== filterProvider) return false;
+      if (filterStatus === "active" && !c.is_active) return false;
+      if (filterStatus === "inactive" && c.is_active) return false;
+      return true;
+    });
+  }, [configs, searchKey, searchDesc, filterProvider, filterStatus]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredConfigs.length / pageSize));
+
+  const paginatedConfigs = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredConfigs.slice(start, start + pageSize);
+  }, [filteredConfigs, currentPage, pageSize]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => { setCurrentPage(1); }, [searchKey, searchDesc, filterProvider, filterStatus, pageSize]);
+
+  const clearFilters = () => {
+    setSearchKey("");
+    setSearchDesc("");
+    setFilterProvider("");
+    setFilterStatus("");
+  };
+
+  const hasActiveFilters = searchKey || searchDesc || filterProvider || filterStatus;
 
   // ── Modal helpers ──────────────────────────────────────────
   const openCreate = () => {
@@ -230,6 +274,90 @@ export default function MailConfigPage() {
 
         <LoadingOverlay show={isLoading} />
 
+        {/* ── Search / Filter Bar ────────────────────────────────── */}
+        <Card className="border-0 shadow-sm mb-3">
+          <Card.Body className="py-3">
+            <Row className="g-2 align-items-end">
+              <Col xs={12} md={3}>
+                <Form.Label className="small text-muted mb-1">Mail Anahtarı</Form.Label>
+                <InputGroup size="sm">
+                  <InputGroup.Text style={{ background: "#fff" }}>
+                    <Search size={13} className="text-muted" />
+                  </InputGroup.Text>
+                  <Form.Control
+                    type="text"
+                    placeholder="Ara…"
+                    value={searchKey}
+                    onChange={(e) => setSearchKey(e.target.value)}
+                  />
+                  {searchKey && (
+                    <Button variant="outline-secondary" size="sm" onClick={() => setSearchKey("")}>
+                      <X size={12} />
+                    </Button>
+                  )}
+                </InputGroup>
+              </Col>
+
+              <Col xs={12} md={3}>
+                <Form.Label className="small text-muted mb-1">Açıklama</Form.Label>
+                <InputGroup size="sm">
+                  <InputGroup.Text style={{ background: "#fff" }}>
+                    <Search size={13} className="text-muted" />
+                  </InputGroup.Text>
+                  <Form.Control
+                    type="text"
+                    placeholder="Ara…"
+                    value={searchDesc}
+                    onChange={(e) => setSearchDesc(e.target.value)}
+                  />
+                  {searchDesc && (
+                    <Button variant="outline-secondary" size="sm" onClick={() => setSearchDesc("")}>
+                      <X size={12} />
+                    </Button>
+                  )}
+                </InputGroup>
+              </Col>
+
+              <Col xs={6} md={2}>
+                <Form.Label className="small text-muted mb-1">Sağlayıcı</Form.Label>
+                <Form.Select
+                  size="sm"
+                  value={filterProvider}
+                  onChange={(e) => setFilterProvider(e.target.value as "" | MailProvider)}
+                >
+                  <option value="">Tümü</option>
+                  <option value="RESEND">RESEND</option>
+                  <option value="SMTP">SMTP</option>
+                </Form.Select>
+              </Col>
+
+              <Col xs={6} md={2}>
+                <Form.Label className="small text-muted mb-1">Durum</Form.Label>
+                <Form.Select
+                  size="sm"
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value as "" | "active" | "inactive")}
+                >
+                  <option value="">Tümü</option>
+                  <option value="active">Aktif</option>
+                  <option value="inactive">Pasif</option>
+                </Form.Select>
+              </Col>
+
+              <Col xs={12} md={2} className="d-flex align-items-end gap-2">
+                {hasActiveFilters && (
+                  <Button variant="outline-secondary" size="sm" onClick={clearFilters} className="d-flex align-items-center gap-1">
+                    <X size={13} /> Temizle
+                  </Button>
+                )}
+                <span className="text-muted small ms-auto">
+                  {filteredConfigs.length} sonuç
+                </span>
+              </Col>
+            </Row>
+          </Card.Body>
+        </Card>
+
         <Card className="border-0 shadow-sm">
           <Card.Body className="p-0">
             <Table responsive className="table-list mb-0">
@@ -245,14 +373,14 @@ export default function MailConfigPage() {
                 </tr>
               </thead>
               <tbody>
-                {configs.length === 0 && !isLoading && (
+                {paginatedConfigs.length === 0 && !isLoading && (
                   <tr>
                     <td colSpan={7} className="text-center text-muted py-5">
-                      Henüz konfigürasyon eklenmemiş
+                      {hasActiveFilters ? "Arama kriterlerine uygun kayıt bulunamadı" : "Henüz konfigürasyon eklenmemiş"}
                     </td>
                   </tr>
                 )}
-                {configs.map((cfg) => (
+                {paginatedConfigs.map((cfg) => (
                   <React.Fragment key={cfg.id}>
                     <tr>
                       <td>
@@ -356,6 +484,21 @@ export default function MailConfigPage() {
             </Table>
           </Card.Body>
         </Card>
+
+        {/* ── Pagination ─────────────────────────────────────────── */}
+        {filteredConfigs.length > 0 && (
+          <div className="d-flex justify-content-end mt-3">
+            <CustomPagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              totalItems={filteredConfigs.length}
+              itemsPerPage={pageSize}
+              onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1); }}
+              pageSizeOptions={[10, 20, 50]}
+            />
+          </div>
+        )}
 
         {/* ═══ CREATE / EDIT MODAL ════════════════════════════════ */}
         <Modal show={showModal} onHide={closeModal} size="lg" backdrop="static">
