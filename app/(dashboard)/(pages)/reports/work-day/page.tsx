@@ -63,10 +63,10 @@ const WorkDayReportPage = () => {
     const year = today.getFullYear();
     const month = today.getMonth();
     
-    // First day of current month
-    const firstDay = new Date(year, month, 1);
-    // Last day of current month
-    const lastDay = new Date(year, month + 1, 0);
+    // First day of previous month
+    const firstDay = new Date(year, month - 1, 1);
+    // Last day of previous month
+    const lastDay = new Date(year, month, 0);
     
     setStartDate(formatDateTR(firstDay));
     setEndDate(formatDateTR(lastDay));

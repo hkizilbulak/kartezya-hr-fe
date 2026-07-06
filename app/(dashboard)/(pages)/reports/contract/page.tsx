@@ -44,6 +44,11 @@ const ContractReportPage = () => {
     ];
 
     useEffect(() => {
+        // Initialize dates to first and last day of current year
+        const year = new Date().getFullYear();
+        setStartDate(`${year}-01-01`);
+        setEndDate(`${year}-12-31`);
+
         const fetchInitialData = async () => {
             try {
                 const compsRes = await lookupService.getCompaniesLookup();
