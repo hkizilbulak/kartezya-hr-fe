@@ -13,7 +13,7 @@ import Pagination from '@/components/Pagination';
 import LoadingOverlay from '@/components/LoadingOverlay';
 import FormSelectField from '@/components/FormSelectField';
 import FormDateField from '@/components/FormDateField';
-import { Edit, Plus, FileText, X, Info } from 'react-feather';
+import { Edit, Plus, FileText, X, Info, ChevronUp, ChevronDown } from 'react-feather';
 import { toast } from 'react-toastify';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
 import '@/styles/table-list.scss';
@@ -36,6 +36,12 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [leaveBalances, setLeaveBalances] = useState<LeaveBalance[]>([]);
   const [balanceLoading, setBalanceLoading] = useState(false);
+
+  // Sıralama State
+  const [sortConfig, setSortConfig] = useState<{
+    key: 'leave_type' | null;
+    direction: 'ASC' | 'DESC';
+  }>({ key: null, direction: 'DESC' });
 
   const itemsPerPage = 10;
   const [currentPage, setCurrentPage] = useState(1);
@@ -114,6 +120,29 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
       console.error(err);
     }
   };
+
+  // --- Sıralama Fonksiyonları ---
+  const handleSort = (key: 'leave_type') => {
+    let direction: 'ASC' | 'DESC' = 'ASC';
+    if (sortConfig.key === key && sortConfig.direction === 'ASC') {
+      direction = 'DESC';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const getSortIcon = (columnKey: string) => {
+    if (sortConfig.key !== columnKey) return null;
+    return sortConfig.direction === 'ASC' ? <ChevronUp size={14} className="ms-1" /> : <ChevronDown size={14} className="ms-1" />;
+  };
+
+  const sortedData = [...leaveRequests].sort((a, b) => {
+    if (!sortConfig.key) return 0;
+    const valA = a.leave_type?.name || "";
+    const valB = b.leave_type?.name || "";
+    if (valA < valB) return sortConfig.direction === 'ASC' ? -1 : 1;
+    if (valA > valB) return sortConfig.direction === 'ASC' ? 1 : -1;
+    return 0;
+  });
 
   useEffect(() => {
     fetchLeaveRequests(1);
@@ -232,7 +261,6 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
         )}
 
         <Row className="g-3">
-          {/* İzin Bakiyeleri */}
           <Col lg={3} md={12} sm={12} className="sidebar-wrapper mb-4 mb-lg-0">
             <h6 className="text-secondary mb-3 d-lg-none" style={{ fontSize: '14px', fontWeight: 700 }}>İZİN BAKİYE BİLGİSİ</h6>
             {balanceLoading ? (
@@ -283,13 +311,11 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
             )}
           </Col>
 
-          {/* Talepler */}
           <Col lg={9} md={12} sm={12} className="content-wrapper">
             <h6 className="mb-3" style={{ fontWeight: 700, fontSize: '16px' }}>
               {employeeId ? 'İzin Talepleri' : 'Taleplerim'}
             </h6>
 
-            {/* Filtreler */}
             <Card className="border-0 shadow-sm mb-3">
               <Card.Body className="py-2 px-3">
                 <Row className="g-2 align-items-end">
@@ -340,7 +366,6 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
               </Card.Body>
             </Card>
 
-            {/* Tablo */}
             <Card className="border-0 shadow-sm position-relative">
               <Card.Body className="p-0">
                 <div className="table-box">
@@ -348,7 +373,7 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
                     <Table hover className="mb-0">
                       <thead>
                         <tr>
-                          <th>İzin Türü</th>
+                          <th className="sortable-header" style={{ cursor: 'pointer' }} onClick={() => handleSort('leave_type')}>İzin Türü {getSortIcon('leave_type')}</th>
                           <th>Başlangıç Tarihi</th>
                           <th>Bitiş Tarihi</th>
                           <th>Kullanılan Gün</th>
@@ -357,8 +382,8 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
                         </tr>
                       </thead>
                       <tbody>
-                        {leaveRequests.length ? (
-                          leaveRequests.map((request: LeaveRequest) => (
+                        {sortedData.length ? (
+                          sortedData.map((request: LeaveRequest) => (
                             <tr key={request.id}>
                               <td>{request.leave_type?.name || '-'}</td>
                               <td>{formatDate(request.start_date)}</td>
@@ -451,7 +476,6 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
         isEdit={isEdit}
       />
 
-      {/* Detail Modal */}
       {selectedRequest && showDetailModal && (
         <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
           <div className="modal-dialog modal-dialog-centered">
@@ -462,93 +486,56 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
               </div>
               <div className="modal-body">
                 <div className="d-flex flex-column gap-3">
-                  <div>
-                    <strong>İzin Türü: </strong> {selectedRequest.leave_type?.name || '-'}
-                  </div>
-                  <div>
-                    <strong>Durum: </strong> {getStatusBadge(selectedRequest.status)}
-                  </div>
-                  <div>
-                    <strong>Başlangıç Tarihi: </strong> {formatDate(selectedRequest.start_date)}
-                  </div>
-                  <div>
-                    <strong>Bitiş Tarihi: </strong> {formatDate(selectedRequest.end_date)}
-                  </div>
-                  <div>
-                    <strong>Kullanılan Gün: </strong> {selectedRequest.requested_days || '-'}
-                  </div>
-                  <div>
-                    <strong>Ücretli: </strong> {selectedRequest.is_paid ? 'Evet' : 'Hayır'}
-                  </div>
-                  {selectedRequest.reason && (
-                    <div>
-                      <strong>Açıklama: </strong> {selectedRequest.reason}
-                    </div>
-                  )}
-                  <div>
-                    <strong>Talep Tarihi: </strong> {formatDate(selectedRequest.created_at)}
-                  </div>
+                  <div><strong>İzin Türü: </strong> {selectedRequest.leave_type?.name || '-'}</div>
+                  <div><strong>Durum: </strong> {getStatusBadge(selectedRequest.status)}</div>
+                  <div><strong>Başlangıç Tarihi: </strong> {formatDate(selectedRequest.start_date)}</div>
+                  <div><strong>Bitiş Tarihi: </strong> {formatDate(selectedRequest.end_date)}</div>
+                  <div><strong>Kullanılan Gün: </strong> {selectedRequest.requested_days || '-'}</div>
+                  <div><strong>Ücretli: </strong> {selectedRequest.is_paid ? 'Evet' : 'Hayır'}</div>
+                  {selectedRequest.reason && (<div><strong>Açıklama: </strong> {selectedRequest.reason}</div>)}
+                  <div><strong>Talep Tarihi: </strong> {formatDate(selectedRequest.created_at)}</div>
                   {selectedRequest.status === 'APPROVED' && (
                     <>
-                      {selectedRequest.approved_at && (
-                        <div>
-                          <strong>Onay Tarihi: </strong> {formatDate(selectedRequest.approved_at)}
-                        </div>
-                      )}
+                      {selectedRequest.approved_at && (<div><strong>Onay Tarihi: </strong> {formatDate(selectedRequest.approved_at)}</div>)}
                       {selectedRequest.approver && (
                         <div>
                           <strong>Onaylayan: </strong>{' '}
-                          {[
-                            selectedRequest.approver.employee?.first_name,
-                            selectedRequest.approver.employee?.last_name,
-                          ].filter(Boolean).join(' ') || selectedRequest.approver.email || '-'}
+                          {[selectedRequest.approver.employee?.first_name, selectedRequest.approver.employee?.last_name].filter(Boolean).join(' ') || selectedRequest.approver.email || '-'}
                         </div>
                       )}
                     </>
                   )}
                   {selectedRequest.status === 'REJECTED' && (
                     <>
-                      {selectedRequest.rejected_at && (
-                        <div>
-                          <strong>Red Tarihi: </strong> {formatDate(selectedRequest.rejected_at)}
-                        </div>
-                      )}
-                      {selectedRequest.rejection_reason && (
-                        <div>
-                          <strong>Red Nedeni: </strong> {selectedRequest.rejection_reason}
-                        </div>
-                      )}
+                      {selectedRequest.rejected_at && (<div><strong>Red Tarihi: </strong> {formatDate(selectedRequest.rejected_at)}</div>)}
+                      {selectedRequest.rejection_reason && (<div><strong>Red Nedeni: </strong> {selectedRequest.rejection_reason}</div>)}
                     </>
                   )}
                   {selectedRequest.status === 'CANCELLED' && (
                     <>
-                      {selectedRequest.cancelled_at && (
-                        <div>
-                          <strong>İptal Tarihi: </strong> {formatDate(selectedRequest.cancelled_at)}
-                        </div>
-                      )}
-                      {selectedRequest.cancel_reason && (
-                        <div>
-                          <strong>İptal Nedeni: </strong> {selectedRequest.cancel_reason}
-                        </div>
-                      )}
+                      {selectedRequest.cancelled_at && (<div><strong>İptal Tarihi: </strong> {formatDate(selectedRequest.cancelled_at)}</div>)}
+                      {selectedRequest.cancel_reason && (<div><strong>İptal Nedeni: </strong> {selectedRequest.cancel_reason}</div>)}
                     </>
                   )}
-                  {selectedRequest.comments && (
-                    <div>
-                      <strong>Yorumlar: </strong> {selectedRequest.comments}
-                    </div>
-                  )}
+                  {selectedRequest.comments && (<div><strong>Yorumlar: </strong> {selectedRequest.comments}</div>)}
                 </div>
               </div>
               <div className="modal-footer">
-                <Button variant="secondary" onClick={() => setShowDetailModal(false)}>
-                  Kapat
-                </Button>
+                <Button variant="secondary" onClick={() => setShowDetailModal(false)}>Kapat</Button>
               </div>
             </div>
           </div>
         </div>
+      )}
+
+      {selectedRequest && (
+        <LeaveDocumentModal
+          show={showDocumentModal}
+          onHide={handleDocumentModalClose}
+          leaveRequestId={selectedRequest.id}
+          leaveTypeName={selectedRequest.leave_type?.name || 'İzin'}
+          canEdit={true}
+        />
       )}
 
       {showCancelConfirm && (
@@ -562,16 +549,6 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
           confirmLabel="İptal Et"
           loadingLabel="İptal Ediliyor"
           variant="danger"
-        />
-      )}
-
-      {selectedRequest && showDocumentModal && (
-        <LeaveDocumentModal
-          show={showDocumentModal}
-          onHide={handleDocumentModalClose}
-          leaveRequestId={selectedRequest.id}
-          leaveTypeName={selectedRequest.leave_type?.name || 'İzin'}
-          canEdit={true}
         />
       )}
     </>

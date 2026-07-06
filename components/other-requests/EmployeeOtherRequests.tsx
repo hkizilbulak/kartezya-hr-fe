@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Row, Col, Card, Table, Button, Modal, Badge, Form } from 'react-bootstrap';
-import { XCircle, Edit2, Eye, X, FileText, Edit } from 'react-feather';
+import { XCircle, Edit2, Eye, X, FileText, Edit, ChevronUp, ChevronDown } from 'react-feather';
 import { toast } from 'react-toastify';
 import { useRouter } from 'next/navigation';
 import dayjs from 'dayjs';
@@ -32,6 +32,12 @@ const EmployeeOtherRequests = () => {
     const [showDocModal, setShowDocModal] = useState(false);
     const [selectedReqId, setSelectedReqId] = useState<number | null>(null);
     const [attachments, setAttachments] = useState<Attachment[]>([]);
+
+    // Sıralama State
+    const [sortConfig, setSortConfig] = useState<{
+        key: 'request_type' | 'description' | 'created_at' | null;
+        direction: 'ASC' | 'DESC';
+    }>({ key: null, direction: 'DESC' });
 
     // Filtre State'leri
     const [filterStatus, setFilterStatus] = useState<string>('');
@@ -65,6 +71,19 @@ const EmployeeOtherRequests = () => {
         } catch (error) {
             console.error('Talep türleri yüklenemedi', error);
         }
+    };
+
+    const handleSort = (key: 'request_type' | 'description' | 'created_at') => {
+        let direction: 'ASC' | 'DESC' = 'ASC';
+        if (sortConfig.key === key && sortConfig.direction === 'ASC') {
+            direction = 'DESC';
+        }
+        setSortConfig({ key, direction });
+    };
+
+    const getSortIcon = (columnKey: string) => {
+        if (sortConfig.key !== columnKey) return null;
+        return sortConfig.direction === 'ASC' ? <ChevronUp size={14} className="ms-1" /> : <ChevronDown size={14} className="ms-1" />;
     };
 
     const openDocs = (req: OtherRequest) => {
@@ -104,34 +123,37 @@ const EmployeeOtherRequests = () => {
         }
     };
 
-    // --- FRONTEND FİLTRELEME ---
     const filteredRequests = requests.filter((req) => {
         let isMatch = true;
-
-        if (filterStatus && req.status !== filterStatus) {
-            isMatch = false;
-        }
-
+        if (filterStatus && req.status !== filterStatus) isMatch = false;
         if (filterTypeId) {
             const typeId = req.request_type_id || req.request_type?.id;
-            if (typeId?.toString() !== filterTypeId) {
-                isMatch = false;
-            }
+            if (typeId?.toString() !== filterTypeId) isMatch = false;
         }
-
-        if (filterStartDate) {
-            if (dayjs(req.created_at).isBefore(dayjs(filterStartDate), 'day')) {
-                isMatch = false;
-            }
-        }
-
-        if (filterEndDate) {
-            if (dayjs(req.created_at).isAfter(dayjs(filterEndDate), 'day')) {
-                isMatch = false;
-            }
-        }
-
+        if (filterStartDate && dayjs(req.created_at).isBefore(dayjs(filterStartDate), 'day')) isMatch = false;
+        if (filterEndDate && dayjs(req.created_at).isAfter(dayjs(filterEndDate), 'day')) isMatch = false;
         return isMatch;
+    });
+
+    const sortedRequests = [...filteredRequests].sort((a, b) => {
+        if (!sortConfig.key) return 0;
+        let valA: any = "";
+        let valB: any = "";
+
+        if (sortConfig.key === 'request_type') {
+            valA = a.request_type?.name || "";
+            valB = b.request_type?.name || "";
+        } else if (sortConfig.key === 'created_at') {
+            valA = dayjs(a.created_at).valueOf();
+            valB = dayjs(b.created_at).valueOf();
+        } else {
+            valA = (a as any)[sortConfig.key] || "";
+            valB = (b as any)[sortConfig.key] || "";
+        }
+
+        if (valA < valB) return sortConfig.direction === 'ASC' ? -1 : 1;
+        if (valA > valB) return sortConfig.direction === 'ASC' ? 1 : -1;
+        return 0;
     });
 
     return (
@@ -220,22 +242,20 @@ const EmployeeOtherRequests = () => {
                                             <Table hover className="mb-0">
                                                 <thead>
                                                     <tr>
-                                                        <th>Talep Türü</th>
-                                                        <th>Açıklama</th>
-                                                        <th>Tarih</th>
+                                                        <th className="sortable-header" style={{ cursor: 'pointer' }} onClick={() => handleSort('request_type')}>Talep Türü {getSortIcon('request_type')}</th>
+                                                        <th className="sortable-header" style={{ cursor: 'pointer' }} onClick={() => handleSort('description')}>Açıklama {getSortIcon('description')}</th>
+                                                        <th className="sortable-header" style={{ cursor: 'pointer' }} onClick={() => handleSort('created_at')}>Tarih {getSortIcon('created_at')}</th>
                                                         <th>Durum</th>
                                                         <th className="text-end">İşlemler</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    {filteredRequests.length === 0 ? (
+                                                    {sortedRequests.length === 0 ? (
                                                         <tr>
-                                                            <td colSpan={5} className="text-center py-4">
-                                                                Talep bulunamadı
-                                                            </td>
+                                                            <td colSpan={5} className="text-center py-4">Talep bulunamadı</td>
                                                         </tr>
                                                     ) : (
-                                                        filteredRequests.map((req) => (
+                                                        sortedRequests.map((req) => (
                                                             <tr key={req.id}>
                                                                 <td className="fw-medium">{req.request_type?.name || 'Bilinmiyor'}</td>
                                                                 <td>{req.description}</td>
@@ -247,35 +267,12 @@ const EmployeeOtherRequests = () => {
                                                                 </td>
                                                                 <td className="text-end">
                                                                     <div className="d-flex justify-content-end gap-2">
-                                                                        <Button
-                                                                            variant="outline-secondary"
-                                                                            size="sm"
-                                                                            title="Dökümanlar"
-                                                                            onClick={() => openDocs(req)}
-                                                                        >
-                                                                            <FileText size={16} />
-                                                                        </Button>
+                                                                        <Button variant="outline-secondary" size="sm" title="Dökümanlar" onClick={() => openDocs(req)}><FileText size={16} /></Button>
                                                                         {req.status !== 'COMPLETED' && (
-                                                                            <Button
-                                                                                variant="outline-primary"
-                                                                                size="sm"
-                                                                                title="Düzenle"
-                                                                                onClick={() => handleEditClick(req)}
-                                                                            >
-                                                                                <Edit size={14} />
-                                                                            </Button>
+                                                                            <Button variant="outline-primary" size="sm" title="Düzenle" onClick={() => handleEditClick(req)}><Edit size={14} /></Button>
                                                                         )}
-
-                                                                        {/* İptal Etme */}
                                                                         {req.status === 'ACTIVE' && (
-                                                                            <Button
-                                                                                variant="outline-danger"
-                                                                                size="sm"
-                                                                                title="İptal Et"
-                                                                                onClick={() => askForCancelConfirm(req.id)}
-                                                                            >
-                                                                                <X size={14} />
-                                                                            </Button>
+                                                                            <Button variant="outline-danger" size="sm" title="İptal Et" onClick={() => askForCancelConfirm(req.id)}><X size={14} /></Button>
                                                                         )}
                                                                     </div>
                                                                 </td>
@@ -293,43 +290,19 @@ const EmployeeOtherRequests = () => {
                 </Row>
             </div>
 
-            <OtherRequestDocumentModal
-                show={showDocModal}
-                onHide={() => setShowDocModal(false)}
-                reqId={selectedReqId}
-                initialAttachments={attachments}
-                onSuccess={fetchData}
-                canDelete={false}
-            />
+            <OtherRequestDocumentModal show={showDocModal} onHide={() => setShowDocModal(false)} reqId={selectedReqId} initialAttachments={attachments} onSuccess={fetchData} canDelete={false} />
+            <OtherRequestModal show={showModal} onHide={() => setShowModal(false)} editing={editing} types={types} onSuccess={fetchData} />
 
-            <OtherRequestModal
-                show={showModal}
-                onHide={() => setShowModal(false)}
-                editing={editing}
-                types={types}
-                onSuccess={fetchData}
-            />
-
-            <Modal
-                show={showCancelModal}
-                onHide={() => setShowCancelModal(false)}
-                size="sm"
-            >
+            <Modal show={showCancelModal} onHide={() => setShowCancelModal(false)} size="sm">
                 <Modal.Header closeButton className="border-0 pb-0">
                     <Modal.Title className="h5 fw-bold text-dark">Talebi İptal Et</Modal.Title>
                 </Modal.Header>
                 <Modal.Body className="pt-2 pb-3">
-                    <p className="text-muted mb-0" style={{ fontSize: '14px' }}>
-                        Bu talebi iptal etmek istediğinizden emin misiniz?
-                    </p>
+                    <p className="text-muted mb-0" style={{ fontSize: '14px' }}>Bu talebi iptal etmek istediğinizden emin misiniz?</p>
                 </Modal.Body>
                 <Modal.Footer className="border-0 pt-0 d-flex justify-content-end gap-2">
-                    <Button variant="secondary" className="px-3 bg-secondary border-0" onClick={() => setShowCancelModal(false)}>
-                        Kapat
-                    </Button>
-                    <Button variant="danger" className="px-3 border-0" onClick={handleCancel}>
-                        İptal Et
-                    </Button>
+                    <Button variant="secondary" className="px-3 bg-secondary border-0" onClick={() => setShowCancelModal(false)}>Kapat</Button>
+                    <Button variant="danger" className="px-3 border-0" onClick={handleCancel}>İptal Et</Button>
                 </Modal.Footer>
             </Modal>
         </>

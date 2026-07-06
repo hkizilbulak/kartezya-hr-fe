@@ -1,6 +1,8 @@
-"use client";
+'use client';
+
 import React, { useState, useEffect } from 'react';
 import { Row, Col, Card, Table, Button, Badge, Form } from 'react-bootstrap';
+import { Edit, Plus, FileText, X, Info, ChevronUp, ChevronDown } from 'react-feather';
 import expenseService from '@/services/expense.service';
 import { ExpenseRequest } from '@/models/hr/expense-models';
 import { PageHeading } from '@/widgets';
@@ -11,7 +13,6 @@ import CustomPagination from '@/components/Pagination';
 import LoadingOverlay from '@/components/LoadingOverlay';
 import FormDateField from '@/components/FormDateField';
 import FormSelectField from '@/components/FormSelectField';
-import { Edit, Plus, FileText, X, Info } from 'react-feather';
 import { toast } from 'react-toastify';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
 import '@/styles/table-list.scss';
@@ -34,6 +35,12 @@ const EmployeeExpenseRequests: React.FC<EmployeeExpenseRequestsProps> = ({
   const [isEdit, setIsEdit] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showDocumentModal, setShowDocumentModal] = useState(false);
+
+  // Sıralama State
+  const [sortConfig, setSortConfig] = useState<{
+    key: string | null;
+    direction: 'ASC' | 'DESC';
+  }>({ key: null, direction: 'DESC' });
 
   const itemsPerPage = 10;
   const [currentPage, setCurrentPage] = useState(1);
@@ -87,11 +94,41 @@ const EmployeeExpenseRequests: React.FC<EmployeeExpenseRequestsProps> = ({
     }
   };
 
+  const handleSort = (key: string) => {
+    let direction: 'ASC' | 'DESC' = 'ASC';
+    if (sortConfig.key === key && sortConfig.direction === 'ASC') {
+      direction = 'DESC';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const getSortIcon = (columnKey: string) => {
+    if (sortConfig.key !== columnKey) return null;
+    return sortConfig.direction === 'ASC' ? <ChevronUp size={16} className="ms-1" style={{ display: 'inline' }} /> : <ChevronDown size={16} className="ms-1" style={{ display: 'inline' }} />;
+  };
+
+  const sortedData = [...expenseRequests].sort((a, b) => {
+    if (!sortConfig.key) return 0;
+    let valA: any = "";
+    let valB: any = "";
+
+    if (sortConfig.key === 'expense_type') {
+      valA = a.expense_type?.name || "";
+      valB = b.expense_type?.name || "";
+    } else {
+      valA = (a as any)[sortConfig.key] ?? "";
+      valB = (b as any)[sortConfig.key] ?? "";
+    }
+
+    if (valA < valB) return sortConfig.direction === 'ASC' ? -1 : 1;
+    if (valA > valB) return sortConfig.direction === 'ASC' ? 1 : -1;
+    return 0;
+  });
+
   const lastFetchedId = React.useRef<string | null>(null);
 
   useEffect(() => {
     if (employeeId) {
-      // Tab mount guard for Strict Mode
       if (lastFetchedId.current === employeeId) return;
       lastFetchedId.current = employeeId;
       fetchExpenseRequests(currentPage);
@@ -243,7 +280,7 @@ const EmployeeExpenseRequests: React.FC<EmployeeExpenseRequestsProps> = ({
               <div className="d-flex justify-content-between align-items-center mb-3">
                 <h6 className="mb-0" style={{ fontWeight: 700, fontSize: '16px' }}>{employeeId ? 'Tüm Talepler' : 'Tüm Taleplerim'}</h6>
               </div>
-              
+                
               <Card className="border-0 shadow-sm mb-3">
                 <Card.Body className="py-2 px-3">
                   <Row className="g-2 align-items-end">
@@ -309,24 +346,54 @@ const EmployeeExpenseRequests: React.FC<EmployeeExpenseRequestsProps> = ({
                       <Table hover className="mb-0">
                         <thead>
                           <tr>
-                            <th>Masraf Türü</th>
-                            <th>Açıklama</th>
-                            <th>Tutar</th>
-                            <th>Masraf Tarihi</th>
+                            <th 
+                              className="sortable-header" 
+                              style={{ cursor: 'pointer' }} 
+                              onClick={() => handleSort('expense_type')}
+                            >
+                              Masraf Türü {getSortIcon('expense_type')}
+                            </th>
+                            <th 
+                              className="sortable-header" 
+                              style={{ cursor: 'pointer' }} 
+                              onClick={() => handleSort('description')}
+                            >
+                              Açıklama {getSortIcon('description')}
+                            </th>
+                            <th 
+                              className="sortable-header" 
+                              style={{ cursor: 'pointer' }} 
+                              onClick={() => handleSort('amount')}
+                            >
+                              Tutar {getSortIcon('amount')}
+                            </th>
+                            <th 
+                              className="sortable-header" 
+                              style={{ cursor: 'pointer' }} 
+                              onClick={() => handleSort('expense_date')}
+                            >
+                              Masraf Tarihi {getSortIcon('expense_date')}
+                            </th>
                             <th>Durum</th>
-                            <th>Oluşturma Tarihi</th>
+                            <th 
+                              className="sortable-header" 
+                              style={{ cursor: 'pointer' }} 
+                              onClick={() => handleSort('created_at')}
+                            >
+                              Oluşturma Tarihi {getSortIcon('created_at')}
+                            </th>
                             <th className="text-end">İşlemler</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {expenseRequests.length === 0 ? (
+                          {sortedData.length === 0 ? (
                             <tr>
                               <td colSpan={7} className="text-center py-4">
                                 Masraf talebi bulunamadı
                               </td>
                             </tr>
                           ) : (
-                            expenseRequests.map((request) => (
+                            sortedData.map((request) => (
                               <tr key={request.id}>
                                 <td>{request.expense_type?.name || '-'}</td>
                                 <td>{request.description}</td>
@@ -387,18 +454,6 @@ const EmployeeExpenseRequests: React.FC<EmployeeExpenseRequestsProps> = ({
                       </Table>
                     </div>
                   </div>
-
-                  {totalPages > 1 && (
-                    <div className="mt-3">
-                      <CustomPagination
-                        currentPage={currentPage}
-                        totalPages={totalPages}
-                        totalItems={totalItems}
-                        itemsPerPage={itemsPerPage}
-                        onPageChange={(page) => fetchExpenseRequests(page)}
-                      />
-                    </div>
-                  )}
                 </Card.Body>
               </Card>
             </div>
@@ -414,7 +469,6 @@ const EmployeeExpenseRequests: React.FC<EmployeeExpenseRequestsProps> = ({
         isEdit={isEdit}
       />
 
-      {/* Detail Modal */}
       {selectedRequest && showDetailModal && (
         <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
           <div className="modal-dialog modal-dialog-centered">
@@ -425,45 +479,23 @@ const EmployeeExpenseRequests: React.FC<EmployeeExpenseRequestsProps> = ({
               </div>
               <div className="modal-body">
                 <div className="d-flex flex-column gap-3">
-                  <div>
-                    <strong>Durum: </strong> {getStatusBadge(selectedRequest.status)}
-                  </div>
+                  <div><strong>Durum: </strong> {getStatusBadge(selectedRequest.status)}</div>
                   {selectedRequest.status === 'APPROVED' && selectedRequest.approved_at && (
-                    <div>
-                      <strong>Onaylanma Tarihi: </strong> {formatDate(selectedRequest.approved_at)}
-                    </div>
+                    <div><strong>Onaylanma Tarihi: </strong> {formatDate(selectedRequest.approved_at)}</div>
                   )}
                   {(selectedRequest.status === 'APPROVED' || selectedRequest.status === 'PAID') && selectedRequest.approver && (
-                    <div>
-                      <strong>Onaylayan: </strong> {selectedRequest.approver.email}
-                    </div>
+                    <div><strong>Onaylayan: </strong> {selectedRequest.approver.email}</div>
                   )}
                   {selectedRequest.status === 'REJECTED' && (
                     <>
-                      {selectedRequest.rejected_at && (
-                        <div>
-                          <strong>Reddedilme Tarihi: </strong> {formatDate(selectedRequest.rejected_at)}
-                        </div>
-                      )}
-                      {selectedRequest.rejection_reason && (
-                        <div>
-                          <strong>Red Nedeni: </strong> {selectedRequest.rejection_reason}
-                        </div>
-                      )}
+                      {selectedRequest.rejected_at && (<div><strong>Reddedilme Tarihi: </strong> {formatDate(selectedRequest.rejected_at)}</div>)}
+                      {selectedRequest.rejection_reason && (<div><strong>Red Nedeni: </strong> {selectedRequest.rejection_reason}</div>)}
                     </>
                   )}
                   {selectedRequest.status === 'PAID' && (
                     <>
-                      {selectedRequest.paid_at && (
-                        <div>
-                          <strong>Ödenme Tarihi: </strong> {formatDate(selectedRequest.paid_at)}
-                        </div>
-                      )}
-                      {selectedRequest.payment_reference && (
-                        <div>
-                          <strong>Ödeme No: </strong> {selectedRequest.payment_reference}
-                        </div>
-                      )}
+                      {selectedRequest.paid_at && (<div><strong>Ödenme Tarihi: </strong> {formatDate(selectedRequest.paid_at)}</div>)}
+                      {selectedRequest.payment_reference && (<div><strong>Ödeme No: </strong> {selectedRequest.payment_reference}</div>)}
                     </>
                   )}
                 </div>

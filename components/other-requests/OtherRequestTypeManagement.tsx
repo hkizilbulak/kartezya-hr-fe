@@ -2,13 +2,15 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, Table, Button, Modal, Form, Spinner } from 'react-bootstrap';
-import { Edit, Trash2 } from 'react-feather';
+import { Edit, Trash2, ChevronUp, ChevronDown } from 'react-feather';
 import { toast } from 'react-toastify';
 import axiosInstance from '@/helpers/api/axiosInstance';
 import { HR_ENDPOINTS } from '@/contants/urls';
 import { PageHeading } from '@/widgets';
 import LoadingOverlay from '@/components/LoadingOverlay';
 import { RequestType } from '@/models/hr/hr-requests';
+import '@/styles/table-list.scss';
+import '@/styles/components/table-common.scss';
 
 const OtherRequestTypeManagement = () => {
     const [types, setTypes] = useState<RequestType[]>([]);
@@ -18,10 +20,15 @@ const OtherRequestTypeManagement = () => {
     const [formData, setFormData] = useState({ name: '', description: '' });
     const [submitting, setSubmitting] = useState(false);
 
-    // Validasyon hataları için state
-    const [errors, setErrors] = useState<{ [key: string]: string }>({});
+    const [sortConfig, setSortConfig] = useState<{
+        key: 'name' | 'description' | null;
+        direction: 'ASC' | 'DESC';
+    }>({
+        key: null,
+        direction: 'DESC'
+    });
 
-    // Silme Onay Modalı State'leri
+    const [errors, setErrors] = useState<{ [key: string]: string }>({});
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
 
@@ -29,16 +36,34 @@ const OtherRequestTypeManagement = () => {
         fetchTypes();
     }, []);
 
-    const fetchTypes = async () => {
+    const fetchTypes = async (key = 'created_at', dir = 'DESC') => {
         try {
             setLoading(true);
-            const res = await axiosInstance.get(`${HR_ENDPOINTS.REQUEST_TYPES}?sort=created_at&direction=DESC`);
+            const res = await axiosInstance.get(`${HR_ENDPOINTS.REQUEST_TYPES}?sort=${key}&direction=${dir}`);
             setTypes(res.data.data || []);
         } catch (error: any) {
             toast.error(error?.response?.data?.error || 'Talep türleri yüklenemedi.');
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleSort = (key: 'name' | 'description') => {
+        let direction: 'ASC' | 'DESC' = 'ASC';
+        if (sortConfig.key === key && sortConfig.direction === 'ASC') {
+            direction = 'DESC';
+        }
+        setSortConfig({ key, direction });
+        fetchTypes(key, direction);
+    };
+
+    const getSortIcon = (columnKey: 'name' | 'description') => {
+        if (sortConfig.key !== columnKey) {
+            return null;
+        }
+        return sortConfig.direction === 'ASC' ?
+            <ChevronUp size={16} className="ms-1" style={{ display: 'inline' }} /> :
+            <ChevronDown size={16} className="ms-1" style={{ display: 'inline' }} />;
     };
 
     const validate = () => {
@@ -127,8 +152,20 @@ const OtherRequestTypeManagement = () => {
                                 <Table hover className="mb-0">
                                     <thead>
                                         <tr>
-                                            <th>Talep Türü</th>
-                                            <th>Açıklama</th>
+                                            <th
+                                                onClick={() => handleSort('name')}
+                                                className="sortable-header"
+                                                style={{ cursor: 'pointer' }}
+                                            >
+                                                Talep Türü {getSortIcon('name')}
+                                            </th>
+                                            <th
+                                                onClick={() => handleSort('description')}
+                                                className="sortable-header"
+                                                style={{ cursor: 'pointer' }}
+                                            >
+                                                Açıklama {getSortIcon('description')}
+                                            </th>
                                             <th className="text-end">İşlemler</th>
                                         </tr>
                                     </thead>
@@ -217,7 +254,6 @@ const OtherRequestTypeManagement = () => {
                 </Form>
             </Modal>
 
-            {/* Silme Modalı */}
             <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} size="sm">
                 <Modal.Header closeButton className="border-0 pb-0">
                     <Modal.Title className="h5 fw-bold text-dark">Talep Türünü Sil</Modal.Title>

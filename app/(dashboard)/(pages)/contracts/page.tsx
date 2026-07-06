@@ -7,7 +7,7 @@ import { lookupService } from '@/services/lookup.service';
 import { Contract, ContractStatus } from '@/models/hr/contract';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
 import { toast } from 'react-toastify';
-import { Edit, Trash2, Plus } from 'react-feather';
+import { Edit, Trash2, Plus, ChevronUp, ChevronDown } from 'react-feather';
 import DeleteModal from '@/components/DeleteModal';
 import ContractModal from '@/components/modals/ContractModal';
 import Pagination from '@/components/Pagination';
@@ -30,6 +30,15 @@ export default function ContractsPage() {
   const [customerName, setCustomerName] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
 
+  // Sort State
+  const [sortConfig, setSortConfig] = useState<{
+    key: string | null;
+    direction: 'ASC' | 'DESC';
+  }>({
+    key: null,
+    direction: 'DESC'
+  });
+
   const [showModal, setShowModal] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
@@ -44,7 +53,12 @@ export default function ContractsPage() {
     fetchContracts(currentPage);
   }, [currentPage, limit]);
 
-  const fetchContracts = async (page: number, overrideFilters?: { search?: string; customerName?: string; statusFilter?: string }) => {
+  const fetchContracts = async (
+    page: number, 
+    overrideFilters?: { search?: string; customerName?: string; statusFilter?: string },
+    sortKey: string | null = sortConfig.key,
+    sortDir: 'ASC' | 'DESC' = sortConfig.direction
+  ) => {
     try {
       setIsLoading(true);
       const f = overrideFilters ?? { search, customerName, statusFilter };
@@ -56,6 +70,7 @@ export default function ContractsPage() {
           ...(f.search ? { search: f.search } : {}),
           ...(f.customerName ? { customer_name: f.customerName } : {}),
           ...(f.statusFilter ? { status: f.statusFilter } : {}),
+          ...(sortKey ? { sort: sortKey, direction: sortDir.toUpperCase() } : {})
         } as any) as any,
         lookupService.getCompaniesLookup().catch(() => ({ data: [] }))
       ]);
@@ -81,6 +96,22 @@ export default function ContractsPage() {
     }
   };
 
+  const handleSort = (key: string) => {
+    let direction: 'ASC' | 'DESC' = 'ASC';
+    if (sortConfig.key === key && sortConfig.direction === 'ASC') {
+      direction = 'DESC';
+    }
+    setSortConfig({ key, direction });
+    fetchContracts(currentPage, undefined, key, direction);
+  };
+
+  const getSortIcon = (columnKey: string) => {
+    if (sortConfig.key !== columnKey) return null;
+    return sortConfig.direction === 'ASC' ? 
+      <ChevronUp size={16} className="ms-1" style={{ display: 'inline' }} /> : 
+      <ChevronDown size={16} className="ms-1" style={{ display: 'inline' }} />;
+  };
+
   const handleSearch = () => {
     setCurrentPage(1);
     fetchContracts(1);
@@ -91,7 +122,8 @@ export default function ContractsPage() {
     setCustomerName('');
     setStatusFilter('');
     setCurrentPage(1);
-    fetchContracts(1, { search: '', customerName: '', statusFilter: '' });
+    setSortConfig({ key: null, direction: 'DESC' });
+    fetchContracts(1, { search: '', customerName: '', statusFilter: '' }, null, 'DESC');
   };
 
   const handleDelete = async () => {
@@ -213,10 +245,18 @@ export default function ContractsPage() {
                     <table className="table table-hover mb-0">
                       <thead>
                         <tr>
-                          <th>Sözleşme No</th>
-                          <th>Proje Adı</th>
-                          <th>Müşteri Yetkili</th>
-                          <th>Tarih</th>
+                          <th onClick={() => handleSort('contract_no')} className="sortable-header" style={{cursor: 'pointer'}}>
+                            Sözleşme No {getSortIcon('contract_no')}
+                          </th>
+                          <th onClick={() => handleSort('project_name')} className="sortable-header" style={{cursor: 'pointer'}}>
+                            Proje Adı {getSortIcon('project_name')}
+                          </th>
+                          <th onClick={() => handleSort('customer_contact_name')} className="sortable-header" style={{cursor: 'pointer'}}>
+                            Müşteri Yetkili {getSortIcon('customer_contact_name')}
+                          </th>
+                          <th onClick={() => handleSort('start_date')} className="sortable-header" style={{cursor: 'pointer'}}>
+                            Tarih {getSortIcon('start_date')}
+                          </th>
                           <th>Durum</th>
                           <th className="text-end">İşlemler</th>
                         </tr>

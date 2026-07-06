@@ -1,15 +1,16 @@
-"use client";
-import { useState, useEffect } from 'react';
+'use client';
+
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Row, Col, Card, Table, Button, Badge, Container, Form } from 'react-bootstrap';
 import { jobService } from '@/services/job.service';
 import { Job } from '@/models/hr/job-models';
 import { PageHeading } from '@/widgets';
 import LoadingOverlay from '@/components/LoadingOverlay';
-import { Edit, Clock, PlayCircle } from 'react-feather';
+import JobModal from '@/components/modals/JobModal';
+import { Edit, Clock, PlayCircle, ChevronUp, ChevronDown } from 'react-feather';
 import { toast } from 'react-toastify';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
-import JobModal from '@/components/modals/JobModal';
 import '@/styles/table-list.scss';
 import '@/styles/components/table-common.scss';
 
@@ -19,12 +20,20 @@ const JobsPage = () => {
   const [showModal, setShowModal] = useState(false);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
 
+  const [sortConfig, setSortConfig] = useState<{
+    key: 'name' | null;
+    direction: 'ASC' | 'DESC';
+  }>({
+    key: null, 
+    direction: 'ASC'
+  });
+
   const router = useRouter();
 
-  const fetchJobs = async () => {
+  const fetchJobs = async (key = sortConfig.key, dir = sortConfig.direction) => {
     try {
       setIsLoading(true);
-      const data = await jobService.getJobs();
+      const data = await jobService.getJobs(key || undefined, dir || undefined);
       if (data) {
         setJobs(data);
       }
@@ -39,6 +48,22 @@ const JobsPage = () => {
   useEffect(() => {
     fetchJobs();
   }, []);
+
+  const handleSort = (key: 'name') => {
+    let direction: 'ASC' | 'DESC' = 'ASC';
+    if (sortConfig.key === key && sortConfig.direction === 'ASC') {
+      direction = 'DESC';
+    }
+    setSortConfig({ key, direction });
+    fetchJobs(key, direction);
+  };
+
+  const getSortIcon = (columnKey: 'name') => {
+    if (sortConfig.key !== columnKey) return null;
+    return sortConfig.direction === 'ASC' ? 
+        <ChevronUp size={16} className="ms-1" style={{ display: 'inline' }} /> : 
+        <ChevronDown size={16} className="ms-1" style={{ display: 'inline' }} />;
+  };
 
   const handleHistory = (job: Job) => {
     router.push(`/job-management/${job.id}/history`);
@@ -114,7 +139,9 @@ const JobsPage = () => {
                           <tr>
                             <th>ID</th>
                             <th>Job Key</th>
-                            <th>Görev Adı</th>
+                            <th onClick={() => handleSort('name')} className="sortable-header" style={{cursor: 'pointer'}}>
+                                Görev Adı {getSortIcon('name')}
+                            </th>
                             <th>Cron İfadesi</th>
                             <th>Durum</th>
                             <th className="text-end">İşlemler</th>

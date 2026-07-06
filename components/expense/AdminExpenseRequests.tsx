@@ -9,7 +9,7 @@ import LoadingOverlay from '@/components/LoadingOverlay';
 import FormSelectField from '@/components/FormSelectField';
 import FormDateField from '@/components/FormDateField';
 import Pagination from '@/components/Pagination';
-import { Check, X, DollarSign, FileText, Info } from 'react-feather';
+import { Check, X, DollarSign, FileText, Info, ChevronUp, ChevronDown } from 'react-feather';
 import { toast } from 'react-toastify';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
 import '@/styles/table-list.scss';
@@ -19,7 +19,7 @@ const AdminExpenseRequests: React.FC = () => {
   const [expenseRequests, setExpenseRequests] = useState<ExpenseRequest[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
-  
+
   const itemsPerPage = 10;
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -41,6 +41,14 @@ const AdminExpenseRequests: React.FC = () => {
   const [rejectionReason, setRejectionReason] = useState('');
   const [paymentReference, setPaymentReference] = useState('');
 
+  const [sortConfig, setSortConfig] = useState<{
+    key: string | null;
+    direction: 'asc' | 'desc';
+  }>({
+    key: null,
+    direction: 'desc'
+  });
+
   const fetchExpenseTypes = async () => {
     try {
       const response = await expenseService.getExpenseTypes();
@@ -52,22 +60,22 @@ const AdminExpenseRequests: React.FC = () => {
     }
   };
 
-  const fetchExpenseRequests = async (page: number = 1, status?: string) => {
+  const fetchExpenseRequests = async (page: number = 1, status?: string, sortKey: string | null = sortConfig.key, sortDir: 'asc' | 'desc' = sortConfig.direction) => {
     try {
       setIsLoading(true);
-      
+
       const response = await expenseService.getAllExpenseRequests(
-        page, 
-        itemsPerPage, 
-        undefined,
+        page,
+        itemsPerPage,
+        undefined,             // Eskiden sortKey buradaydı (HATA VEREN KISIM). Burası employeeId için sayı (number) bekliyor.
         status || undefined,
-        undefined,
-        'desc',
+        sortKey || undefined,  // sortKey parametresinin doğru yeri burası
+        sortDir,
         filterExpenseTypeId,
         filterStartDate,
         filterEndDate
       );
-      
+
       if (response.data) {
         setExpenseRequests(response.data);
         setTotalPages(response.page?.total_pages || 1);
@@ -85,6 +93,22 @@ const AdminExpenseRequests: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSort = (key: string) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+    fetchExpenseRequests(currentPage, statusFilter, key, direction);
+  };
+
+  const getSortIcon = (columnKey: string) => {
+    if (sortConfig.key !== columnKey) return null;
+    return sortConfig.direction === 'asc' ?
+      <ChevronUp size={16} className="ms-1" style={{ display: 'inline' }} /> :
+      <ChevronDown size={16} className="ms-1" style={{ display: 'inline' }} />;
   };
 
   useEffect(() => {
@@ -214,8 +238,8 @@ const AdminExpenseRequests: React.FC = () => {
   return (
     <>
       <LoadingOverlay show={isLoading} />
-      
-      <PageHeading 
+
+      <PageHeading
         heading="Masraf Yönetimi"
         showCreateButton={false}
         showFilterButton={false}
@@ -223,9 +247,8 @@ const AdminExpenseRequests: React.FC = () => {
 
       <div className="content-wrapper">
         <div className="content-header">
-          {/* Admin sayfası, create butonu PageHeading'de yok */}
         </div>
-        
+
         <Card className="border-0 shadow-sm mb-3">
           <Card.Body className="py-2 px-3">
             <Row className="g-2 align-items-end">
@@ -291,13 +314,25 @@ const AdminExpenseRequests: React.FC = () => {
                 <Table hover className="mb-0">
                   <thead>
                     <tr>
-                      <th>Çalışan</th>
-                      <th>Masraf Türü</th>
-                      <th>Açıklama</th>
-                      <th>Tutar</th>
-                      <th>Masraf Tarihi</th>
+                      <th onClick={() => handleSort('employee_id')} className="sortable-header" style={{ cursor: 'pointer' }}>
+                        Çalışan {getSortIcon('employee_id')}
+                      </th>
+                      <th onClick={() => handleSort('expense_type_id')} className="sortable-header" style={{ cursor: 'pointer' }}>
+                        Masraf Türü {getSortIcon('expense_type_id')}
+                      </th>
+                      <th onClick={() => handleSort('description')} className="sortable-header" style={{ cursor: 'pointer' }}>
+                        Açıklama {getSortIcon('description')}
+                      </th>
+                      <th onClick={() => handleSort('amount')} className="sortable-header" style={{ cursor: 'pointer' }}>
+                        Tutar {getSortIcon('amount')}
+                      </th>
+                      <th onClick={() => handleSort('expense_date')} className="sortable-header" style={{ cursor: 'pointer' }}>
+                        Masraf Tarihi {getSortIcon('expense_date')}
+                      </th>
                       <th>Durum</th>
-                      <th>Oluşturma Tarihi</th>
+                      <th onClick={() => handleSort('created_at')} className="sortable-header" style={{ cursor: 'pointer' }}>
+                        Oluşturma Tarihi {getSortIcon('created_at')}
+                      </th>
                       <th className="text-end">İşlemler</th>
                     </tr>
                   </thead>
@@ -396,7 +431,7 @@ const AdminExpenseRequests: React.FC = () => {
               totalItems={totalItems}
               itemsPerPage={itemsPerPage}
               onPageChange={(page) => fetchExpenseRequests(page, statusFilter)}
-              onPageSizeChange={(size) => {}}
+              onPageSizeChange={(size) => { }}
             />
           </div>
         )}
@@ -455,8 +490,8 @@ const AdminExpenseRequests: React.FC = () => {
           <Button variant="secondary" onClick={() => setShowRejectModal(false)}>
             İptal
           </Button>
-          <Button 
-            variant="danger" 
+          <Button
+            variant="danger"
             onClick={handleRejectConfirm}
             disabled={!rejectionReason.trim()}
           >
