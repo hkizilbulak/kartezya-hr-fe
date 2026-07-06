@@ -487,7 +487,7 @@ export default function MailConfigPage() {
 
         {/* ── Pagination ─────────────────────────────────────────── */}
         {filteredConfigs.length > 0 && (
-          <div className="d-flex justify-content-end mt-3">
+          <div className="mt-3">
             <CustomPagination
               currentPage={currentPage}
               totalPages={totalPages}
