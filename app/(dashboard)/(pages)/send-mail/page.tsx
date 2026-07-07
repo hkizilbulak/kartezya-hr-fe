@@ -66,7 +66,7 @@ export default function SendMailPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<EmployeeResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [selectedEmployee, setSelectedEmployee] = useState<EmployeeResult | null>(null);
+  const [selectedEmployees, setSelectedEmployees] = useState<EmployeeResult[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
 
   // ── Middle panel state ──
@@ -115,7 +115,6 @@ export default function SendMailPage() {
 
   // ── Debounced search ──
   useEffect(() => {
-    if (selectedEmployee) return;
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (!searchQuery.trim()) {
       setSearchResults([]);
@@ -138,22 +137,31 @@ export default function SendMailPage() {
         setIsSearching(false);
       }
     }, 300);
-  }, [searchQuery, selectedEmployee]);
+  }, [searchQuery]);
 
   // ── Populate middle panel when employee is selected ──
   const selectEmployee = useCallback((emp: EmployeeResult) => {
-    setSelectedEmployee(emp);
-    setSearchQuery(`${emp.first_name} ${emp.last_name}`);
+    setSelectedEmployees((prev) => {
+      if (prev.find((e) => e.id === emp.id)) return prev; // zaten listede
+      // İlk eklenen çalışandan departman/yönetici otomatik doldur
+      if (prev.length === 0) {
+        setCustomerTeam(emp.work_information?.department_name ?? "");
+        setCustomerManagerState(emp.work_information?.manager ?? "");
+      }
+      return [...prev, emp];
+    });
+    setSearchQuery("");
     setShowDropdown(false);
     setSearchResults([]);
-    // Null-safe read from work_information
-    setCustomerTeam(emp.work_information?.department_name ?? "");
-    setCustomerManagerState(emp.work_information?.manager ?? "");
-    setErrors({});
+    setErrors((p) => ({ ...p, employee: "" }));
   }, []);
 
-  const clearEmployee = () => {
-    setSelectedEmployee(null);
+  const removeEmployee = (id: number) => {
+    setSelectedEmployees((prev) => prev.filter((e) => e.id !== id));
+  };
+
+  const clearAll = () => {
+    setSelectedEmployees([]);
     setSearchQuery("");
     setCustomerTeam("");
     setCustomerManagerState("");
@@ -182,13 +190,13 @@ export default function SendMailPage() {
   const removeDynamicField = (id: number) =>
     setDynamicFields((prev) => prev.filter((f) => f.id !== id));
 
-  // ── Live preview payload ──
+  // ── Live preview payload (ilk seçili çalışan üzerinden) ──
   const buildTemplateData = useCallback((): Record<string, string> => {
     const data: Record<string, string> = {};
-    if (selectedEmployee) {
-      data["fullname"] =
-        `${selectedEmployee.first_name} ${selectedEmployee.last_name}`.trim();
-      data["email"] = selectedEmployee.email;
+    const emp = selectedEmployees[0];
+    if (emp) {
+      data["fullname"] = `${emp.first_name} ${emp.last_name}`.trim();
+      data["email"] = emp.email;
     }
     data["customer_team"] = customerTeam;
     data["customer_manager"] = customerManager;
@@ -197,7 +205,7 @@ export default function SendMailPage() {
       if (f.key) data[f.key] = f.value;
     });
     return data;
-  }, [selectedEmployee, customerTeam, customerManager, kartezyaManager, dynamicFields]);
+  }, [selectedEmployees, customerTeam, customerManager, kartezyaManager, dynamicFields]);
 
   const templateData = buildTemplateData();
 
@@ -205,36 +213,55 @@ export default function SendMailPage() {
   const validate = (): boolean => {
     const errs: Record<string, string> = {};
     if (!templateCode.trim()) errs.templateCode = "Şablon kodu zorunludur";
-    if (!selectedEmployee) errs.employee = "Çalışan seçimi zorunludur";
+    if (selectedEmployees.length === 0) errs.employee = "En az bir çalışan seçmelisiniz";
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
 
   // ── Send ──
   const handleSend = async () => {
-    if (!validate() || !selectedEmployee) return;
+    if (!validate()) return;
     setIsSending(true);
-    try {
-      await emailService.sendDynamicTemplate({
-        to: selectedEmployee.email,
-        template_code: templateCode.trim(),
-        mail_key: selectedMailKey || undefined,
-        subject: subject.trim() || undefined,
-        template_data: templateData,
-      });
-      toast.success(`Mail başarıyla gönderildi → ${selectedEmployee.email}`);
-      // Reset form
+    let successCount = 0;
+    const failedEmails: string[] = [];
+
+    for (const emp of selectedEmployees) {
+      try {
+        const empData: Record<string, string> = {
+          ...templateData,
+          fullname: `${emp.first_name} ${emp.last_name}`.trim(),
+          email: emp.email,
+        };
+        await emailService.sendDynamicTemplate({
+          to: emp.email,
+          template_code: templateCode.trim(),
+          mail_key: selectedMailKey || undefined,
+          subject: subject.trim() || undefined,
+          template_data: empData,
+        });
+        successCount++;
+      } catch {
+        failedEmails.push(`${emp.first_name} ${emp.last_name}`);
+      }
+    }
+
+    setIsSending(false);
+
+    if (successCount > 0) {
+      toast.success(`${successCount} kişiye mail başarıyla gönderildi`);
       setTemplateCode("");
       setSelectedMailKey("");
       setSubject("");
-      clearEmployee();
+      setSelectedEmployees([]);
+      setSearchQuery("");
+      setCustomerTeam("");
+      setCustomerManagerState("");
       setKartezyaManager("");
-    } catch (err: any) {
-      const msg =
-        err?.response?.data?.error || err?.message || "Mail gönderilemedi";
-      toast.error(msg);
-    } finally {
-      setIsSending(false);
+      setDynamicFields([]);
+      setErrors({});
+    }
+    if (failedEmails.length > 0) {
+      toast.error(`${failedEmails.length} kişiye gönderilemedi: ${failedEmails.join(", ")}`);
     }
   };
 
@@ -326,7 +353,6 @@ export default function SendMailPage() {
                     value={searchQuery}
                     autoComplete="off"
                     onChange={(e) => {
-                      if (selectedEmployee) clearEmployee();
                       setSearchQuery(e.target.value);
                       if (errors.employee)
                         setErrors((p) => ({ ...p, employee: "" }));
@@ -354,7 +380,7 @@ export default function SendMailPage() {
                 )}
 
                 {/* Dropdown */}
-                {(showDropdown || isSearching) && searchQuery.trim() && !selectedEmployee && (
+                {(showDropdown || isSearching) && searchQuery.trim() && (
                   <div className={styles.searchDropdown}>
                     {isSearching ? (
                       <div style={{ padding: "0.75rem 1rem", textAlign: "center", color: "#6c757d", fontSize: "0.85rem" }}>
@@ -366,44 +392,56 @@ export default function SendMailPage() {
                         Sonuç bulunamadı
                       </div>
                     ) : (
-                      searchResults.map((emp) => (
-                        <div
-                          key={emp.id}
-                          className={styles.searchItem}
-                          onMouseDown={() => selectEmployee(emp)}
-                        >
-                          <div className={styles.searchItemName}>
-                            {emp.first_name} {emp.last_name}
+                      searchResults.map((emp) => {
+                        const alreadyAdded = selectedEmployees.some((e) => e.id === emp.id);
+                        return (
+                          <div
+                            key={emp.id}
+                            className={styles.searchItem}
+                            onMouseDown={() => !alreadyAdded && selectEmployee(emp)}
+                            style={{ opacity: alreadyAdded ? 0.45 : 1, cursor: alreadyAdded ? "not-allowed" : "pointer" }}
+                          >
+                            <div className={styles.searchItemName}>
+                              {emp.first_name} {emp.last_name}
+                              {alreadyAdded && <span style={{ fontSize: "0.72rem", color: "#624bff", marginLeft: 6 }}>✓ Eklendi</span>}
+                            </div>
+                            <div className={styles.searchItemSub}>
+                              {emp.email}
+                              {emp.work_information?.department_name
+                                ? ` · ${emp.work_information.department_name}`
+                                : ""}
+                            </div>
                           </div>
-                          <div className={styles.searchItemSub}>
-                            {emp.email}
-                            {emp.work_information?.department_name
-                              ? ` · ${emp.work_information.department_name}`
-                              : ""}
-                          </div>
-                        </div>
-                      ))
+                        );
+                      })
                     )}
                   </div>
                 )}
               </div>
             </Form.Group>
 
-            {/* Selected employee chip */}
-            {selectedEmployee && (
-              <div className={styles.selectedEmployee}>
-                <div className={styles.avatar}>
-                  {getInitials(selectedEmployee.first_name, selectedEmployee.last_name)}
-                </div>
-                <div>
-                  <div className={styles.selectedName}>
-                    {selectedEmployee.first_name} {selectedEmployee.last_name}
+            {/* Seçilen çalışanlar — chip listesi */}
+            {selectedEmployees.length > 0 && (
+              <div className={styles.employeeChipList}>
+                {selectedEmployees.map((emp) => (
+                  <div key={emp.id} className={styles.employeeChip}>
+                    <span className={styles.chipAvatar}>
+                      {getInitials(emp.first_name, emp.last_name)}
+                    </span>
+                    <div className={styles.chipInfo}>
+                      <span className={styles.chipName}>{emp.first_name} {emp.last_name}</span>
+                      <span className={styles.chipEmail}>{emp.email}</span>
+                    </div>
+                    <button
+                      className={styles.chipRemove}
+                      onClick={() => removeEmployee(emp.id)}
+                      title="Listeden çıkar"
+                      type="button"
+                    >
+                      <X size={12} />
+                    </button>
                   </div>
-                  <div className={styles.selectedEmail}>{selectedEmployee.email}</div>
-                </div>
-                <button className={styles.clearBtn} onClick={clearEmployee} title="Seçimi kaldır">
-                  <X size={14} />
-                </button>
+                ))}
               </div>
             )}
           </div>
@@ -422,8 +460,10 @@ export default function SendMailPage() {
                 className={styles.readonlyInput}
                 readOnly
                 value={
-                  selectedEmployee
-                    ? `${selectedEmployee.first_name} ${selectedEmployee.last_name}`
+                  selectedEmployees.length === 1
+                    ? `${selectedEmployees[0].first_name} ${selectedEmployees[0].last_name}`
+                    : selectedEmployees.length > 1
+                    ? `(${selectedEmployees.length} kişi seçildi)`
                     : ""
                 }
                 placeholder="Çalışan seçilince dolar"
@@ -439,7 +479,13 @@ export default function SendMailPage() {
               <Form.Control
                 className={styles.readonlyInput}
                 readOnly
-                value={selectedEmployee?.email ?? ""}
+                value={
+                  selectedEmployees.length === 1
+                    ? selectedEmployees[0].email
+                    : selectedEmployees.length > 1
+                    ? "(Her kişiye kendi e-postası gönderilir)"
+                    : ""
+                }
                 placeholder="Çalışan seçilince dolar"
               />
             </Form.Group>
@@ -452,7 +498,7 @@ export default function SendMailPage() {
                 placeholder="Departman / takım adı"
                 value={customerTeam}
                 onChange={(e) => setCustomerTeam(e.target.value)}
-                disabled={!selectedEmployee}
+                disabled={selectedEmployees.length === 0}
               />
             </Form.Group>
 
@@ -464,7 +510,7 @@ export default function SendMailPage() {
                 placeholder="Müşteri yöneticisi"
                 value={customerManager}
                 onChange={(e) => setCustomerManagerState(e.target.value)}
-                disabled={!selectedEmployee}
+                disabled={selectedEmployees.length === 0}
               />
             </Form.Group>
 
@@ -483,7 +529,7 @@ export default function SendMailPage() {
                   if (errors.kartezyaManager)
                     setErrors((p) => ({ ...p, kartezyaManager: "" }));
                 }}
-                disabled={!selectedEmployee}
+                disabled={selectedEmployees.length === 0}
                 isInvalid={!!errors.kartezyaManager}
               />
               {errors.kartezyaManager && (
@@ -529,7 +575,7 @@ export default function SendMailPage() {
                       onChange={(e) =>
                         updateDynamicField(f.id, "key", e.target.value)
                       }
-                      disabled={!selectedEmployee}
+                      disabled={selectedEmployees.length === 0}
                     />
                     <Form.Control
                       size="sm"
@@ -538,7 +584,7 @@ export default function SendMailPage() {
                       onChange={(e) =>
                         updateDynamicField(f.id, "value", e.target.value)
                       }
-                      disabled={!selectedEmployee}
+                      disabled={selectedEmployees.length === 0}
                     />
                     <button
                       className={styles.removeRowBtn}
@@ -555,7 +601,7 @@ export default function SendMailPage() {
             <button
               className={styles.addRowBtn}
               onClick={addDynamicField}
-              disabled={!selectedEmployee}
+              disabled={selectedEmployees.length === 0}
             >
               <Plus size={14} />
               Yeni Alan Ekle
@@ -621,7 +667,9 @@ export default function SendMailPage() {
               ) : (
                 <>
                   <Send size={15} />
-                  Gönder
+                  {selectedEmployees.length > 1
+                    ? `${selectedEmployees.length} Kişiye Gönder`
+                    : "Gönder"}
                 </>
               )}
             </Button>
