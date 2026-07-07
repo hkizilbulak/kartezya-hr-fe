@@ -161,12 +161,6 @@ export const DashboardMenu: IMenuProps[] = [
                 requiredRoles: ['ADMIN']
             },
             {
-                id: 'job-management',
-                name: 'Görev Yönetimi',
-                link: '/job-management',
-                requiredRoles: ['ADMIN']
-            },
-            {
                 id: 'events',
                 name: 'Etkinlikler',
                 link: '/events',
@@ -211,6 +205,13 @@ export const DashboardMenu: IMenuProps[] = [
                 requiredRoles: ['ADMIN']
             }
         ]
+    },
+    {
+        id: 'job-management',
+        title: 'Zamanlanmış Görevler',
+        icon: 'clock',
+        link: '/job-management',
+        requiredRoles: ['ADMIN']
     },
     {
         id: 'cv-management',
