@@ -243,24 +243,59 @@ export default function SendMailPage() {
     setIsSending(true);
     let successCount = 0;
     const failedEmails: string[] = [];
+    // Determine selected mail configuration
+    const selectedConfig = templates.find((t) => t.mail_key === selectedMailKey);
 
-    for (const emp of selectedEmployees) {
-      try {
-        const empData: Record<string, string> = {
-          ...templateData,
-          fullname: `${emp.first_name} ${emp.last_name}`.trim(),
-          email: emp.email,
-        };
-        await emailService.sendDynamicTemplate({
-          to: emp.email,
-          template_code: templateCode.trim(),
-          mail_key: selectedMailKey || undefined,
-          subject: subject.trim() || undefined,
-          template_data: empData,
-        });
-        successCount++;
-      } catch {
-        failedEmails.push(`${emp.first_name} ${emp.last_name}`);
+    // Helper to extract TO recipient config
+    const toRecipient = selectedConfig?.recipients?.find((r) => r.recipient_type === 'TO');
+    const toIsDynamic = toRecipient ? toRecipient.value_type === 'DYNAMIC' : true;
+
+    if (!toIsDynamic) {
+      // Static TO: send based on static recipient values from config (use first selected employee for template data)
+      const staticRecipientsRaw = (toRecipient?.recipient_value ?? "").split(",").map(s => s.trim()).filter(Boolean);
+      const emp = selectedEmployees[0];
+      const baseData: Record<string, string> = {
+        ...templateData,
+      };
+      if (emp) {
+        baseData.fullname = `${emp.first_name} ${emp.last_name}`.trim();
+        baseData.email = emp.email;
+      }
+
+      for (const recipient of staticRecipientsRaw) {
+        try {
+          await emailService.sendDynamicTemplate({
+            to: recipient,
+            template_code: templateCode.trim(),
+            mail_key: selectedMailKey || undefined,
+            subject: subject.trim() || undefined,
+            template_data: baseData,
+          });
+          successCount++;
+        } catch {
+          failedEmails.push(recipient);
+        }
+      }
+    } else {
+      // Dynamic TO (default): send per selected employee
+      for (const emp of selectedEmployees) {
+        try {
+          const empData: Record<string, string> = {
+            ...templateData,
+            fullname: `${emp.first_name} ${emp.last_name}`.trim(),
+            email: emp.email,
+          };
+          await emailService.sendDynamicTemplate({
+            to: emp.email,
+            template_code: templateCode.trim(),
+            mail_key: selectedMailKey || undefined,
+            subject: subject.trim() || undefined,
+            template_data: empData,
+          });
+          successCount++;
+        } catch {
+          failedEmails.push(`${emp.first_name} ${emp.last_name}`);
+        }
       }
     }
 
@@ -623,7 +658,9 @@ export default function SendMailPage() {
                       ordered.push(entries[fullnameEntryIndex]);
                       ordered = ordered.concat(entries.filter((_, i) => i !== fullnameEntryIndex));
                     } else {
-                      ordered = entries;
+                      // ensure fullname is present as first entry with placeholder if missing
+                      const firstEntry: [string, any] = ["fullname", templateData["fullname"] ?? ""];
+                      ordered = [firstEntry].concat(entries);
                     }
                     return ordered.map(([k, v]) => (
                       <span key={k}>
