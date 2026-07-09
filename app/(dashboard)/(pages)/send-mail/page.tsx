@@ -59,6 +59,7 @@ export default function SendMailPage() {
   const [templates, setTemplates] = useState<MailConfiguration[]>([]);
   const [isLoadingTemplates, setIsLoadingTemplates] = useState(false);
   const [templateCode, setTemplateCode] = useState("");
+  const [templateVariables, setTemplateVariables] = useState<string[]>([]);
   const [selectedMailKey, setSelectedMailKey] = useState("");
   const [subject, setSubject] = useState("");
 
@@ -72,7 +73,7 @@ export default function SendMailPage() {
   // ── Middle panel state ──
   const [customerTeam, setCustomerTeam] = useState("");
   const [customerManager, setCustomerManagerState] = useState("");
-  const [kartezyaManager, setKartezyaManager] = useState("");
+  // kartezyaManager removed — field no longer needed in UI or template data
   const [dynamicFields, setDynamicFields] = useState<DynamicField[]>([]);
 
   // ── Send state ──
@@ -98,6 +99,25 @@ export default function SendMailPage() {
   }, []);
 
   useEffect(() => { fetchTemplates(); }, [fetchTemplates]);
+
+  // Fetch template variables when templateCode changes
+  useEffect(() => {
+    let mounted = true;
+    const fetchVars = async () => {
+      if (!templateCode) {
+        setTemplateVariables([]);
+        return;
+      }
+      try {
+        const vars = await emailService.getTemplateVariables(templateCode);
+        if (mounted) setTemplateVariables(vars);
+      } catch (err) {
+        if (mounted) setTemplateVariables([]);
+      }
+    };
+    fetchVars();
+    return () => { mounted = false; };
+  }, [templateCode]);
 
   // ── Close dropdown on outside click ──
   useEffect(() => {
@@ -199,13 +219,12 @@ export default function SendMailPage() {
       data["email"] = emp.email;
     }
     data["customer_team"] = customerTeam;
-    data["customer_manager"] = customerManager;
-    data["kartezya_manager"] = kartezyaManager;
+  data["customer_manager"] = customerManager;
     dynamicFields.forEach((f) => {
       if (f.key) data[f.key] = f.value;
     });
     return data;
-  }, [selectedEmployees, customerTeam, customerManager, kartezyaManager, dynamicFields]);
+  }, [selectedEmployees, customerTeam, customerManager, dynamicFields]);
 
   const templateData = buildTemplateData();
 
@@ -245,7 +264,7 @@ export default function SendMailPage() {
       }
     }
 
-    setIsSending(false);
+      setIsSending(false);
 
     if (successCount > 0) {
       toast.success(`${successCount} kişiye mail başarıyla gönderildi`);
@@ -253,11 +272,10 @@ export default function SendMailPage() {
       setSelectedMailKey("");
       setSubject("");
       setSelectedEmployees([]);
-      setSearchQuery("");
-      setCustomerTeam("");
-      setCustomerManagerState("");
-      setKartezyaManager("");
-      setDynamicFields([]);
+  setSearchQuery("");
+  setCustomerTeam("");
+  setCustomerManagerState("");
+  setDynamicFields([]);
       setErrors({});
     }
     if (failedEmails.length > 0) {
@@ -514,30 +532,7 @@ export default function SendMailPage() {
               />
             </Form.Group>
 
-            {/* Manual: kartezya_manager */}
-            <Form.Group className="mb-3">
-              <Form.Label className={styles.fieldLabel}>
-                kartezya_manager
-                <span className={styles.requiredMark}>*</span>
-              </Form.Label>
-              <Form.Control
-                type="text"
-                placeholder="Kartezya yöneticisi adı"
-                value={kartezyaManager}
-                onChange={(e) => {
-                  setKartezyaManager(e.target.value);
-                  if (errors.kartezyaManager)
-                    setErrors((p) => ({ ...p, kartezyaManager: "" }));
-                }}
-                disabled={selectedEmployees.length === 0}
-                isInvalid={!!errors.kartezyaManager}
-              />
-              {errors.kartezyaManager && (
-                <Form.Control.Feedback type="invalid">
-                  {errors.kartezyaManager}
-                </Form.Control.Feedback>
-              )}
-            </Form.Group>
+            {/* kartezya_manager input removed */}
 
             {/* Dynamic fields */}
             {dynamicFields.length > 0 && (
@@ -620,13 +615,24 @@ export default function SendMailPage() {
               ) : (
                 <>
                   <span style={{ color: "#6c757d" }}>{"{\n"}</span>
-                  {Object.entries(templateData).map(([k, v]) => (
-                    <span key={k}>
-                      {"  "}
-                      <span className={styles.previewKey}>"{k}"</span>
-                      {`: "${v}",\n`}
-                    </span>
-                  ))}
+                  {(() => {
+                    const entries = Object.entries(templateData).filter(([k]) => !k.trim().toLowerCase().startsWith("kartezya_manager"));
+                    const fullnameEntryIndex = entries.findIndex(([k]) => k === "fullname");
+                    let ordered: [string, any][] = [];
+                    if (fullnameEntryIndex !== -1) {
+                      ordered.push(entries[fullnameEntryIndex]);
+                      ordered = ordered.concat(entries.filter((_, i) => i !== fullnameEntryIndex));
+                    } else {
+                      ordered = entries;
+                    }
+                    return ordered.map(([k, v]) => (
+                      <span key={k}>
+                        {"  "}
+                        <span className={styles.previewKey}>"{k}"</span>
+                        {`: "${v}",\n`}
+                      </span>
+                    ));
+                  })()}
                   <span style={{ color: "#6c757d" }}>{"}"}</span>
                 </>
               )}
@@ -650,6 +656,25 @@ export default function SendMailPage() {
                     <strong>subject:</strong> {subject}
                   </>
                 )}
+              </div>
+            )}
+
+            {/* Template variables card */}
+            {templateVariables && templateVariables.length > 0 && (
+              <div style={{ marginTop: "0.75rem", padding: "0.75rem", background: "#fff8e6", borderRadius: 6 }}>
+                <strong>Şablon Parametreleri</strong>
+                <div style={{ marginTop: 8, fontSize: "0.9rem" }}>
+                  <div style={{ color: "#6c757d", marginBottom: 6 }}>Bu şablon için Resend'den bulunan değişkenler ve örnek değerler:</div>
+                  {templateVariables
+                    .map((v) => ({ raw: v?.toString() ?? "", name: (v?.toString() ?? "").replace(/[^a-zA-Z0-9_]/g, "") }))
+                    .filter(({ name }) => name && !name.toLowerCase().startsWith("kartezya_manager"))
+                    .map(({ raw, name }) => (
+                      <div key={raw + name} style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 6 }}>
+                        <div style={{ fontFamily: "monospace", background: "#f1f3f5", padding: "4px 8px", borderRadius: 4 }}>{name}</div>
+                        <div style={{ color: "#495057" }}>{templateData[name] ?? templateData[raw] ?? `<örnek: ${name}>`}</div>
+                      </div>
+                    ))}
+                </div>
               </div>
             )}
 

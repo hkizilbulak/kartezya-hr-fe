@@ -23,6 +23,11 @@ class EmailService {
     return response.data?.data ?? [];
   }
 
+  async getTemplateVariables(templateId: string): Promise<string[]> {
+    const response = await axiosInstance.get(`${this.baseUrl}/templates/${templateId}/variables`);
+    return response.data?.data ?? [];
+  }
+
   async sendDynamicTemplate(payload: SendDynamicEmailPayload) {
     const response = await axiosInstance.post(`${this.baseUrl}/send-template`, payload);
     return response.data;
