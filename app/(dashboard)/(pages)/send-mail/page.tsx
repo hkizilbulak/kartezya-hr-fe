@@ -262,7 +262,10 @@ export default function SendMailPage() {
       };
       if (emp) {
         baseData.fullname = `${emp.first_name} ${emp.last_name}`.trim();
-        baseData.email = emp.email;
+        // Ensure templates receive company_email under `email` and also have explicit fields
+        baseData.company_email = emp.company_email ?? emp.email;
+        baseData.personal_email = emp.email;
+        baseData.email = emp.company_email ?? emp.email;
       }
 
       for (const recipient of staticRecipientsRaw) {
@@ -286,7 +289,9 @@ export default function SendMailPage() {
           const empData: Record<string, string> = {
             ...templateData,
             fullname: `${emp.first_name} ${emp.last_name}`.trim(),
-            email: emp.email,
+            company_email: emp.company_email ?? emp.email,
+            personal_email: emp.email,
+            email: emp.company_email ?? emp.email,
           };
           await emailService.sendDynamicTemplate({
             to: emp.email,
