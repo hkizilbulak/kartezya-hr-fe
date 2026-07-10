@@ -73,7 +73,7 @@ export default function SendMailPage() {
   // ── Middle panel state ──
   const [customerTeam, setCustomerTeam] = useState("");
   const [customerManager, setCustomerManagerState] = useState("");
-  // kartezyaManager removed — field no longer needed in UI or template data
+  
   const [dynamicFields, setDynamicFields] = useState<DynamicField[]>([]);
 
   // ── Send state ──
@@ -567,7 +567,7 @@ export default function SendMailPage() {
               />
             </Form.Group>
 
-            {/* kartezya_manager input removed */}
+            
 
             {/* Dynamic fields */}
             {dynamicFields.length > 0 && (
@@ -651,7 +651,7 @@ export default function SendMailPage() {
                 <>
                   <span style={{ color: "#6c757d" }}>{"{\n"}</span>
                   {(() => {
-                    const entries = Object.entries(templateData).filter(([k]) => !k.trim().toLowerCase().startsWith("kartezya_manager"));
+                    const entries = Object.entries(templateData);
                     const fullnameEntryIndex = entries.findIndex(([k]) => k === "fullname");
                     let ordered: [string, any][] = [];
                     if (fullnameEntryIndex !== -1) {
@@ -702,9 +702,9 @@ export default function SendMailPage() {
                 <strong>Şablon Parametreleri</strong>
                 <div style={{ marginTop: 8, fontSize: "0.9rem" }}>
                   <div style={{ color: "#6c757d", marginBottom: 6 }}>Bu şablon için Resend'den bulunan değişkenler ve örnek değerler:</div>
-                  {templateVariables
+                    {templateVariables
                     .map((v) => ({ raw: v?.toString() ?? "", name: (v?.toString() ?? "").replace(/[^a-zA-Z0-9_]/g, "") }))
-                    .filter(({ name }) => name && !name.toLowerCase().startsWith("kartezya_manager"))
+                    .filter(({ name }) => name)
                     .map(({ raw, name }) => (
                       <div key={raw + name} style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 6 }}>
                         <div style={{ fontFamily: "monospace", background: "#f1f3f5", padding: "4px 8px", borderRadius: 4 }}>{name}</div>
