@@ -218,6 +218,8 @@ export default function SendMailPage() {
       data["fullname"] = `${emp.first_name} ${emp.last_name}`.trim();
       // Use company_email for template variables / preview. Fall back to personal email if company_email is missing.
       data["email"] = emp.company_email ?? emp.email;
+      // Add firstname so templates can use it directly
+      data["firstname"] = emp.first_name ?? "";
     }
     data["customer_team"] = customerTeam;
   data["customer_manager"] = customerManager;
