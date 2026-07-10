@@ -6,6 +6,7 @@ import { useRouter, usePathname } from "next/navigation";
 import DashboardWrapper from './dashboard-wrapper';
 import Loading from '@/components/Loading';
 import MissingInfoModal from '@/components/modals/MissingInfoModal';
+import KvkkModal from '@/components/modals/KvkkModal';
 
 const ADMIN_REQUIRED_ROUTES = [
   '/employees',
@@ -58,6 +59,7 @@ export default function DashboardLayout({
   return (
     <>
       <MissingInfoModal />
+      <KvkkModal />
       <DashboardWrapper>{children}</DashboardWrapper>
     </>
   );

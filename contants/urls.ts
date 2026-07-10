@@ -12,7 +12,9 @@ export const HR_ENDPOINTS = {
     RESET_PASSWORD: '/auth/reset-password',
     CHANGE_PASSWORD: '/auth/change-password',
     SEND_PASSWORD_RESET_EMAIL: '/auth/send-password-reset-email',
-    YANDEX_CALLBACK: '/auth/yandex/callback'
+    YANDEX_CALLBACK: '/auth/yandex/callback',
+    SETTINGS: '/auth/settings',
+    KVKK: '/auth/kvkk'
   },
 
   FAQS: '/faqs',
