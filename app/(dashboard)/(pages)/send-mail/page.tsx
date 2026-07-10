@@ -216,7 +216,8 @@ export default function SendMailPage() {
     const emp = selectedEmployees[0];
     if (emp) {
       data["fullname"] = `${emp.first_name} ${emp.last_name}`.trim();
-      data["email"] = emp.email;
+      // Use company_email for template variables / preview. Fall back to personal email if company_email is missing.
+      data["email"] = emp.company_email ?? emp.email;
     }
     data["customer_team"] = customerTeam;
   data["customer_manager"] = customerManager;
@@ -534,7 +535,7 @@ export default function SendMailPage() {
                 readOnly
                 value={
                   selectedEmployees.length === 1
-                    ? selectedEmployees[0].email
+                    ? (selectedEmployees[0].company_email ?? selectedEmployees[0].email)
                     : selectedEmployees.length > 1
                     ? "(Her kişiye kendi e-postası gönderilir)"
                     : ""
