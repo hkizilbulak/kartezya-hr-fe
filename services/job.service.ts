@@ -7,9 +7,13 @@ class JobService extends BaseService<Job> {
     super('/jobs'); // Backend uses /api/v1/jobs
   }
 
-  // Get all jobs
-  async getJobs(): Promise<Job[]> {
-    const response = await axiosInstance.get<Job[]>(this.baseUrl);
+  // Get all jobs with optional sorting
+  async getJobs(sort?: string, direction?: string): Promise<Job[]> {
+    const params = new URLSearchParams();
+    if (sort) params.append('sort', sort);
+    if (direction) params.append('direction', direction);
+
+    const response = await axiosInstance.get<Job[]>(this.baseUrl, { params });
     return response.data;
   }
 

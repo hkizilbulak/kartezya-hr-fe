@@ -47,10 +47,10 @@ class CvSearchService {
 
   // ── Candidates ──────────────────────────────────────────────────────────────
 
-  async listCandidates(limit = 20, offset = 0): Promise<ListCandidatesResponse> {
+  async listCandidates(limit = 20, offset = 0, sort?: string, direction?: string): Promise<ListCandidatesResponse> {
     const response = await cvSearchAxiosInstance.get<ListCandidatesResponse>(
       CV_SEARCH_ENDPOINTS.CANDIDATES,
-      { params: { limit, offset } }
+      { params: { limit, offset, sort, direction } }
     )
     return response.data
   }

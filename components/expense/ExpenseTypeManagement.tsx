@@ -1,4 +1,5 @@
-"use client";
+'use client';
+
 import React, { useState, useEffect } from 'react';
 import { Card, Table, Button, Badge, Modal, Form, Row, Col } from 'react-bootstrap';
 import expenseService from '@/services/expense.service';
@@ -7,9 +8,11 @@ import { ExpenseType } from '@/models/hr/expense-models';
 import { PageHeading } from '@/widgets';
 import LoadingOverlay from '@/components/LoadingOverlay';
 import DeleteModal from '@/components/DeleteModal';
-import { Edit, Trash2, Plus } from 'react-feather';
+import { Edit, Trash2, Plus, ChevronUp, ChevronDown } from 'react-feather';
 import { toast } from 'react-toastify';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
+import '@/styles/table-list.scss';
+import '@/styles/components/table-common.scss';
 
 const ExpenseTypeManagement: React.FC = () => {
   const [expenseTypes, setExpenseTypes] = useState<ExpenseType[]>([]);
@@ -20,6 +23,14 @@ const ExpenseTypeManagement: React.FC = () => {
   const [selectedType, setSelectedType] = useState<ExpenseType | null>(null);
   const [isEdit, setIsEdit] = useState(false);
   
+  const [sortConfig, setSortConfig] = useState<{
+    key: 'name' | 'description' | null;
+    direction: 'ASC' | 'DESC';
+  }>({
+    key: null,
+    direction: 'ASC'
+  });
+
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -36,10 +47,10 @@ const ExpenseTypeManagement: React.FC = () => {
     fetchRoles();
   }, []);
 
-  const fetchExpenseTypes = async () => {
+  const fetchExpenseTypes = async (key = sortConfig.key, dir = sortConfig.direction) => {
     try {
       setIsLoading(true);
-      const response = await expenseService.getExpenseTypes();
+      const response = await expenseService.getExpenseTypes(key || undefined, dir || undefined);
       if (response.data) {
         setExpenseTypes(response.data);
       }
@@ -51,6 +62,22 @@ const ExpenseTypeManagement: React.FC = () => {
     }
   };
 
+  const handleSort = (key: 'name' | 'description') => {
+    let direction: 'ASC' | 'DESC' = 'ASC';
+    if (sortConfig.key === key && sortConfig.direction === 'ASC') {
+      direction = 'DESC';
+    }
+    setSortConfig({ key, direction });
+    fetchExpenseTypes(key, direction);
+  };
+
+  const getSortIcon = (columnKey: 'name' | 'description') => {
+    if (sortConfig.key !== columnKey) return null;
+    return sortConfig.direction === 'ASC' ? 
+        <ChevronUp size={16} className="ms-1" style={{ display: 'inline' }} /> : 
+        <ChevronDown size={16} className="ms-1" style={{ display: 'inline' }} />;
+  };
+
   const fetchRoles = async () => {
     try {
       const response = await lookupService.getRolesLookup();
@@ -58,7 +85,6 @@ const ExpenseTypeManagement: React.FC = () => {
         setRoles(response.data);
       }
     } catch (error: any) {
-      // Roles lookup failure is non-critical, ignore silently
     }
   };
 
@@ -195,8 +221,12 @@ const ExpenseTypeManagement: React.FC = () => {
             <Table hover>
               <thead>
                 <tr>
-                  <th>Ad</th>
-                  <th>Açıklama</th>
+                  <th onClick={() => handleSort('name')} className="sortable-header" style={{cursor: 'pointer'}}>
+                    Ad {getSortIcon('name')}
+                  </th>
+                  <th onClick={() => handleSort('description')} className="sortable-header" style={{cursor: 'pointer'}}>
+                    Açıklama {getSortIcon('description')}
+                  </th>
                   <th>Maksimum Tutar</th>
                   <th>Makbuz Gerekli</th>
                   <th>Rol</th>
@@ -265,7 +295,6 @@ const ExpenseTypeManagement: React.FC = () => {
         </Card.Body>
       </Card>
 
-      {/* Create/Edit Modal */}
       <Modal show={showModal} onHide={handleCloseModal} size="lg">
         <Modal.Header closeButton>
           <Modal.Title>
@@ -380,7 +409,6 @@ const ExpenseTypeManagement: React.FC = () => {
         </Form>
       </Modal>
 
-      {/* Delete Modal */}
       {showDeleteModal && (
         <DeleteModal
           onClose={() => {

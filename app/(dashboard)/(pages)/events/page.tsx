@@ -1,6 +1,7 @@
 "use client";
-import { useState, useEffect } from 'react';
-import { Row, Col, Card, Table, Button, Container, Badge, Modal } from 'react-bootstrap';
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { Row, Col, Card, Table, Button, Badge, Container, Modal } from 'react-bootstrap';
 import { eventService } from '@/services';
 import { Event, EventStatus } from '@/models/hr/hr-models';
 import { PageHeading } from '@/widgets';
@@ -8,7 +9,7 @@ import Pagination from '@/components/Pagination';
 import EventModal from '@/components/modals/EventModal';
 import DeleteModal from '@/components/DeleteModal';
 import LoadingOverlay from '@/components/LoadingOverlay';
-import { Plus, Edit, Trash2, Send, Download } from 'react-feather';
+import { Edit, Trash2, Send, Download, ChevronUp, ChevronDown } from 'react-feather';
 import { toast } from 'react-toastify';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
 import '@/styles/table-list.scss';
@@ -31,15 +32,23 @@ const EventsPage = () => {
   const [totalItems, setTotalItems] = useState(0);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
-  const fetchEvents = async (page: number = 1, perPage?: number) => {
+  const [sortConfig, setSortConfig] = useState<{
+    key: 'name' | 'start_date' | 'location' | 'audience_filter' | null;
+    direction: 'ASC' | 'DESC';
+  }>({
+    key: null,
+    direction: 'ASC'
+  });
+
+  const fetchEvents = async (page: number = 1, perPage?: number, key = sortConfig.key, dir = sortConfig.direction) => {
     try {
       setIsLoading(true);
       
       const response = await eventService.getAll({ 
         page, 
         limit: perPage || itemsPerPage,
-        sort: "start_date",
-        direction: "DESC"
+        sort: key || undefined,
+        direction: dir || undefined
       });
       
       if (response.data) {
@@ -59,6 +68,22 @@ const EventsPage = () => {
   useEffect(() => {
     fetchEvents(1);
   }, []);
+
+  const handleSort = (key: 'name' | 'start_date' | 'location' | 'audience_filter') => {
+    let direction: 'ASC' | 'DESC' = 'ASC';
+    if (sortConfig.key === key && sortConfig.direction === 'ASC') {
+      direction = 'DESC';
+    }
+    setSortConfig({ key, direction });
+    fetchEvents(currentPage, itemsPerPage, key, direction);
+  };
+
+  const getSortIcon = (columnKey: 'name' | 'start_date' | 'location' | 'audience_filter') => {
+    if (sortConfig.key !== columnKey) return null;
+    return sortConfig.direction === 'ASC' ? 
+        <ChevronUp size={16} className="ms-1" style={{ display: 'inline' }} /> : 
+        <ChevronDown size={16} className="ms-1" style={{ display: 'inline' }} />;
+  };
 
   const handleAddNew = () => {
     setSelectedEvent(null);
@@ -168,10 +193,18 @@ const EventsPage = () => {
                       <Table hover className="mb-0">
                         <thead>
                           <tr>
-                            <th>Etkinlik Adı</th>
-                            <th>Tarih</th>
-                            <th>Lokasyon</th>
-                            <th>Kitle</th>
+                            <th onClick={() => handleSort('name')} className="sortable-header" style={{cursor: 'pointer'}}>
+                                Etkinlik Adı {getSortIcon('name')}
+                            </th>
+                            <th onClick={() => handleSort('start_date')} className="sortable-header" style={{cursor: 'pointer'}}>
+                                Tarih {getSortIcon('start_date')}
+                            </th>
+                            <th onClick={() => handleSort('location')} className="sortable-header" style={{cursor: 'pointer'}}>
+                                Lokasyon {getSortIcon('location')}
+                            </th>
+                            <th onClick={() => handleSort('audience_filter')} className="sortable-header" style={{cursor: 'pointer'}}>
+                                Kitle {getSortIcon('audience_filter')}
+                            </th>
                             <th>Durum</th>
                             <th className="text-end">İşlemler</th>
                           </tr>

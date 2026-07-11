@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, Table, Button, Badge, Modal, Row, Col, Form } from 'react-bootstrap';
-import { MessageCircle, FileText, Check, XCircle, X } from 'react-feather';
+import { MessageCircle, FileText, Check, XCircle, X, ChevronUp, ChevronDown } from 'react-feather';
 import { toast } from 'react-toastify';
 import dayjs from 'dayjs';
 import axiosInstance from '@/helpers/api/axiosInstance';
@@ -36,21 +36,45 @@ const AdminOtherRequests = () => {
     const [filterStartDate, setFilterStartDate] = useState<string>('');
     const [filterEndDate, setFilterEndDate] = useState<string>('');
 
+    const [sortConfig, setSortConfig] = useState<{
+        key: string;
+        direction: 'asc' | 'desc';
+    }>({
+        key: 'created_at',
+        direction: 'desc'
+    });
+
     useEffect(() => {
         fetchRequests();
         fetchTypes();
     }, []);
 
-    const fetchRequests = async () => {
+    const fetchRequests = async (sortKey: string = sortConfig.key, sortDir: 'asc' | 'desc' = sortConfig.direction) => {
         try {
             setLoading(true);
-            const res = await axiosInstance.get(`${HR_ENDPOINTS.OTHER_REQUESTS}?limit=9999&sort=created_at&direction=DESC`);
+            const res = await axiosInstance.get(`${HR_ENDPOINTS.OTHER_REQUESTS}?limit=9999&sort=${sortKey}&direction=${sortDir.toUpperCase()}`);
             setRequests(res.data.data || []);
         } catch (error: any) {
             toast.error(error?.response?.data?.error || 'Talepler yüklenemedi.');
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleSort = (key: string) => {
+        let direction: 'asc' | 'desc' = 'asc';
+        if (sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
+        }
+        setSortConfig({ key, direction });
+        fetchRequests(key, direction);
+    };
+
+    const getSortIcon = (columnKey: string) => {
+        if (sortConfig.key !== columnKey) return null;
+        return sortConfig.direction === 'asc' ? 
+            <ChevronUp size={16} className="ms-1" style={{ display: 'inline' }} /> : 
+            <ChevronDown size={16} className="ms-1" style={{ display: 'inline' }} />;
     };
 
     const fetchTypes = async () => {
@@ -183,10 +207,18 @@ const AdminOtherRequests = () => {
                                 <Table hover className="mb-0">
                                     <thead>
                                         <tr>
-                                            <th>Çalışan Adı Soyadı</th>
-                                            <th>Talep Türü</th>
-                                            <th>Talep Açıklaması</th>
-                                            <th>Oluşturma Tarihi</th>
+                                            <th onClick={() => handleSort('employee_id')} className="sortable-header" style={{cursor: 'pointer'}}>
+                                                Çalışan Adı Soyadı {getSortIcon('employee_id')}
+                                            </th>
+                                            <th onClick={() => handleSort('request_type_id')} className="sortable-header" style={{cursor: 'pointer'}}>
+                                                Talep Türü {getSortIcon('request_type_id')}
+                                            </th>
+                                            <th onClick={() => handleSort('description')} className="sortable-header" style={{cursor: 'pointer'}}>
+                                                Talep Açıklaması {getSortIcon('description')}
+                                            </th>
+                                            <th onClick={() => handleSort('created_at')} className="sortable-header" style={{cursor: 'pointer'}}>
+                                                Oluşturma Tarihi {getSortIcon('created_at')}
+                                            </th>
                                             <th>Talep Durumu</th>
                                             <th className="text-end">İşlemler</th>
                                         </tr>

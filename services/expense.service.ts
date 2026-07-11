@@ -170,15 +170,18 @@ class ExpenseService extends BaseService<ExpenseRequest> {
   /**
    * Get all expense types (admin only)
    */
-  async getExpenseTypes(): Promise<APIResponse<ExpenseType[]>> {
+  async getExpenseTypes(sort?: string, direction?: string): Promise<APIResponse<ExpenseType[]>> {
     try {
-      const response = await axiosInstance.get(`/expense/types`);
+      const params = new URLSearchParams();
+      if (sort) params.append('sort', sort);
+      if (direction) params.append('direction', direction);
+
+      const response = await axiosInstance.get(`/expense/types`, { params });
       return response.data;
     } catch (error) {
       throw error;
     }
   }
-
   /**
    * Get active expense types
    */

@@ -1,4 +1,5 @@
-"use client";
+'use client';
+
 import React, { useState, useEffect } from 'react';
 import { Row, Col, Card, Table, Button, Container, Badge } from 'react-bootstrap';
 import { faqService } from '@/services/faq.service';
@@ -8,7 +9,7 @@ import Pagination from '@/components/Pagination';
 import FaqModal from '@/components/modals/FaqModal';
 import DeleteModal from '@/components/DeleteModal';
 import LoadingOverlay from '@/components/LoadingOverlay';
-import { Edit, Trash2 } from 'react-feather';
+import { Edit, Trash2, ChevronUp, ChevronDown } from 'react-feather';
 import { toast } from 'react-toastify';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
 import dayjs from 'dayjs';
@@ -26,23 +27,32 @@ const FaqsPage = () => {
   const [isEdit, setIsEdit] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
+  const [sortConfig, setSortConfig] = useState<{
+    key: 'title' | 'created_at' | 'updated_at' | null;
+    direction: 'ASC' | 'DESC';
+  }>({
+    key: null,
+    direction: 'DESC'
+  });
+
   // Sayfalama stateleri
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
-  const fetchFaqs = async (page: number = 1, perPage?: number) => {
+  const fetchFaqs = async (page: number = 1, perPage?: number, key = sortConfig.key, dir = sortConfig.direction) => {
     try {
       setIsLoading(true);
       const response = await faqService.getAll({
         page,
         limit: perPage || itemsPerPage,
+        sort: key || undefined,
+        direction: dir || undefined
       });
 
       if (response.data) {
         setFaqs(response.data);
-        // Projedeki standart pagination response'una göre ayarlandı
         setTotalPages(response.page?.total_pages || 1);
         setTotalItems(response.page?.total || response.data.length);
         setCurrentPage(page);
@@ -57,6 +67,22 @@ const FaqsPage = () => {
   useEffect(() => {
     fetchFaqs(1);
   }, []);
+
+  const handleSort = (key: 'title' | 'created_at' | 'updated_at') => {
+    let direction: 'ASC' | 'DESC' = 'ASC';
+    if (sortConfig.key === key && sortConfig.direction === 'ASC') {
+      direction = 'DESC';
+    }
+    setSortConfig({ key, direction });
+    fetchFaqs(currentPage, itemsPerPage, key, direction);
+  };
+
+  const getSortIcon = (columnKey: 'title' | 'created_at' | 'updated_at') => {
+    if (sortConfig.key !== columnKey) return null;
+    return sortConfig.direction === 'ASC' ? 
+        <ChevronUp size={16} className="ms-1" style={{ display: 'inline' }} /> : 
+        <ChevronDown size={16} className="ms-1" style={{ display: 'inline' }} />;
+  };
 
   // Modal İşlemleri
   const handleAddNew = () => {
@@ -118,10 +144,16 @@ const FaqsPage = () => {
                     <Table hover className="mb-0">
                       <thead>
                         <tr>
-                          <th>Başlık</th>
+                          <th onClick={() => handleSort('title')} className="sortable-header" style={{cursor: 'pointer'}}>
+                            Başlık {getSortIcon('title')}
+                          </th>
                           <th>Durum</th>
-                          <th>Oluşturulma Tarihi</th>
-                          <th>Güncellenme Tarihi</th>
+                          <th onClick={() => handleSort('created_at')} className="sortable-header" style={{cursor: 'pointer'}}>
+                            Oluşturulma Tarihi {getSortIcon('created_at')}
+                          </th>
+                          <th onClick={() => handleSort('updated_at')} className="sortable-header" style={{cursor: 'pointer'}}>
+                            Güncellenme Tarihi {getSortIcon('updated_at')}
+                          </th>
                           <th className="text-end">İşlemler</th>
                         </tr>
                       </thead>
@@ -175,7 +207,6 @@ const FaqsPage = () => {
         </Col>
       </Row>
 
-      {/* Sayfa */}
       {!isLoading && totalItems > 0 && (
         <Row className="mt-4">
           <Col lg={12} md={12} sm={12}>
@@ -185,7 +216,7 @@ const FaqsPage = () => {
                 totalPages={totalPages}
                 totalItems={totalItems}
                 itemsPerPage={itemsPerPage}
-                onPageChange={(page) => fetchFaqs(page, itemsPerPage)}
+                onPageChange={(page) => fetchFaqs(page)}
                 onPageSizeChange={(size) => {
                   setItemsPerPage(size);
                   fetchFaqs(1, size);
@@ -196,7 +227,6 @@ const FaqsPage = () => {
         </Row>
       )}
 
-      {/* Kayıt / Güncelleme */}
       <FaqModal
         show={showModal}
         onHide={() => setShowModal(false)}
@@ -205,7 +235,6 @@ const FaqsPage = () => {
         isEdit={isEdit}
       />
 
-      {/* Silme */}
       {showDeleteModal && (
         <DeleteModal
           onClose={() => setShowDeleteModal(false)}

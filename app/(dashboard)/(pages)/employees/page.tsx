@@ -41,7 +41,7 @@ const EmployeesPage = () => {
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const [sortConfig, setSortConfig] = useState<{
-    key: 'first_name' | 'last_name' | null;
+    key: string | null;
     direction: 'ASC' | 'DESC';
   }>({
     key: null,
@@ -307,7 +307,7 @@ const EmployeesPage = () => {
       
       if (urlData.sort) {
         setSortConfig({
-          key: urlData.sort as 'first_name' | 'last_name',
+          key: urlData.sort as string,
           direction: urlData.direction
         });
       }
@@ -533,7 +533,7 @@ const EmployeesPage = () => {
     }
   };
 
-  const handleSort = (key: 'first_name' | 'last_name') => {
+  const handleSort = (key: string) => {
     let direction: 'ASC' | 'DESC' = 'ASC';
     if (sortConfig.key === key && sortConfig.direction === 'ASC') {
       direction = 'DESC';
@@ -556,7 +556,7 @@ const EmployeesPage = () => {
     fetchEmployees(1, key, direction, allFilters, itemsPerPage);
   };
 
-  const getSortIcon = (columnKey: 'first_name' | 'last_name') => {
+  const getSortIcon = (columnKey: string) => {
     if (sortConfig.key !== columnKey) {
       return null;
     }
@@ -896,9 +896,24 @@ const EmployeesPage = () => {
                             >
                               Ad Soyad {getSortIcon('first_name')}
                             </th>
-                            <th>Çalıştığı Şirket</th>
-                            <th>Departman</th>
-                            <th>Manager</th>
+                            <th 
+                              onClick={() => handleSort('company_name')} 
+                              className="sortable-header"
+                            >
+                              Çalıştığı Şirket {getSortIcon('company_name')}
+                            </th>
+                            <th 
+                              onClick={() => handleSort('department_name')} 
+                              className="sortable-header"
+                            >
+                              Departman {getSortIcon('department_name')}
+                            </th>
+                            <th 
+                              onClick={() => handleSort('manager')} 
+                              className="sortable-header"
+                            >
+                              Manager {getSortIcon('manager')}
+                            </th>
                             <th>Statü</th>
                             <th></th>
                           </tr>

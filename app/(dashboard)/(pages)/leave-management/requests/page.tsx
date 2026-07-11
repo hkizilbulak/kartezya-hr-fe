@@ -150,7 +150,7 @@ const LeaveRequestsPage = () => {
     completedPage * itemsPerPage
   );
 
-  const handleSort = (key: 'name') => {
+  const handleSort = (key: string) => {
     let direction: 'ASC' | 'DESC' = 'ASC';
     if (sortConfig.key === key && sortConfig.direction === 'ASC') {
       direction = 'DESC';
@@ -159,7 +159,7 @@ const LeaveRequestsPage = () => {
     fetchLeaveRequests(1, key, direction);
   };
 
-  const getSortIcon = (columnKey: 'name') => {
+  const getSortIcon = (columnKey: string) => {
     if (sortConfig.key !== columnKey) {
       return null;
     }
@@ -389,9 +389,15 @@ const LeaveRequestsPage = () => {
                         <Table hover className="mb-0">
                           <thead>
                             <tr>
-                              <th>Talep Tarihi</th>
-                              <th>Personel Adı</th>
-                              <th>İzin Türü</th>
+                              <th onClick={() => handleSort('created_at')} className="sortable-header" style={{ cursor: 'pointer' }}>
+                                Talep Tarihi {getSortIcon('created_at')}
+                              </th>
+                              <th onClick={() => handleSort('employee_id')} className="sortable-header" style={{ cursor: 'pointer' }}>
+                                Personel Adı {getSortIcon('employee_id')}
+                              </th>
+                              <th onClick={() => handleSort('leave_type_id')} className="sortable-header" style={{ cursor: 'pointer' }}>
+                                İzin Türü {getSortIcon('leave_type_id')}
+                              </th>
                               <th>Başlangıç Tarihi</th>
                               <th>Bitiş Tarihi</th>
                               <th className="text-center">Kullanılan Gün</th>
@@ -581,9 +587,15 @@ const LeaveRequestsPage = () => {
                         <Table hover className="mb-0">
                           <thead>
                             <tr>
-                              <th>Talep Tarihi</th>
-                              <th>Personel Adı</th>
-                              <th>İzin Türü</th>
+                              <th onClick={() => handleSort('created_at')} className="sortable-header" style={{ cursor: 'pointer' }}>
+                                Talep Tarihi {getSortIcon('created_at')}
+                              </th>
+                              <th onClick={() => handleSort('employee_id')} className="sortable-header" style={{ cursor: 'pointer' }}>
+                                Personel Adı {getSortIcon('employee_id')}
+                              </th>
+                              <th onClick={() => handleSort('leave_type_id')} className="sortable-header" style={{ cursor: 'pointer' }}>
+                                İzin Türü {getSortIcon('leave_type_id')}
+                              </th>
                               <th>Başlangıç Tarihi</th>
                               <th>Bitiş Tarihi</th>
                               <th className="text-center">Kullanılan Gün</th>
