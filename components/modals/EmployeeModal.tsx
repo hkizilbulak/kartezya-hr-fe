@@ -6,10 +6,13 @@ import { employeeService, lookupService } from '@/services';
 import { GradeLookup } from '@/services/lookup.service';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
 import { genderOptions } from '@/contants/options';
+import { UserRole } from '@/models/enums/hr.enum';
 import { toast } from 'react-toastify';
 import LoadingOverlay from '@/components/LoadingOverlay';
 import FormDateField from '@/components/FormDateField';
 import FormSelectField from '@/components/FormSelectField';
+
+const EMPLOYEE_CREATION_ROLES = [UserRole.EMPLOYEE, UserRole.HR, UserRole.FINANCE] as const;
 
 interface EmployeeModalProps {
   show: boolean;
@@ -35,28 +38,30 @@ interface FormData {
   status: string;
 }
 
+const emptyFormData = (): FormData => ({
+  email: '',
+  company_email: '',
+  first_name: '',
+  last_name: '',
+  phone: '',
+  gender: '',
+  date_of_birth: '',
+  profession_start_date: '',
+  hire_date: '',
+  total_gap: '',
+  marital_status: '',
+  identity_no: '',
+  roles: [],
+  status: 'ACTIVE'
+});
+
 const EmployeeModal: React.FC<EmployeeModalProps> = ({
   show,
   onHide,
   onSave,
   employee = null,
 }) => {
-  const [formData, setFormData] = useState<FormData>({
-    email: '',
-    company_email: '',
-    first_name: '',
-    last_name: '',
-    phone: '',
-    gender: '',
-    date_of_birth: '',
-    profession_start_date: '',
-    hire_date: '',
-    total_gap: '',
-    marital_status: '',
-    identity_no: '',
-    roles: ['EMPLOYEE'],
-    status: 'ACTIVE'
-  });
+  const [formData, setFormData] = useState<FormData>(emptyFormData());
 
   const [loading, setLoading] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
@@ -82,27 +87,27 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
   };
 
   useEffect(() => {
-    setFormData({
-      email: '',
-      company_email: '',
-      first_name: '',
-      last_name: '',
-      phone: '',
-      gender: '',
-      date_of_birth: '',
-      profession_start_date: '',
-      hire_date: '',
-      total_gap: '',
-      marital_status: '',
-      identity_no: '',
-      roles: ['EMPLOYEE'],
-      status: 'ACTIVE'
-    });
+    setFormData(emptyFormData());
     setFieldErrors({});
   }, [show, employee]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
+
+    if (name === 'role') {
+      setFormData(prev => ({
+        ...prev,
+        roles: value ? [value] : []
+      }));
+      if (fieldErrors.roles) {
+        setFieldErrors(prev => ({
+          ...prev,
+          roles: ''
+        }));
+      }
+      return;
+    }
+
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -155,6 +160,11 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
     }
     if (!formData.profession_start_date) {
       errors.profession_start_date = 'Meslek başlama tarihi zorunludur';
+    }
+    if (!formData.roles.length || !formData.roles[0]) {
+      errors.roles = 'Rol seçimi zorunludur';
+    } else if (!EMPLOYEE_CREATION_ROLES.includes(formData.roles[0] as typeof EMPLOYEE_CREATION_ROLES[number])) {
+      errors.roles = 'Geçersiz rol seçimi';
     }
 
     setFieldErrors(errors);
@@ -215,6 +225,8 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
       setLoading(false);
     }
   };
+
+  const selectedRole = formData.roles[0] || '';
 
   return (
     <Modal show={show} onHide={onHide} size="lg" scrollable className="employee-modal">
@@ -362,6 +374,32 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
               </Col>
               <Col md={6}>
                 <Form.Group>
+                  <Form.Label>Rol <span className="text-danger">*</span></Form.Label>
+                  <FormSelectField
+                    name="role"
+                    value={selectedRole}
+                    onChange={handleInputChange}
+                    searchable={false}
+                  >
+                    <option value="">Rol seçiniz</option>
+                    {EMPLOYEE_CREATION_ROLES.map((role) => (
+                      <option key={role} value={role}>
+                        {role}
+                      </option>
+                    ))}
+                  </FormSelectField>
+                  {fieldErrors.roles && (
+                    <div className="text-danger mt-1" style={{ fontSize: '0.875rem' }}>
+                      {fieldErrors.roles}
+                    </div>
+                  )}
+                </Form.Group>
+              </Col>
+            </Row>
+
+            <Row className="mb-3">
+              <Col md={6}>
+                <Form.Group>
                   <Form.Label>Meslek Başlama Tarihi <span className="text-danger">*</span></Form.Label>
                   <FormDateField
                     name="profession_start_date"
@@ -376,9 +414,6 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
                   )}
                 </Form.Group>
               </Col>
-            </Row>
-
-            <Row className="mb-3">
               <Col md={6}>
                 <Form.Group>
                   <Form.Label>İşe Başlama Tarihi <span className="text-danger">*</span></Form.Label>
@@ -395,6 +430,9 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
                   )}
                 </Form.Group>
               </Col>
+            </Row>
+
+            <Row className="mb-3">
               <Col md={6}>
                 <Form.Group>
                   <Form.Label>Toplam Boşluk (Yıl)</Form.Label>

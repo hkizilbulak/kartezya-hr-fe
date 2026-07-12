@@ -1,3 +1,6 @@
+import { Capability } from '@/lib/authz/capabilities';
+import { UserRole } from '@/models/enums/hr.enum';
+
 export interface IMenuProps {
     id: string;
     title?: string;
@@ -8,6 +11,9 @@ export interface IMenuProps {
     children?: IMenuProps[];
     badge?: string;
     badgecolor?: string;
+    /** Capability required to see this item (preferred for ticket-scoped modules). */
+    requiredCapability?: Capability;
+    /** Role gate for unresolved ADMIN-only modules outside the capability model. */
     requiredRoles?: string[];
 }
 
@@ -50,19 +56,18 @@ export const DashboardMenu: IMenuProps[] = [
         id: 'employee-management',
         title: 'Çalışan Yönetimi',
         icon: 'users',
-        requiredRoles: ['ADMIN'],
         children: [
             {
                 id: 'employees',
                 name: 'Çalışanlar',
                 link: '/employees',
-                requiredRoles: ['ADMIN']
+                requiredCapability: Capability.CanViewEmployees
             },
             {
                 id: 'contracts',
                 name: 'Kurumsal Sözleşmeler',
                 link: '/contracts',
-                requiredRoles: ['ADMIN']
+                requiredRoles: [UserRole.ADMIN]
             }
         ]
     },
@@ -70,19 +75,19 @@ export const DashboardMenu: IMenuProps[] = [
         id: 'notification-management',
         title: 'Bildirim Yönetimi',
         icon: 'mail',
-        requiredRoles: ['ADMIN'],
+        requiredRoles: [UserRole.ADMIN],
         children: [
             {
                 id: 'send-mail',
                 name: 'Dinamik Mail Gönder',
                 link: '/send-mail',
-                requiredRoles: ['ADMIN']
+                requiredRoles: [UserRole.ADMIN]
             },
             {
                 id: 'mail-config',
                 name: 'Mail Konfigürasyonları',
                 link: '/mail-config',
-                requiredRoles: ['ADMIN']
+                requiredRoles: [UserRole.ADMIN]
             }
         ]
     },
@@ -90,25 +95,24 @@ export const DashboardMenu: IMenuProps[] = [
         id: 'request-management',
         title: 'Talep Yönetimi',
         icon: 'clipboard',
-        requiredRoles: ['ADMIN'],
         children: [
             {
                 id: 'leave-requests',
                 link: '/leave-management/requests',
                 name: 'İzin Talepleri',
-                requiredRoles: ['ADMIN']
+                requiredCapability: Capability.CanViewLeaveManagement
             },
             {
                 id: 'expense-requests',
                 link: '/expense-management/requests',
                 name: 'Masraf Talepleri',
-                requiredRoles: ['ADMIN']
+                requiredCapability: Capability.CanViewExpenseManagement
             },
             {
                 id: 'other-requests-management',
-                link: '/other-requests-management',
+                link: '/other-requests-management/requests',
                 name: 'Diğer Talepler',
-                requiredRoles: ['ADMIN', 'HR']
+                requiredCapability: Capability.CanManageOtherRequests
             }
         ]
     },
@@ -116,61 +120,60 @@ export const DashboardMenu: IMenuProps[] = [
         id: 'definitions',
         title: 'Tanımlamalar',
         icon: 'settings',
-        requiredRoles: ['ADMIN'],
         children: [
             {
                 id: 'companies',
                 name: 'Şirketler',
                 link: '/companies',
-                requiredRoles: ['ADMIN']
+                requiredCapability: Capability.CanManageOrgMaster
             },
             {
                 id: 'departments',
                 name: 'Departmanlar',
                 link: '/departments',
-                requiredRoles: ['ADMIN']
+                requiredCapability: Capability.CanManageOrgMaster
             },
             {
                 id: 'job-positions',
                 name: 'Pozisyonlar',
                 link: '/job-positions',
-                requiredRoles: ['ADMIN']
+                requiredCapability: Capability.CanManageOrgMaster
             },
             {
                 id: 'leave-types',
                 name: 'İzin Türleri',
                 link: '/leave-management/types',
-                requiredRoles: ['ADMIN']
+                requiredCapability: Capability.CanManageLeaveTypes
             },
             {
                 id: 'expense-types',
                 name: 'Masraf Türleri',
                 link: '/expense-management/types',
-                requiredRoles: ['ADMIN']
+                requiredCapability: Capability.CanManageExpenseTypes
             },
             {
                 id: 'request-types',
                 name: 'Talep Türleri',
-                link: '/request-types',
-                requiredRoles: ['ADMIN', 'HR']
+                link: '/other-requests-management/types',
+                requiredCapability: Capability.CanManageRequestTypes
             },
             {
                 id: 'kspeaker-vouchers',
                 name: 'Kspeaker Voucher',
                 link: '/kspeaker/vouchers',
-                requiredRoles: ['ADMIN']
+                requiredRoles: [UserRole.ADMIN]
             },
             {
                 id: 'events',
                 name: 'Etkinlikler',
                 link: '/events',
-                requiredRoles: ['ADMIN']
+                requiredRoles: [UserRole.ADMIN]
             },
             {
                 id: 'faqs',
                 name: 'Sıkça Sorulan Sorular',
                 link: '/faqs',
-                requiredRoles: ['ADMIN']
+                requiredRoles: [UserRole.ADMIN]
             }
         ]
     },
@@ -178,31 +181,31 @@ export const DashboardMenu: IMenuProps[] = [
         id: 'reports',
         title: 'Raporlar',
         icon: 'bar-chart-2',
-        requiredRoles: ['ADMIN'],
+        requiredRoles: [UserRole.ADMIN],
         children: [
             {
                 id: 'work-day-report',
                 link: '/reports/work-day',
                 name: 'Çalışma Günü Raporu',
-                requiredRoles: ['ADMIN']
+                requiredRoles: [UserRole.ADMIN]
             },
             {
                 id: 'hakedis-efor-report',
                 link: '/reports/hakedis-efor',
                 name: 'Hakediş Efor Raporu',
-                requiredRoles: ['ADMIN']
+                requiredRoles: [UserRole.ADMIN]
             },
             {
                 id: 'grade',
                 link: '/reports/grade',
                 name: 'Grade Raporu',
-                requiredRoles: ['ADMIN']
+                requiredRoles: [UserRole.ADMIN]
             },
             {
                 id: 'contract-report',
                 link: '/reports/contract',
                 name: 'Sözleşme Raporu',
-                requiredRoles: ['ADMIN']
+                requiredRoles: [UserRole.ADMIN]
             }
         ]
     },
@@ -211,31 +214,31 @@ export const DashboardMenu: IMenuProps[] = [
         title: 'Zamanlanmış Görevler',
         icon: 'clock',
         link: '/job-management',
-        requiredRoles: ['ADMIN']
+        requiredRoles: [UserRole.ADMIN]
     },
     {
         id: 'cv-management',
         title: 'CV Yönetimi',
         icon: 'file',
-        requiredRoles: ['ADMIN'],
+        requiredRoles: [UserRole.ADMIN],
         children: [
             {
                 id: 'cv-upload',
                 name: 'CV Yükleme',
                 link: '/cv-upload',
-                requiredRoles: ['ADMIN']
+                requiredRoles: [UserRole.ADMIN]
             },
             {
                 id: 'cv-search',
                 name: 'CV Arama',
                 link: '/cv-search',
-                requiredRoles: ['ADMIN']
+                requiredRoles: [UserRole.ADMIN]
             },
             {
                 id: 'candidates',
                 name: 'Adaylar',
                 link: '/candidates',
-                requiredRoles: ['ADMIN']
+                requiredRoles: [UserRole.ADMIN]
             }
         ]
     },

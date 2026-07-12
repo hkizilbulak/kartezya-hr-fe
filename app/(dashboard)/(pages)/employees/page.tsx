@@ -18,6 +18,8 @@ import { translateErrorMessage } from '@/helpers/ErrorUtils';
 import { exportEmployeesToExcel } from '@/helpers/excelExport';
 import { CompanyLookup, DepartmentLookup, GradeLookup, JobPositionLookup } from '@/services/lookup.service';
 import { genderOptions, maritalStatusOptions, statusOptions } from '@/contants/options';
+import { useAuth } from '@/hooks/useAuth';
+import { Capability, hasCapability } from '@/lib/authz/capabilities';
 import '@/styles/table-list.scss';
 import '@/styles/components/table-common.scss';
 
@@ -28,6 +30,8 @@ const EmployeeStatusBadge = ({ status }: { status: string }) => {
 };
 
 const EmployeesPage = () => {
+  const { user } = useAuth();
+  const canManageEmployees = hasCapability(user?.roles, Capability.CanManageEmployees);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -685,7 +689,7 @@ const EmployeesPage = () => {
         <div className="page-heading-wrapper">
           <PageHeading
             heading="Çalışanlar"
-            showCreateButton={true}
+            showCreateButton={canManageEmployees}
             showFilterButton={false}
             createButtonText="Yeni Çalışan"
             onCreate={handleAddNew}
@@ -867,10 +871,12 @@ const EmployeesPage = () => {
                     <Button variant="secondary" size="sm" className="me-2" onClick={clearFilters}>
                       Temizle
                     </Button>
-                    <Button variant="success" size="sm" onClick={handleExportToExcel} disabled={isLoading}>
-                      <DownloadIcon size={14} className="me-1" style={{ display: 'inline' }} />
-                      Excel'e İndir
-                    </Button>
+                    {canManageEmployees && (
+                      <Button variant="success" size="sm" onClick={handleExportToExcel} disabled={isLoading}>
+                        <DownloadIcon size={14} className="me-1" style={{ display: 'inline' }} />
+                        Excel'e İndir
+                      </Button>
+                    )}
                   </Col>
                 </Row>
               </Card.Body>
@@ -939,13 +945,15 @@ const EmployeesPage = () => {
                                   >
                                     <Eye size={14} />
                                   </Button>
-                                  <Button
-                                    variant="outline-danger"
-                                    size="sm"
-                                    onClick={() => handleDeleteClick(employee)}
-                                  >
-                                    <Trash2 size={14} />
-                                  </Button>
+                                  {canManageEmployees && (
+                                    <Button
+                                      variant="outline-danger"
+                                      size="sm"
+                                      onClick={() => handleDeleteClick(employee)}
+                                    >
+                                      <Trash2 size={14} />
+                                    </Button>
+                                  )}
                                 </td>
                               </tr>
                             ))
