@@ -1,5 +1,4 @@
 import { Capability } from '@/lib/authz/capabilities';
-import { UserRole } from '@/models/enums/hr.enum';
 
 export interface IMenuProps {
     id: string;
@@ -67,7 +66,7 @@ export const DashboardMenu: IMenuProps[] = [
                 id: 'contracts',
                 name: 'Kurumsal Sözleşmeler',
                 link: '/contracts',
-                requiredRoles: [UserRole.ADMIN]
+                requiredCapability: Capability.CanAccessAdminModules
             }
         ]
     },
@@ -75,19 +74,19 @@ export const DashboardMenu: IMenuProps[] = [
         id: 'notification-management',
         title: 'Bildirim Yönetimi',
         icon: 'mail',
-        requiredRoles: [UserRole.ADMIN],
+        requiredCapability: Capability.CanAccessAdminModules,
         children: [
             {
                 id: 'send-mail',
                 name: 'Dinamik Mail Gönder',
                 link: '/send-mail',
-                requiredRoles: [UserRole.ADMIN]
+                requiredCapability: Capability.CanAccessAdminModules
             },
             {
                 id: 'mail-config',
                 name: 'Mail Konfigürasyonları',
                 link: '/mail-config',
-                requiredRoles: [UserRole.ADMIN]
+                requiredCapability: Capability.CanAccessAdminModules
             }
         ]
     },
@@ -161,19 +160,19 @@ export const DashboardMenu: IMenuProps[] = [
                 id: 'kspeaker-vouchers',
                 name: 'Kspeaker Voucher',
                 link: '/kspeaker/vouchers',
-                requiredRoles: [UserRole.ADMIN]
+                requiredCapability: Capability.CanAccessAdminModules
             },
             {
                 id: 'events',
                 name: 'Etkinlikler',
                 link: '/events',
-                requiredRoles: [UserRole.ADMIN]
+                requiredCapability: Capability.CanAccessAdminModules
             },
             {
                 id: 'faqs',
                 name: 'Sıkça Sorulan Sorular',
                 link: '/faqs',
-                requiredRoles: [UserRole.ADMIN]
+                requiredCapability: Capability.CanAccessAdminModules
             }
         ]
     },
@@ -181,31 +180,31 @@ export const DashboardMenu: IMenuProps[] = [
         id: 'reports',
         title: 'Raporlar',
         icon: 'bar-chart-2',
-        requiredRoles: [UserRole.ADMIN],
+        requiredCapability: Capability.CanAccessAdminModules,
         children: [
             {
                 id: 'work-day-report',
                 link: '/reports/work-day',
                 name: 'Çalışma Günü Raporu',
-                requiredRoles: [UserRole.ADMIN]
+                requiredCapability: Capability.CanAccessAdminModules
             },
             {
                 id: 'hakedis-efor-report',
                 link: '/reports/hakedis-efor',
                 name: 'Hakediş Efor Raporu',
-                requiredRoles: [UserRole.ADMIN]
+                requiredCapability: Capability.CanAccessAdminModules
             },
             {
                 id: 'grade',
                 link: '/reports/grade',
                 name: 'Grade Raporu',
-                requiredRoles: [UserRole.ADMIN]
+                requiredCapability: Capability.CanAccessAdminModules
             },
             {
                 id: 'contract-report',
                 link: '/reports/contract',
                 name: 'Sözleşme Raporu',
-                requiredRoles: [UserRole.ADMIN]
+                requiredCapability: Capability.CanAccessAdminModules
             }
         ]
     },
@@ -214,31 +213,31 @@ export const DashboardMenu: IMenuProps[] = [
         title: 'Zamanlanmış Görevler',
         icon: 'clock',
         link: '/job-management',
-        requiredRoles: [UserRole.ADMIN]
+        requiredCapability: Capability.CanAccessAdminModules
     },
     {
         id: 'cv-management',
         title: 'CV Yönetimi',
         icon: 'file',
-        requiredRoles: [UserRole.ADMIN],
+        requiredCapability: Capability.CanAccessAdminModules,
         children: [
             {
                 id: 'cv-upload',
                 name: 'CV Yükleme',
                 link: '/cv-upload',
-                requiredRoles: [UserRole.ADMIN]
+                requiredCapability: Capability.CanAccessAdminModules
             },
             {
                 id: 'cv-search',
                 name: 'CV Arama',
                 link: '/cv-search',
-                requiredRoles: [UserRole.ADMIN]
+                requiredCapability: Capability.CanAccessAdminModules
             },
             {
                 id: 'candidates',
                 name: 'Adaylar',
                 link: '/candidates',
-                requiredRoles: [UserRole.ADMIN]
+                requiredCapability: Capability.CanAccessAdminModules
             }
         ]
     },

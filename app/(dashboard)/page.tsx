@@ -11,6 +11,7 @@ import { LeaveRequest, LeaveBalance } from "@/models/hr/hr-models";
 import { useRouter } from 'next/navigation';
 import LoadingOverlay from "@/components/LoadingOverlay";
 import EventsWidget from '@/components/widgets/EventsWidget';
+import { Capability, hasCapability } from '@/lib/authz/capabilities';
 
 // Helper function to format dates from API (ISO strings) or local format (number arrays)
 const formatDate = (date?: string | number[]): string => {
@@ -43,7 +44,7 @@ const formatDate = (date?: string | number[]): string => {
 const Home = () => {
     const { user } = useAuth();
     const router = useRouter();
-    const isAdmin = user?.roles?.includes('ADMIN');
+    const canAccessAdminModules = hasCapability(user?.roles, Capability.CanAccessAdminModules);
 
     // Admin/Manager state
     const [stats, setStats] = useState<DashboardData>({
@@ -90,7 +91,7 @@ const Home = () => {
             setLoading(true);
             setInitialized(true);
 
-            if (isAdmin) {
+            if (canAccessAdminModules) {
                 await fetchAllDashboardData();
             } else {
                 await fetchEmployeeDashboardData();
@@ -103,7 +104,7 @@ const Home = () => {
         if (user) {
             initializeDashboard();
         }
-    }, [user, initialized, isAdmin]);
+    }, [user, initialized, canAccessAdminModules]);
 
     // Admin/Manager dashboard veri yükleme
     const fetchAllDashboardData = async () => {
@@ -275,7 +276,7 @@ const Home = () => {
     }, [companyDeptData]);
 
     // EMPLOYEE Dashboard
-    if (!isAdmin) {
+    if (!canAccessAdminModules) {
         // Tenure hesapla
         const calculateTenure = () => {
             if (!employeeProfile?.hire_date) return { years: 0, months: 0, days: 0, text: '' };

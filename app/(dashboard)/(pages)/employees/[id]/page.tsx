@@ -39,6 +39,8 @@ const EmployeeDetailPage = () => {
   const employeeId = params.id as string;
   const { user } = useAuth();
   const canManageEmployees = hasCapability(user?.roles, Capability.CanManageEmployees);
+  const isActorAdmin = !!user?.roles?.includes(UserRole.ADMIN);
+  const isActorHR = !isActorAdmin && !!user?.roles?.includes(UserRole.HR);
 
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [workInformations, setWorkInformations] = useState<EmployeeWorkInformation[]>([]);
@@ -78,6 +80,11 @@ const EmployeeDetailPage = () => {
   const [grades, setGrades] = useState<GradeLookup[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [roles, setRoles] = useState<string[]>(['EMPLOYEE']);
+  const targetHasAdmin = roles.includes(UserRole.ADMIN);
+  const canEditEmployee = canManageEmployees && !(isActorHR && targetHasAdmin);
+  const assignableRoles = isActorAdmin
+    ? Object.values(UserRole)
+    : [UserRole.EMPLOYEE, UserRole.HR, UserRole.FINANCE];
   const [deleteItemType, setDeleteItemType] = useState<'workinfo' | 'grade' | 'contract' | null>(null);
   const [activeTab, setActiveTab] = useState<string>('employee-info');
   const [showPasswordResetModal, setShowPasswordResetModal] = useState(false);
@@ -389,7 +396,7 @@ const EmployeeDetailPage = () => {
   };
 
   const handleDeleteWorkInfo = async () => {
-    if (!workInfoToDelete) return;
+    if (!workInfoToDelete || !canEditEmployee) return;
 
     setIsDeleting(true);
     try {
@@ -409,7 +416,7 @@ const EmployeeDetailPage = () => {
   };
 
   const handleDeleteGrade = async () => {
-    if (!gradeToDelete) return;
+    if (!gradeToDelete || !canEditEmployee) return;
 
     setIsDeleting(true);
     try {
@@ -429,7 +436,7 @@ const EmployeeDetailPage = () => {
   };
 
   const handleDeleteContract = async () => {
-    if (!contractToDelete) return;
+    if (!contractToDelete || !canEditEmployee) return;
 
     setIsDeleting(true);
     try {
@@ -449,6 +456,7 @@ const EmployeeDetailPage = () => {
   };
 
   const handleRoleChange = (role: string) => {
+    if (!canEditEmployee) return;
     setRoles(prev => {
       const newRoles = prev.includes(role)
         ? prev.filter(r => r !== role)
@@ -458,7 +466,7 @@ const EmployeeDetailPage = () => {
   };
 
   const handleSaveEmployee = async () => {
-    if (!employee) return;
+    if (!employee || !canEditEmployee) return;
 
     setIsSaving(true);
     try {
@@ -518,7 +526,7 @@ const EmployeeDetailPage = () => {
   };
 
   const handleSendPasswordResetEmail = async () => {
-    if (!employee?.user?.id) return;
+    if (!employee?.user?.id || !canEditEmployee) return;
     setIsSendingResetEmail(true);
     try {
       await authService.sendPasswordResetEmail(employee.user.id);
@@ -703,7 +711,7 @@ const EmployeeDetailPage = () => {
             <p className="text-muted mb-0">{getWorkInfoField('job_title')}</p>
           </div>
 
-          {canManageEmployees && (
+          {canEditEmployee && (
             <div className="d-flex justify-content-end mb-3">
               <Button
                 variant="outline-primary"
@@ -813,7 +821,7 @@ const EmployeeDetailPage = () => {
                             name="first_name"
                             value={employee.first_name}
                             onChange={(name, value) => setEmployee({ ...employee, first_name: value })}
-                          disabled={!canManageEmployees}
+                          disabled={!canEditEmployee}
                           />
                         </Col>
                         <Col md={4}>
@@ -823,7 +831,7 @@ const EmployeeDetailPage = () => {
                             name="last_name"
                             value={employee.last_name}
                             onChange={(name, value) => setEmployee({ ...employee, last_name: value })}
-                          disabled={!canManageEmployees}
+                          disabled={!canEditEmployee}
                           />
                         </Col>
                         <Col md={4}>
@@ -832,7 +840,7 @@ const EmployeeDetailPage = () => {
                             name="date_of_birth"
                             value={employee.date_of_birth ? employee.date_of_birth.split('T')[0] : ''}
                             onChange={(e) => setEmployee({ ...employee, date_of_birth: e.target.value })}
-                          disabled={!canManageEmployees}
+                          disabled={!canEditEmployee}
                           />
                         </Col>
                       </Row>
@@ -843,7 +851,7 @@ const EmployeeDetailPage = () => {
                             label="Cinsiyet"
                             value={employee.gender || ''}
                             onChange={(e) => setEmployee({ ...employee, gender: e.target.value })}
-                            disabled={!canManageEmployees}
+                            disabled={!canEditEmployee}
                           >
                             <option value="">Cinsiyet seçiniz</option>
                             {genderOptions.map((option) => (
@@ -859,7 +867,7 @@ const EmployeeDetailPage = () => {
                             label="Medeni Durum"
                             value={employee.marital_status || ''}
                             onChange={(e) => setEmployee({ ...employee, marital_status: e.target.value })}
-                            disabled={!canManageEmployees}
+                            disabled={!canEditEmployee}
                           >
                             <option value="">Medeni durum seçiniz</option>
                             {maritalStatusOptions.map((option) => (
@@ -876,7 +884,7 @@ const EmployeeDetailPage = () => {
                             name="father_name"
                             value={(employee as any).father_name || ''}
                             onChange={(name, value) => setEmployee({ ...employee, father_name: value } as any)}
-                          disabled={!canManageEmployees}
+                          disabled={!canEditEmployee}
                           />
                         </Col>
                       </Row>
@@ -895,7 +903,7 @@ const EmployeeDetailPage = () => {
                             type="email"
                             value={employee.email}
                             onChange={(name, value) => setEmployee({ ...employee, email: value })}
-                          disabled={!canManageEmployees}
+                          disabled={!canEditEmployee}
                           />
                         </Col>
                         <Col md={4}>
@@ -906,7 +914,7 @@ const EmployeeDetailPage = () => {
                             type="email"
                             value={employee.company_email || ''}
                             onChange={(name, value) => setEmployee({ ...employee, company_email: value })}
-                          disabled={!canManageEmployees}
+                          disabled={!canEditEmployee}
                           />
                         </Col>
                         <Col md={4}>
@@ -916,7 +924,7 @@ const EmployeeDetailPage = () => {
                             name="phone"
                             value={employee.phone || ''}
                             onChange={(name, value) => setEmployee({ ...employee, phone: value })}
-                          disabled={!canManageEmployees}
+                          disabled={!canEditEmployee}
                           />
                         </Col>
                       </Row>
@@ -928,7 +936,7 @@ const EmployeeDetailPage = () => {
                             name="city"
                             value={employee.city || ''}
                             onChange={(name, value) => setEmployee({ ...employee, city: value })}
-                          disabled={!canManageEmployees}
+                          disabled={!canEditEmployee}
                           />
                         </Col>
                         <Col md={4}>
@@ -938,7 +946,7 @@ const EmployeeDetailPage = () => {
                             name="state"
                             value={employee.state || ''}
                             onChange={(name, value) => setEmployee({ ...employee, state: value })}
-                          disabled={!canManageEmployees}
+                          disabled={!canEditEmployee}
                           />
                         </Col>
                         <Col md={4}>
@@ -949,7 +957,7 @@ const EmployeeDetailPage = () => {
                             value={employee.address || ''}
                             onChange={(name, value) => setEmployee({ ...employee, address: value })}
                             rows={2}
-                          disabled={!canManageEmployees}
+                          disabled={!canEditEmployee}
                           />
                         </Col>
                       </Row>
@@ -966,7 +974,7 @@ const EmployeeDetailPage = () => {
                             name="profession_start_date"
                             value={(employee as any).profession_start_date ? (employee as any).profession_start_date.split('T')[0] : ''}
                             onChange={(e) => setEmployee({ ...employee, profession_start_date: e.target.value } as any)}
-                          disabled={!canManageEmployees}
+                          disabled={!canEditEmployee}
                           />
                         </Col>
                         <Col md={4}>
@@ -975,7 +983,7 @@ const EmployeeDetailPage = () => {
                             name="hire_date"
                             value={employee.hire_date ? employee.hire_date.split('T')[0] : ''}
                             onChange={(e) => setEmployee({ ...employee, hire_date: e.target.value })}
-                          disabled={!canManageEmployees}
+                          disabled={!canEditEmployee}
                           />
                         </Col>
                         <Col md={4}>
@@ -984,7 +992,7 @@ const EmployeeDetailPage = () => {
                             name="leave_date"
                             value={employee.leave_date ? employee.leave_date.split('T')[0] : ''}
                             onChange={(e) => setEmployee({ ...employee, leave_date: e.target.value })}
-                          disabled={!canManageEmployees}
+                          disabled={!canEditEmployee}
                           />
                         </Col>
                       </Row>
@@ -999,7 +1007,7 @@ const EmployeeDetailPage = () => {
                               value={employee.total_gap}
                               onChange={(e) => setEmployee({ ...employee, total_gap: e.target.value || 0 } as any)}
                               placeholder="0"
-                              disabled={!canManageEmployees}
+                              disabled={!canEditEmployee}
                             />
                           </Form.Group>
                         </Col>
@@ -1009,7 +1017,7 @@ const EmployeeDetailPage = () => {
                             label="Statü"
                             value={employee.status || ''}
                             onChange={(e) => setEmployee({ ...employee, status: e.target.value as "ACTIVE" | "PASSIVE" | undefined })}
-                            disabled={!canManageEmployees}
+                            disabled={!canEditEmployee}
                           >
                             <option value="">Statü seçiniz</option>
                             {statusOptions.map((option) => (
@@ -1031,7 +1039,7 @@ const EmployeeDetailPage = () => {
                             type="textarea"
                             rows={4}
                             placeholder="Not giriniz"
-                          disabled={!canManageEmployees}
+                          disabled={!canEditEmployee}
                           />
                         </Col>
                       </Row>
@@ -1049,7 +1057,7 @@ const EmployeeDetailPage = () => {
                             name="emergency_contact_name"
                             value={employee.emergency_contact_name || ''}
                             onChange={(name, value) => setEmployee({ ...employee, emergency_contact_name: value })}
-                          disabled={!canManageEmployees}
+                          disabled={!canEditEmployee}
                           />
                         </Col>
                         <Col md={4}>
@@ -1059,7 +1067,7 @@ const EmployeeDetailPage = () => {
                             name="emergency_contact"
                             value={employee.emergency_contact || ''}
                             onChange={(name, value) => setEmployee({ ...employee, emergency_contact: value })}
-                          disabled={!canManageEmployees}
+                          disabled={!canEditEmployee}
                           />
                         </Col>
                         <Col md={4}>
@@ -1068,7 +1076,7 @@ const EmployeeDetailPage = () => {
                             label="İlişki"
                             value={employee.emergency_contact_relation || ''}
                             onChange={(e) => setEmployee({ ...employee, emergency_contact_relation: e.target.value })}
-                            disabled={!canManageEmployees}
+                            disabled={!canEditEmployee}
                           >
                             <option value="">İlişki seçiniz</option>
                             {emergencyContactRelationOptions.map((option) => (
@@ -1086,9 +1094,9 @@ const EmployeeDetailPage = () => {
                     {/* Roles */}
                     <h6 style={{ color: '#495057', fontWeight: 700, fontSize: '14px', marginBottom: '1rem' }}>Rol Bilgileri</h6>
 
-                    {canManageEmployees ? (
+                    {canEditEmployee ? (
                       <div className="mb-3 p-3" style={{ backgroundColor: '#f8f9fa', borderRadius: '4px' }}>
-                        {Object.values(UserRole).map(role => (
+                        {assignableRoles.map(role => (
                           <Form.Check
                             key={role}
                             type="checkbox"
@@ -1106,7 +1114,7 @@ const EmployeeDetailPage = () => {
                       </div>
                     )}
 
-                    {canManageEmployees && (
+                    {canEditEmployee && (
                       <>
                         <hr style={{ margin: '1rem 0', borderColor: '#e9ecef' }} />
                         <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
@@ -1130,7 +1138,7 @@ const EmployeeDetailPage = () => {
                   {canManageEmployees && (
                   <Tab.Pane eventKey="work-info">
                     <div className={styles.section}>
-                      {canManageEmployees && (
+                      {canEditEmployee && (
                         <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '1.5rem' }}>
                           <Button
                             className="d-flex align-items-center"
@@ -1168,7 +1176,7 @@ const EmployeeDetailPage = () => {
                                 <td>{workInfo.start_date ? formatDate(workInfo.start_date) : '-'}</td>
                                 <td>{workInfo.end_date ? formatDate(workInfo.end_date) : '-'}</td>
                                 <td>
-                                  {canManageEmployees && (
+                                  {canEditEmployee && (
                                   <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
                                     <Button
                                       variant="outline-primary"
@@ -1279,7 +1287,7 @@ const EmployeeDetailPage = () => {
                                     >
                                       <Download size={14} />
                                     </Button>
-                                    {canManageEmployees && (
+                                    {canEditEmployee && (
                                       <Button
                                         variant="outline-danger"
                                         size="sm"
@@ -1331,7 +1339,7 @@ const EmployeeDetailPage = () => {
                   {canManageEmployees && (
                   <Tab.Pane eventKey="grade-info">
                     <div className={styles.section}>
-                      {canManageEmployees && (
+                      {canEditEmployee && (
                         <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '1.5rem' }}>
                           <Button
                             className="d-flex align-items-center"
@@ -1365,7 +1373,7 @@ const EmployeeDetailPage = () => {
                                 <td>{grade.start_date ? formatDate(grade.start_date) : '-'}</td>
                                 <td>{grade.end_date ? formatDate(grade.end_date) : '-'}</td>
                                 <td>
-                                  {canManageEmployees && (
+                                  {canEditEmployee && (
                                   <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
                                     <Button
                                       variant="outline-primary"
@@ -1413,7 +1421,7 @@ const EmployeeDetailPage = () => {
                   {canManageEmployees && (
                   <Tab.Pane eventKey="contract-info">
                     <div className={styles.section}>
-                      {canManageEmployees && (
+                      {canEditEmployee && (
                         <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '1.5rem' }}>
                         <Button
                           className="d-flex align-items-center"
@@ -1470,7 +1478,7 @@ const EmployeeDetailPage = () => {
                                   </td>
                                   
                                   <td>
-                                    {canManageEmployees && (
+                                    {canEditEmployee && (
                                   <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
                                       <Button
                                         variant="outline-primary"
@@ -1540,7 +1548,7 @@ const EmployeeDetailPage = () => {
                     <div className={styles.section}>
 
                       {/* Upload Alanı */}
-                      {canManageEmployees && (
+                      {canEditEmployee && (
                       <>
                       <div
                         onDragOver={(e) => { e.preventDefault(); setCvDragOver(true); }}
@@ -1665,7 +1673,7 @@ const EmployeeDetailPage = () => {
                                     >
                                       <Download size={14} />
                                     </Button>
-                                    {canManageEmployees && (
+                                    {canEditEmployee && (
                                       <Button
                                         variant="outline-danger"
                                         size="sm"
