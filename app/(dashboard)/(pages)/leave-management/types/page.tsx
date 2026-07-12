@@ -29,7 +29,7 @@ const LeaveTypesPage = () => {
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const [sortConfig, setSortConfig] = useState<{
-    key: 'name' | null;
+    key: 'name' | 'limit_amount' | 'is_paid' | 'is_accrual' | 'is_required_document' | null;
     direction: 'ASC' | 'DESC';
   }>({
     key: null,
@@ -65,16 +65,17 @@ const LeaveTypesPage = () => {
     fetchLeaveTypes(1);
   }, []);
 
-  const handleSort = (key: 'name') => {
+  const handleSort = (key: 'name' | 'limit_amount' | 'is_paid' | 'is_accrual' | 'is_required_document') => {
     let direction: 'ASC' | 'DESC' = 'ASC';
     if (sortConfig.key === key && sortConfig.direction === 'ASC') {
       direction = 'DESC';
     }
     setSortConfig({ key, direction });
+    setCurrentPage(1);
     fetchLeaveTypes(1, key, direction);
   };
 
-  const getSortIcon = (columnKey: 'name') => {
+  const getSortIcon = (columnKey: 'name' | 'limit_amount') => {
     if (sortConfig.key !== columnKey) {
       return null;
     }
@@ -189,10 +190,34 @@ const LeaveTypesPage = () => {
                             >
                               İzin Türü {getSortIcon('name')}
                             </th>
-                            <th>Ücret Durumu</th>
-                            <th>Limit (Gün)</th>
-                            <th>Devredilebilir</th>
-                            <th>Belge Gerekli</th>
+                            <th
+                              onClick={() => handleSort('is_paid')}
+                              className="sortable-header"
+                              style={{ cursor: 'pointer' }}
+                            >
+                              Ücret Durumu {getSortIcon('is_paid')}
+                            </th>
+                            <th
+                              onClick={() => handleSort('limit_amount')}
+                              className="sortable-header"
+                              style={{ cursor: 'pointer' }}
+                            >
+                              Limit (Gün) {getSortIcon('limit_amount')}
+                            </th>
+                            <th
+                              onClick={() => handleSort('is_accrual')}
+                              className="sortable-header"
+                              style={{ cursor: 'pointer' }}
+                            >
+                              Devredilebilir {getSortIcon('is_accrual')}
+                            </th>
+                            <th
+                              onClick={() => handleSort('is_required_document')}
+                              className="sortable-header"
+                              style={{ cursor: 'pointer' }}
+                            >
+                              Belge Gerekli {getSortIcon('is_required_document')}
+                            </th>
                             <th>İşlemler</th>
                           </tr>
                         </thead>

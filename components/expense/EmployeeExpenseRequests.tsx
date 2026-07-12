@@ -53,17 +53,29 @@ const EmployeeExpenseRequests: React.FC<EmployeeExpenseRequestsProps> = ({
   const [filterEndDate, setFilterEndDate] = useState<string>('');
   const [expenseTypes, setExpenseTypes] = useState<any[]>([]);
 
-  const fetchExpenseRequests = async (page: number = 1) => {
+  const fetchExpenseRequests = async (
+    page: number = 1,
+    sortKey: string | null = sortConfig.key,
+    sortDir: 'ASC' | 'DESC' = sortConfig.direction
+  ) => {
     try {
       setIsLoading(true);
-      
+      const apiDir = sortDir === 'ASC' ? 'asc' : 'desc';
+      const apiSort = sortKey || undefined;
+
       let response;
       if (employeeId) {
-        response = await expenseService.getAllExpenseRequests(page, itemsPerPage, parseInt(employeeId), filterStatus, undefined, 'desc', filterExpenseTypeId, filterStartDate, filterEndDate);
+        response = await expenseService.getAllExpenseRequests(
+          page, itemsPerPage, parseInt(employeeId), filterStatus, apiSort, apiDir,
+          filterExpenseTypeId, filterStartDate, filterEndDate
+        );
       } else {
-        response = await expenseService.getMyExpenseRequests(page, itemsPerPage, filterStatus, undefined, 'desc', filterExpenseTypeId, filterStartDate, filterEndDate);
+        response = await expenseService.getMyExpenseRequests(
+          page, itemsPerPage, filterStatus, apiSort, apiDir,
+          filterExpenseTypeId, filterStartDate, filterEndDate
+        );
       }
-      
+
       if (response.data) {
         setExpenseRequests(response.data);
         setTotalPages(response.page?.total_pages || 1);
@@ -100,30 +112,14 @@ const EmployeeExpenseRequests: React.FC<EmployeeExpenseRequestsProps> = ({
       direction = 'DESC';
     }
     setSortConfig({ key, direction });
+    setCurrentPage(1);
+    fetchExpenseRequests(1, key, direction);
   };
 
   const getSortIcon = (columnKey: string) => {
     if (sortConfig.key !== columnKey) return null;
     return sortConfig.direction === 'ASC' ? <ChevronUp size={16} className="ms-1" style={{ display: 'inline' }} /> : <ChevronDown size={16} className="ms-1" style={{ display: 'inline' }} />;
   };
-
-  const sortedData = [...expenseRequests].sort((a, b) => {
-    if (!sortConfig.key) return 0;
-    let valA: any = "";
-    let valB: any = "";
-
-    if (sortConfig.key === 'expense_type') {
-      valA = a.expense_type?.name || "";
-      valB = b.expense_type?.name || "";
-    } else {
-      valA = (a as any)[sortConfig.key] ?? "";
-      valB = (b as any)[sortConfig.key] ?? "";
-    }
-
-    if (valA < valB) return sortConfig.direction === 'ASC' ? -1 : 1;
-    if (valA > valB) return sortConfig.direction === 'ASC' ? 1 : -1;
-    return 0;
-  });
 
   const lastFetchedId = React.useRef<string | null>(null);
 
@@ -349,9 +345,9 @@ const EmployeeExpenseRequests: React.FC<EmployeeExpenseRequestsProps> = ({
                             <th 
                               className="sortable-header" 
                               style={{ cursor: 'pointer' }} 
-                              onClick={() => handleSort('expense_type')}
+                              onClick={() => handleSort('expense_type_name')}
                             >
-                              Masraf Türü {getSortIcon('expense_type')}
+                              Masraf Türü {getSortIcon('expense_type_name')}
                             </th>
                             <th 
                               className="sortable-header" 
@@ -386,14 +382,14 @@ const EmployeeExpenseRequests: React.FC<EmployeeExpenseRequestsProps> = ({
                           </tr>
                         </thead>
                         <tbody>
-                          {sortedData.length === 0 ? (
+                          {expenseRequests.length === 0 ? (
                             <tr>
                               <td colSpan={7} className="text-center py-4">
                                 Masraf talebi bulunamadı
                               </td>
                             </tr>
                           ) : (
-                            sortedData.map((request) => (
+                            expenseRequests.map((request) => (
                               <tr key={request.id}>
                                 <td>{request.expense_type?.name || '-'}</td>
                                 <td>{request.description}</td>

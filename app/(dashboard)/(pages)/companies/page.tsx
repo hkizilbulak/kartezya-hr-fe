@@ -30,7 +30,7 @@ const CompaniesPage = () => {
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const [sortConfig, setSortConfig] = useState<{
-    key: 'name' | null;
+    key: 'name' | 'email' | 'phone' | 'address' | null;
     direction: 'ASC' | 'DESC';
   }>({
     key: null,
@@ -68,16 +68,17 @@ const CompaniesPage = () => {
     fetchCompanies(1);
   }, []);
 
-  const handleSort = (key: 'name') => {
+  const handleSort = (key: 'name' | 'email' | 'phone' | 'address') => {
     let direction: 'ASC' | 'DESC' = 'ASC';
     if (sortConfig.key === key && sortConfig.direction === 'ASC') {
       direction = 'DESC';
     }
     setSortConfig({ key, direction });
+    setCurrentPage(1);
     fetchCompanies(1, key, direction);
   };
 
-  const getSortIcon = (columnKey: 'name') => {
+  const getSortIcon = (columnKey: 'name' | 'email' | 'phone') => {
     if (sortConfig.key !== columnKey) {
       return null;
     }
@@ -196,9 +197,27 @@ const CompaniesPage = () => {
                             >
                               Şirket Adı {getSortIcon('name')}
                             </th>
-                            <th>E-posta</th>
-                            <th>Telefon</th>
-                            <th>Adres</th>
+                            <th
+                              onClick={() => handleSort('email')}
+                              className="sortable-header"
+                              style={{ cursor: 'pointer' }}
+                            >
+                              E-posta {getSortIcon('email')}
+                            </th>
+                            <th
+                              onClick={() => handleSort('phone')}
+                              className="sortable-header"
+                              style={{ cursor: 'pointer' }}
+                            >
+                              Telefon {getSortIcon('phone')}
+                            </th>
+                            <th
+                              onClick={() => handleSort('address')}
+                              className="sortable-header"
+                              style={{ cursor: 'pointer' }}
+                            >
+                              Adres {getSortIcon('address')}
+                            </th>
                             <th>Statü</th>
                             <th></th>
                           </tr>

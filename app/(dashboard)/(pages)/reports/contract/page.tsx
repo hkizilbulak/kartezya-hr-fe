@@ -15,8 +15,11 @@ import { toast } from 'react-toastify';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
 import * as ExcelUtils from '@/helpers/excelExport';
 import ReportEmailButton from '@/components/reports/ReportEmailButton';
+import { compareText, ClientSortDirection } from '@/lib/sort/clientCompare';
 import '@/styles/table-list.scss';
 import '@/styles/components/table-common.scss';
+
+type ContractSortKey = 'employee_name' | 'contract_names' | 'company_name' | 'department_name' | 'manager';
 
 const ContractReportPage = () => {
     const [reportData, setReportData] = useState<ContractReportResponse | null>(null);
@@ -36,6 +39,10 @@ const ContractReportPage = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(10);
     const [isFilterOpen, setIsFilterOpen] = useState(true);
+    const [sortConfig, setSortConfig] = useState<{
+        key: ContractSortKey | null;
+        direction: ClientSortDirection;
+    }>({ key: null, direction: 'ASC' });
 
     const statusOptions = [
         { value: 'active', label: 'Aktif Çalışanlar' },
@@ -108,6 +115,7 @@ const ContractReportPage = () => {
             setReportData(data);
             setShowTable(true);
             setCurrentPage(1);
+            setSortConfig({ key: null, direction: 'ASC' });
             setIsFilterOpen(false);
             toast.success('Rapor başarıyla oluşturuldu');
         } catch (error: any) {
@@ -162,12 +170,47 @@ const ContractReportPage = () => {
         }
     };
 
-    // Calculate pagination
-    const totalItems = reportData?.rows?.length || 0;
-    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    // Full-dataset sort before client pagination slice
+    const sortedRows = (() => {
+        const rows = reportData?.rows ? [...reportData.rows] : [];
+        if (!sortConfig.key) return rows;
+        const key = sortConfig.key;
+        const dir = sortConfig.direction;
+        rows.sort((a, b) => {
+            if (key === 'employee_name') {
+                return compareText(
+                    `${a.first_name || ''} ${a.last_name || ''}`.trim(),
+                    `${b.first_name || ''} ${b.last_name || ''}`.trim(),
+                    dir
+                );
+            }
+            const field = key as 'contract_names' | 'company_name' | 'department_name' | 'manager';
+            return compareText(String(a[field] ?? ''), String(b[field] ?? ''), dir);
+        });
+        return rows;
+    })();
+
+    const totalItems = sortedRows.length;
+    const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
-    const currentRows = reportData?.rows?.slice(startIndex, endIndex) || [];
+    const currentRows = sortedRows.slice(startIndex, endIndex);
+
+    const handleSort = (key: ContractSortKey) => {
+        let direction: ClientSortDirection = 'ASC';
+        if (sortConfig.key === key && sortConfig.direction === 'ASC') {
+            direction = 'DESC';
+        }
+        setSortConfig({ key, direction });
+        setCurrentPage(1);
+    };
+
+    const getSortIcon = (columnKey: ContractSortKey) => {
+        if (sortConfig.key !== columnKey) return null;
+        return sortConfig.direction === 'ASC'
+            ? <ChevronUp size={16} className="ms-1" style={{ display: 'inline' }} />
+            : <ChevronDown size={16} className="ms-1" style={{ display: 'inline' }} />;
+    };
 
     const handlePageChange = (page: number) => {
         setCurrentPage(page);
@@ -306,11 +349,21 @@ const ContractReportPage = () => {
                                         <Table hover className="mb-0">
                                             <thead>
                                                 <tr>
-                                                    <th className="sortable-header">AD SOYAD</th>
-                                                    <th className="sortable-header">SÖZLEŞMELER</th>
-                                                    <th className="sortable-header">ŞİRKET</th>
-                                                    <th className="sortable-header">DEPARTMAN</th>
-                                                    <th className="sortable-header">YÖNETİCİ</th>
+                                                    <th className="sortable-header" style={{ cursor: 'pointer' }} onClick={() => handleSort('employee_name')}>
+                                                        AD SOYAD {getSortIcon('employee_name')}
+                                                    </th>
+                                                    <th className="sortable-header" style={{ cursor: 'pointer' }} onClick={() => handleSort('contract_names')}>
+                                                        SÖZLEŞMELER {getSortIcon('contract_names')}
+                                                    </th>
+                                                    <th className="sortable-header" style={{ cursor: 'pointer' }} onClick={() => handleSort('company_name')}>
+                                                        ŞİRKET {getSortIcon('company_name')}
+                                                    </th>
+                                                    <th className="sortable-header" style={{ cursor: 'pointer' }} onClick={() => handleSort('department_name')}>
+                                                        DEPARTMAN {getSortIcon('department_name')}
+                                                    </th>
+                                                    <th className="sortable-header" style={{ cursor: 'pointer' }} onClick={() => handleSort('manager')}>
+                                                        YÖNETİCİ {getSortIcon('manager')}
+                                                    </th>
                                                 </tr>
                                             </thead>
                                             <tbody>

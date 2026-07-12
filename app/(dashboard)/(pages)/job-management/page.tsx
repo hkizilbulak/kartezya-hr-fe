@@ -21,7 +21,7 @@ const JobsPage = () => {
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
 
   const [sortConfig, setSortConfig] = useState<{
-    key: 'name' | null;
+    key: 'name' | 'job_key' | 'is_active' | null;
     direction: 'ASC' | 'DESC';
   }>({
     key: null, 
@@ -49,7 +49,7 @@ const JobsPage = () => {
     fetchJobs();
   }, []);
 
-  const handleSort = (key: 'name') => {
+  const handleSort = (key: 'name' | 'job_key' | 'is_active') => {
     let direction: 'ASC' | 'DESC' = 'ASC';
     if (sortConfig.key === key && sortConfig.direction === 'ASC') {
       direction = 'DESC';
@@ -58,7 +58,7 @@ const JobsPage = () => {
     fetchJobs(key, direction);
   };
 
-  const getSortIcon = (columnKey: 'name') => {
+  const getSortIcon = (columnKey: 'name' | 'job_key' | 'is_active') => {
     if (sortConfig.key !== columnKey) return null;
     return sortConfig.direction === 'ASC' ? 
         <ChevronUp size={16} className="ms-1" style={{ display: 'inline' }} /> : 
@@ -138,12 +138,16 @@ const JobsPage = () => {
                         <thead>
                           <tr>
                             <th>ID</th>
-                            <th>Job Key</th>
+                            <th onClick={() => handleSort('job_key')} className="sortable-header" style={{cursor: 'pointer'}}>
+                                Job Key {getSortIcon('job_key')}
+                            </th>
                             <th onClick={() => handleSort('name')} className="sortable-header" style={{cursor: 'pointer'}}>
                                 Görev Adı {getSortIcon('name')}
                             </th>
                             <th>Cron İfadesi</th>
-                            <th>Durum</th>
+                            <th onClick={() => handleSort('is_active')} className="sortable-header" style={{cursor: 'pointer'}}>
+                                Durum {getSortIcon('is_active')}
+                            </th>
                             <th className="text-end">İşlemler</th>
                           </tr>
                         </thead>

@@ -22,6 +22,10 @@ import DeleteModal from "@/components/DeleteModal";
 import LoadingOverlay from "@/components/LoadingOverlay";
 import FormTextField from "@/components/FormTextField";
 import FormSelectField from "@/components/FormSelectField";
+import {
+  compareText,
+  ClientSortDirection,
+} from "@/lib/sort/clientCompare";
 import "@/styles/table-list.scss";
 import "@/styles/components/table-common.scss";
 
@@ -91,6 +95,10 @@ export default function MailConfigPage() {
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [sortConfig, setSortConfig] = useState<{
+    key: "mail_key" | "description" | "provider" | null;
+    direction: ClientSortDirection;
+  }>({ key: null, direction: "ASC" });
 
   // Modal state
   const [showModal, setShowModal] = useState(false);
@@ -152,15 +160,46 @@ export default function MailConfigPage() {
     });
   }, [configs, searchKey, searchDesc, filterProvider, filterStatus]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredConfigs.length / pageSize));
+  const sortedConfigs = useMemo(() => {
+    if (!sortConfig.key) return filteredConfigs;
+    const key = sortConfig.key;
+    const dir = sortConfig.direction;
+    return [...filteredConfigs].sort((a, b) => {
+      if (key === "mail_key") {
+        return compareText(a.mail_key || "", b.mail_key || "", dir);
+      }
+      if (key === "provider") {
+        return compareText(a.provider || "", b.provider || "", dir);
+      }
+      return compareText(a.description || "", b.description || "", dir);
+    });
+  }, [filteredConfigs, sortConfig]);
+
+  const totalPages = Math.max(1, Math.ceil(sortedConfigs.length / pageSize));
 
   const paginatedConfigs = useMemo(() => {
     const start = (currentPage - 1) * pageSize;
-    return filteredConfigs.slice(start, start + pageSize);
-  }, [filteredConfigs, currentPage, pageSize]);
+    return sortedConfigs.slice(start, start + pageSize);
+  }, [sortedConfigs, currentPage, pageSize]);
 
   // Reset to page 1 when filters change
   useEffect(() => { setCurrentPage(1); }, [searchKey, searchDesc, filterProvider, filterStatus, pageSize]);
+
+  const handleSort = (key: "mail_key" | "description" | "provider") => {
+    let direction: ClientSortDirection = "ASC";
+    if (sortConfig.key === key && sortConfig.direction === "ASC") {
+      direction = "DESC";
+    }
+    setSortConfig({ key, direction });
+    setCurrentPage(1);
+  };
+
+  const getSortIcon = (columnKey: "mail_key" | "description" | "provider") => {
+    if (sortConfig.key !== columnKey) return null;
+    return sortConfig.direction === "ASC"
+      ? <ChevronUp size={14} className="ms-1" style={{ display: "inline" }} />
+      : <ChevronDown size={14} className="ms-1" style={{ display: "inline" }} />;
+  };
 
   const clearFilters = () => {
     setSearchKey("");
@@ -351,7 +390,7 @@ export default function MailConfigPage() {
                   </Button>
                 )}
                 <span className="text-muted small ms-auto">
-                  {filteredConfigs.length} sonuç
+                  {sortedConfigs.length} sonuç
                 </span>
               </Col>
             </Row>
@@ -363,9 +402,15 @@ export default function MailConfigPage() {
             <Table responsive className="table-list mb-0">
               <thead>
                 <tr>
-                  <th>Mail Anahtarı</th>
-                  <th>Açıklama</th>
-                  <th>Sağlayıcı</th>
+                  <th className="sortable-header" style={{ cursor: "pointer" }} onClick={() => handleSort("mail_key")}>
+                    Mail Anahtarı {getSortIcon("mail_key")}
+                  </th>
+                  <th className="sortable-header" style={{ cursor: "pointer" }} onClick={() => handleSort("description")}>
+                    Açıklama {getSortIcon("description")}
+                  </th>
+                  <th className="sortable-header" style={{ cursor: "pointer" }} onClick={() => handleSort("provider")}>
+                    Sağlayıcı {getSortIcon("provider")}
+                  </th>
                   <th>Şablon</th>
                   <th>Durum</th>
                   <th>Alıcılar</th>
@@ -486,13 +531,13 @@ export default function MailConfigPage() {
         </Card>
 
         {/* ── Pagination ─────────────────────────────────────────── */}
-        {filteredConfigs.length > 0 && (
+        {sortedConfigs.length > 0 && (
           <div className="mt-3">
             <CustomPagination
               currentPage={currentPage}
               totalPages={totalPages}
               onPageChange={setCurrentPage}
-              totalItems={filteredConfigs.length}
+              totalItems={sortedConfigs.length}
               itemsPerPage={pageSize}
               onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1); }}
               pageSizeOptions={[10, 20, 50]}

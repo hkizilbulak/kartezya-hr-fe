@@ -36,16 +36,20 @@ const DepartmentsPage = () => {
     direction: 'ASC'
   });
 
-  const fetchDepartments = async (page: number = 1, sortKey: string = "company", sortDir?: 'ASC' | 'DESC', perPage?: number) => {
+  const fetchDepartments = async (page: number = 1, sortKey?: string | null, sortDir?: 'ASC' | 'DESC', perPage?: number) => {
     try {
       setIsLoading(true);
-      
-      const response = await departmentService.getAll({ 
-        page, 
+
+      const params: Record<string, unknown> = {
+        page,
         limit: perPage || itemsPerPage,
-        sort: sortKey,
-        direction: sortDir
-      });
+      };
+      if (sortKey) {
+        params.sort = sortKey;
+        params.direction = sortDir || sortConfig.direction;
+      }
+
+      const response = await departmentService.getAll(params);
       
       if (response.data) {
         setDepartments(response.data);

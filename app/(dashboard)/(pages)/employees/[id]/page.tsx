@@ -7,7 +7,7 @@ import { authService } from '@/services/auth.service';
 import { Employee, EmployeeWorkInformation } from '@/models/hr/hr-models';
 import { toast } from 'react-toastify';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
-import { Edit, Trash2 } from 'react-feather';
+import { Edit, Trash2, Download, Upload, ChevronUp, ChevronDown } from 'react-feather';
 import EmployeeHeaderProfile from '@/components/employee-detail/EmployeeHeaderProfile';
 import WorkInformationModal from '@/components/modals/WorkInformationModal';
 import EmployeeGradeModal from '@/components/modals/EmployeeGradeModal';
@@ -27,7 +27,6 @@ import '@/styles/table-list.scss';
 import '@/styles/components/table-common.scss';
 import { documentService } from '@/services/document.service';
 import { ATTACHMENT_RELATED_TYPE_EMPLOYEE, ATTACHMENT_TYPE_CV } from '@/services/document.service';
-import { Download, Upload } from 'react-feather';
 import axiosInstance from '@/helpers/api/axiosInstance';
 import CustomPagination from '@/components/Pagination';
 
@@ -45,6 +44,10 @@ const EmployeeDetailPage = () => {
   const [docTotalPages, setDocTotalPages] = useState(1);
   const [docTotalItems, setDocTotalItems] = useState(0);
   const [docLimit] = useState(10);
+  const [docSortConfig, setDocSortConfig] = useState<{
+    key: 'file_name' | 'type' | 'file_size' | 'created_at';
+    direction: 'ASC' | 'DESC';
+  }>({ key: 'created_at', direction: 'DESC' });
 
   // CV state
   const [employeeCvDocuments, setEmployeeCvDocuments] = useState<any[]>([]);
@@ -52,6 +55,10 @@ const EmployeeDetailPage = () => {
   const [cvTotalPages, setCvTotalPages] = useState(1);
   const [cvTotalItems, setCvTotalItems] = useState(0);
   const [cvLimit] = useState(10);
+  const [cvSortConfig, setCvSortConfig] = useState<{
+    key: 'file_name' | 'file_size' | 'created_at';
+    direction: 'ASC' | 'DESC';
+  }>({ key: 'created_at', direction: 'DESC' });
   const [isCvUploading, setIsCvUploading] = useState(false);
   const [cvSelectedFile, setCvSelectedFile] = useState<File | null>(null);
   const [cvDragOver, setCvDragOver] = useState(false);
@@ -267,7 +274,13 @@ const EmployeeDetailPage = () => {
     }
   };
 
-  const fetchEmployeeDocuments = async (empId: number, page = 1, limit = 10, sort = 'created_at', direction = 'DESC') => {
+  const fetchEmployeeDocuments = async (
+    empId: number,
+    page = 1,
+    limit = 10,
+    sort: string = docSortConfig.key,
+    direction: 'ASC' | 'DESC' = docSortConfig.direction
+  ) => {
     try {
       const response = await documentService.getUserDocuments(empId, {
         page,
@@ -295,12 +308,37 @@ const EmployeeDetailPage = () => {
     }
   };
 
-  const fetchEmployeeCvDocuments = async (empId: number, page = 1, limit = 10) => {
+  const handleDocSort = (key: 'file_name' | 'type' | 'file_size' | 'created_at') => {
+    let direction: 'ASC' | 'DESC' = 'ASC';
+    if (docSortConfig.key === key && docSortConfig.direction === 'ASC') {
+      direction = 'DESC';
+    }
+    setDocSortConfig({ key, direction });
+    setDocPage(1);
+    if (employee) {
+      fetchEmployeeDocuments(employee.id, 1, docLimit, key, direction);
+    }
+  };
+
+  const getDocSortIcon = (columnKey: 'file_name' | 'type' | 'file_size' | 'created_at') => {
+    if (docSortConfig.key !== columnKey) return null;
+    return docSortConfig.direction === 'ASC'
+      ? <ChevronUp size={14} className="ms-1" style={{ display: 'inline' }} />
+      : <ChevronDown size={14} className="ms-1" style={{ display: 'inline' }} />;
+  };
+
+  const fetchEmployeeCvDocuments = async (
+    empId: number,
+    page = 1,
+    limit = 10,
+    sort: string = cvSortConfig.key,
+    direction: 'ASC' | 'DESC' = cvSortConfig.direction
+  ) => {
     try {
       const response = await documentService.getRelatedDocuments(
         ATTACHMENT_RELATED_TYPE_EMPLOYEE,
         empId,
-        { page, limit, sort: 'created_at', direction: 'DESC' }
+        { page, limit, sort, direction }
       );
       if (response?.data && Array.isArray(response.data)) {
         setEmployeeCvDocuments(response.data);
@@ -319,6 +357,25 @@ const EmployeeDetailPage = () => {
       setCvTotalItems(0);
       setCvPage(1);
     }
+  };
+
+  const handleCvSort = (key: 'file_name' | 'file_size' | 'created_at') => {
+    let direction: 'ASC' | 'DESC' = 'ASC';
+    if (cvSortConfig.key === key && cvSortConfig.direction === 'ASC') {
+      direction = 'DESC';
+    }
+    setCvSortConfig({ key, direction });
+    setCvPage(1);
+    if (employee) {
+      fetchEmployeeCvDocuments(employee.id, 1, cvLimit, key, direction);
+    }
+  };
+
+  const getCvSortIcon = (columnKey: 'file_name' | 'file_size' | 'created_at') => {
+    if (cvSortConfig.key !== columnKey) return null;
+    return cvSortConfig.direction === 'ASC'
+      ? <ChevronUp size={14} className="ms-1" style={{ display: 'inline' }} />
+      : <ChevronDown size={14} className="ms-1" style={{ display: 'inline' }} />;
   };
 
   const handleCvFileSelect = (file: File) => {
@@ -357,7 +414,7 @@ const EmployeeDetailPage = () => {
       setCvSelectedFile(null);
       if (cvFileInputRef.current) cvFileInputRef.current.value = '';
       fetchedTabs.current.delete('cv-info');
-      fetchEmployeeCvDocuments(employee.id, cvPage, cvLimit);
+      fetchEmployeeCvDocuments(employee.id, cvPage, cvLimit, cvSortConfig.key, cvSortConfig.direction);
       fetchedTabs.current.add('cv-info');
     } catch (error: any) {
       toast.error(error.response?.data?.error || error.message || 'CV yükleme başarısız');
@@ -372,7 +429,7 @@ const EmployeeDetailPage = () => {
       await documentService.delete(docId);
       toast.success('CV silindi');
       fetchedTabs.current.delete('cv-info');
-      fetchEmployeeCvDocuments(employee.id, cvPage, cvLimit);
+      fetchEmployeeCvDocuments(employee.id, cvPage, cvLimit, cvSortConfig.key, cvSortConfig.direction);
       fetchedTabs.current.add('cv-info');
     } catch (error: any) {
       toast.error('CV silinemedi');
@@ -1165,10 +1222,18 @@ const EmployeeDetailPage = () => {
                         <Table responsive className="table-list">
                           <thead>
                             <tr>
-                              <th>Dosya Adı</th>
-                              <th>Tip</th>
-                              <th>Boyut</th>
-                              <th>Yüklenme Tarihi</th>
+                              <th className="sortable-header" style={{ cursor: 'pointer' }} onClick={() => handleDocSort('file_name')}>
+                                Dosya Adı {getDocSortIcon('file_name')}
+                              </th>
+                              <th className="sortable-header" style={{ cursor: 'pointer' }} onClick={() => handleDocSort('type')}>
+                                Tip {getDocSortIcon('type')}
+                              </th>
+                              <th className="sortable-header" style={{ cursor: 'pointer' }} onClick={() => handleDocSort('file_size')}>
+                                Boyut {getDocSortIcon('file_size')}
+                              </th>
+                              <th className="sortable-header" style={{ cursor: 'pointer' }} onClick={() => handleDocSort('created_at')}>
+                                Yüklenme Tarihi {getDocSortIcon('created_at')}
+                              </th>
                               <th></th>
                             </tr>
                           </thead>
@@ -1232,7 +1297,7 @@ const EmployeeDetailPage = () => {
                                         try {
                                           await documentService.delete(doc.id);
                                           toast.success('Doküman silindi');
-                                          fetchEmployeeDocuments(employee.id, docPage, docLimit);
+                                          fetchEmployeeDocuments(employee.id, docPage, docLimit, docSortConfig.key, docSortConfig.direction);
                                         } catch (error) {
                                           toast.error('Silme başarısız');
                                         }
@@ -1263,7 +1328,7 @@ const EmployeeDetailPage = () => {
                             itemsPerPage={docLimit}
                             onPageChange={(page) => {
                               setDocPage(page);
-                              fetchEmployeeDocuments(employee.id, page, docLimit);
+                              fetchEmployeeDocuments(employee.id, page, docLimit, docSortConfig.key, docSortConfig.direction);
                             }}
                           />
                         </div>
@@ -1540,9 +1605,15 @@ const EmployeeDetailPage = () => {
                         <Table responsive className="table-list">
                           <thead>
                             <tr>
-                              <th>Dosya Adı</th>
-                              <th>Boyut</th>
-                              <th>Yüklenme Tarihi</th>
+                              <th className="sortable-header" style={{ cursor: 'pointer' }} onClick={() => handleCvSort('file_name')}>
+                                Dosya Adı {getCvSortIcon('file_name')}
+                              </th>
+                              <th className="sortable-header" style={{ cursor: 'pointer' }} onClick={() => handleCvSort('file_size')}>
+                                Boyut {getCvSortIcon('file_size')}
+                              </th>
+                              <th className="sortable-header" style={{ cursor: 'pointer' }} onClick={() => handleCvSort('created_at')}>
+                                Yüklenme Tarihi {getCvSortIcon('created_at')}
+                              </th>
                               <th></th>
                             </tr>
                           </thead>
@@ -1622,7 +1693,7 @@ const EmployeeDetailPage = () => {
                             itemsPerPage={cvLimit}
                             onPageChange={(page) => {
                               setCvPage(page);
-                              fetchEmployeeCvDocuments(employee.id, page, cvLimit);
+                              fetchEmployeeCvDocuments(employee.id, page, cvLimit, cvSortConfig.key, cvSortConfig.direction);
                             }}
                           />
                         </div>
