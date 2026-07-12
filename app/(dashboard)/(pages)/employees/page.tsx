@@ -62,6 +62,7 @@ const EmployeesPage = () => {
   const [filterParams, setFilterParams] = useState({
     first_name: '',
     email: '',
+    city: '',
     department_ids: [] as string[], // Changed to array for multiple selection
     manager: '',
     identity_no: '',
@@ -192,6 +193,7 @@ const EmployeesPage = () => {
     // Load all filter parameters
     const firstName = searchParams.get('first_name');
     const email = searchParams.get('email');
+  const city = searchParams.get('city');
     const departmentIds = searchParams.get('department_ids');
     const manager = searchParams.get('manager');
     const identityNo = searchParams.get('identity_no');
@@ -206,6 +208,7 @@ const EmployeesPage = () => {
     // Set filter states
     if (firstName) urlFilters.first_name = firstName;
     if (email) urlFilters.email = email;
+  if (city) urlFilters.city = city;
     if (departmentIds) urlFilters.department_ids = departmentIds.split(',');
     if (manager) urlFilters.manager = manager;
     if (identityNo) urlFilters.identity_no = identityNo;
@@ -222,6 +225,7 @@ const EmployeesPage = () => {
       status: status || 'ACTIVE',
       company_id: company_id || '',
       department_ids: department_ids || '',
+      city: city || '',
       jobTitle: jobTitle || ''
     };
   };
@@ -288,6 +292,7 @@ const EmployeesPage = () => {
       setFilterParams({
         first_name: urlData.filters.first_name || '',
         email: urlData.filters.email || '',
+        city: urlData.filters.city || '',
         department_ids: urlData.filters.department_ids || [],
         manager: urlData.filters.manager || '',
         identity_no: urlData.filters.identity_no || '',
@@ -381,20 +386,22 @@ const EmployeesPage = () => {
           acc['department_ids'] = value.join(',');
         }
       } else if (value && value.toString().trim() !== '') {
-        const strValue = value.toString().trim();
-        // Minimum 3 characters rule for text-based real-time filters
-        if ((key === 'first_name' || key === 'manager') && strValue.length > 0 && strValue.length < 3) {
-          // Ignore filter if less than 3 characters
-        } else {
-          acc[key] = strValue;
+          const strValue = value.toString().trim();
+          // Minimum 3 characters rule for text-based real-time filters
+          if ((key === 'first_name' || key === 'manager' || key === 'city') && strValue.length > 0 && strValue.length < 3) {
+            // Ignore filter if less than 3 characters
+          } else {
+            acc[key] = strValue;
+          }
         }
-      }
       return acc;
     }, {} as Record<string, any>);
 
     if (statusFilter) {
       activeFilters['status'] = statusFilter;
     }
+
+    // city is handled above with the same 3-character rule as other text filters
 
     return activeFilters;
   };
@@ -416,8 +423,9 @@ const EmployeesPage = () => {
       // 1-2 karakter girildiğinde hiç istek atmaması için erken dönüş (block)
       const firstNameLen = filterParams.first_name?.trim().length || 0;
       const managerLen = filterParams.manager?.trim().length || 0;
+      const cityLen = (filterParams as any).city?.trim().length || 0;
 
-      if ((firstNameLen > 0 && firstNameLen < 3) || (managerLen > 0 && managerLen < 3)) {
+      if ((firstNameLen > 0 && firstNameLen < 3) || (managerLen > 0 && managerLen < 3) || (cityLen > 0 && cityLen < 3)) {
         return;
       }
 
@@ -441,8 +449,9 @@ const EmployeesPage = () => {
     quickSearchParams.company_id,
     quickSearchParams.department_ids,
     quickSearchParams.jobTitle,
-    filterParams.first_name,
-    filterParams.email,
+  filterParams.first_name,
+  filterParams.city,
+  filterParams.email,
     departmentIdsStr,
     filterParams.manager,
     filterParams.identity_no,
@@ -480,6 +489,7 @@ const EmployeesPage = () => {
     setFilterParams({
       first_name: '',
       email: '',
+      city: '',
       department_ids: [], // Reset to empty array
       manager: '',
       identity_no: '',
@@ -785,6 +795,17 @@ const EmployeesPage = () => {
                           value={filterParams.manager}
                           onChange={(name, value) => handleFilterChange(name, value)}
                           placeholder="Manager giriniz"
+                        />
+                      </Col>
+                      <Col lg={3} md={6} sm={12}>
+                        <FormTextField
+                          controlId="filter-city"
+                          label="İl"
+                          name="city"
+                          type="text"
+                          value={(filterParams as any).city}
+                          onChange={(name, value) => handleFilterChange(name, value)}
+                          placeholder="İl giriniz (ör. İstanbul)"
                         />
                       </Col>
                       <Col lg={3} md={6} sm={12}>
