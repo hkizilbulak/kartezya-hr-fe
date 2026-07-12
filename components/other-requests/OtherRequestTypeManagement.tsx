@@ -21,7 +21,7 @@ const OtherRequestTypeManagement = () => {
     const [submitting, setSubmitting] = useState(false);
 
     const [sortConfig, setSortConfig] = useState<{
-        key: 'name' | 'description' | null;
+        key: 'name' | 'description' | 'active' | 'created_at' | null;
         direction: 'ASC' | 'DESC';
     }>({
         key: null,
@@ -48,7 +48,7 @@ const OtherRequestTypeManagement = () => {
         }
     };
 
-    const handleSort = (key: 'name' | 'description') => {
+    const handleSort = (key: 'name' | 'description' | 'active' | 'created_at') => {
         let direction: 'ASC' | 'DESC' = 'ASC';
         if (sortConfig.key === key && sortConfig.direction === 'ASC') {
             direction = 'DESC';
@@ -57,7 +57,7 @@ const OtherRequestTypeManagement = () => {
         fetchTypes(key, direction);
     };
 
-    const getSortIcon = (columnKey: 'name' | 'description') => {
+    const getSortIcon = (columnKey: 'name' | 'description' | 'active' | 'created_at') => {
         if (sortConfig.key !== columnKey) {
             return null;
         }
@@ -166,19 +166,35 @@ const OtherRequestTypeManagement = () => {
                                             >
                                                 Açıklama {getSortIcon('description')}
                                             </th>
+                                            <th
+                                                onClick={() => handleSort('active')}
+                                                className="sortable-header"
+                                                style={{ cursor: 'pointer' }}
+                                            >
+                                                Durum {getSortIcon('active')}
+                                            </th>
+                                            <th
+                                                onClick={() => handleSort('created_at')}
+                                                className="sortable-header"
+                                                style={{ cursor: 'pointer' }}
+                                            >
+                                                Oluşturma {getSortIcon('created_at')}
+                                            </th>
                                             <th className="text-end">İşlemler</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {types.length === 0 ? (
                                             <tr>
-                                                <td colSpan={3} className="text-center py-4">Talep türü bulunamadı</td>
+                                                <td colSpan={5} className="text-center py-4">Talep türü bulunamadı</td>
                                             </tr>
                                         ) : (
                                             types.map(t => (
                                                 <tr key={t.id}>
                                                     <td className="fw-medium">{t.name}</td>
                                                     <td>{t.description || '-'}</td>
+                                                    <td>{t.active === false ? 'Pasif' : 'Aktif'}</td>
+                                                    <td>{t.created_at ? new Date(t.created_at).toLocaleDateString('tr-TR') : '-'}</td>
                                                     <td className="text-end">
                                                         <Button
                                                             variant="outline-primary"

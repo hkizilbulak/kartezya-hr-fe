@@ -24,7 +24,7 @@ const ExpenseTypeManagement: React.FC = () => {
   const [isEdit, setIsEdit] = useState(false);
   
   const [sortConfig, setSortConfig] = useState<{
-    key: 'name' | 'description' | null;
+    key: 'name' | 'description' | 'max_amount' | 'active' | 'requires_receipt' | 'role_name' | null;
     direction: 'ASC' | 'DESC';
   }>({
     key: null,
@@ -62,7 +62,7 @@ const ExpenseTypeManagement: React.FC = () => {
     }
   };
 
-  const handleSort = (key: 'name' | 'description') => {
+  const handleSort = (key: 'name' | 'description' | 'max_amount' | 'active' | 'requires_receipt' | 'role_name') => {
     let direction: 'ASC' | 'DESC' = 'ASC';
     if (sortConfig.key === key && sortConfig.direction === 'ASC') {
       direction = 'DESC';
@@ -71,7 +71,7 @@ const ExpenseTypeManagement: React.FC = () => {
     fetchExpenseTypes(key, direction);
   };
 
-  const getSortIcon = (columnKey: 'name' | 'description') => {
+  const getSortIcon = (columnKey: 'name' | 'description' | 'max_amount' | 'active') => {
     if (sortConfig.key !== columnKey) return null;
     return sortConfig.direction === 'ASC' ? 
         <ChevronUp size={16} className="ms-1" style={{ display: 'inline' }} /> : 
@@ -227,10 +227,18 @@ const ExpenseTypeManagement: React.FC = () => {
                   <th onClick={() => handleSort('description')} className="sortable-header" style={{cursor: 'pointer'}}>
                     Açıklama {getSortIcon('description')}
                   </th>
-                  <th>Maksimum Tutar</th>
-                  <th>Makbuz Gerekli</th>
-                  <th>Rol</th>
-                  <th>Durum</th>
+                  <th onClick={() => handleSort('max_amount')} className="sortable-header" style={{cursor: 'pointer'}}>
+                    Maksimum Tutar {getSortIcon('max_amount')}
+                  </th>
+                  <th onClick={() => handleSort('requires_receipt')} className="sortable-header" style={{cursor: 'pointer'}}>
+                    Makbuz Gerekli {getSortIcon('requires_receipt')}
+                  </th>
+                  <th onClick={() => handleSort('role_name')} className="sortable-header" style={{cursor: 'pointer'}}>
+                    Rol {getSortIcon('role_name')}
+                  </th>
+                  <th onClick={() => handleSort('active')} className="sortable-header" style={{cursor: 'pointer'}}>
+                    Durum {getSortIcon('active')}
+                  </th>
                   <th className="text-end">İşlemler</th>
                 </tr>
               </thead>

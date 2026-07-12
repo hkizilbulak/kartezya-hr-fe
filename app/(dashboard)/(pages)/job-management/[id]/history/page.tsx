@@ -1,17 +1,24 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Row, Col, Card, Table, Button, Badge, Container } from 'react-bootstrap';
 import { jobService } from '@/services/job.service';
 import { Job, JobHistory } from '@/models/hr/job-models';
-import { PageHeading } from '@/widgets';
 import LoadingOverlay from '@/components/LoadingOverlay';
-import { Eye, ArrowLeft } from 'react-feather';
+import { Eye, ArrowLeft, ChevronUp, ChevronDown } from 'react-feather';
 import { toast } from 'react-toastify';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
 import JobHistoryModal from '@/components/modals/JobHistoryModal';
+import {
+  compareDate,
+  compareNumber,
+  compareText,
+  ClientSortDirection,
+} from '@/lib/sort/clientCompare';
 import '@/styles/table-list.scss';
 import '@/styles/components/table-common.scss';
+
+type HistorySortKey = 'start_time' | 'end_time' | 'processed_count' | 'status';
 
 const JobHistoryPage = () => {
   const { id } = useParams();
@@ -20,9 +27,13 @@ const JobHistoryPage = () => {
   const [job, setJob] = useState<Job | null>(null);
   const [history, setHistory] = useState<JobHistory[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  
+
   const [showModal, setShowModal] = useState(false);
   const [selectedHistory, setSelectedHistory] = useState<JobHistory | null>(null);
+  const [sortConfig, setSortConfig] = useState<{
+    key: HistorySortKey;
+    direction: ClientSortDirection;
+  }>({ key: 'start_time', direction: 'DESC' });
 
   useEffect(() => {
     if (id) {
@@ -37,7 +48,7 @@ const JobHistoryPage = () => {
         jobService.getJobById(jobId),
         jobService.getJobHistory(jobId, 100) // fetch up to 100 logs
       ]);
-      
+
       setJob(jobData);
       setHistory(historyData || []);
     } catch (error: any) {
@@ -47,6 +58,39 @@ const JobHistoryPage = () => {
       setIsLoading(false);
     }
   };
+
+  const handleSort = (key: HistorySortKey) => {
+    let direction: ClientSortDirection = 'ASC';
+    if (sortConfig.key === key && sortConfig.direction === 'ASC') {
+      direction = 'DESC';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const getSortIcon = (columnKey: HistorySortKey) => {
+    if (sortConfig.key !== columnKey) return null;
+    return sortConfig.direction === 'ASC'
+      ? <ChevronUp size={14} className="ms-1" style={{ display: 'inline' }} />
+      : <ChevronDown size={14} className="ms-1" style={{ display: 'inline' }} />;
+  };
+
+  const sortedHistory = useMemo(() => {
+    const rows = [...history];
+    const { key, direction } = sortConfig;
+    rows.sort((a, b) => {
+      if (key === 'processed_count') {
+        return compareNumber(a.processed_count, b.processed_count, direction);
+      }
+      if (key === 'status') {
+        return compareText(a.status || '', b.status || '', direction);
+      }
+      if (key === 'end_time') {
+        return compareDate(a.end_time, b.end_time, direction);
+      }
+      return compareDate(a.start_time, b.start_time, direction);
+    });
+    return rows;
+  }, [history, sortConfig]);
 
   const handleViewDetail = (item: JobHistory) => {
     setSelectedHistory(item);
@@ -63,7 +107,7 @@ const JobHistoryPage = () => {
     const startTime = new Date(start).getTime();
     const endTime = new Date(end).getTime();
     const diffInSeconds = Math.floor((endTime - startTime) / 1000);
-    
+
     if (diffInSeconds < 60) {
       return `${diffInSeconds} sn`;
     }
@@ -89,14 +133,14 @@ const JobHistoryPage = () => {
 
   return (
     <>
-      <Container fluid className="page-container">      
+      <Container fluid className="page-container">
         <LoadingOverlay show={isLoading} message="Geçmiş yükleniyor..." />
-  
+
         <div className="page-heading-wrapper">
           <div className="d-flex align-items-center mb-3">
-            <Button 
-              variant="link" 
-              className="p-0 me-3 text-dark d-flex align-items-center" 
+            <Button
+              variant="link"
+              className="p-0 me-3 text-dark d-flex align-items-center"
               onClick={() => router.push('/job-management')}
               style={{ textDecoration: 'none' }}
             >
@@ -117,17 +161,25 @@ const JobHistoryPage = () => {
                       <Table hover className="mb-0">
                         <thead>
                           <tr>
-                            <th>Başlangıç</th>
-                            <th>Bitiş</th>
+                            <th className="sortable-header" style={{ cursor: 'pointer' }} onClick={() => handleSort('start_time')}>
+                              Başlangıç {getSortIcon('start_time')}
+                            </th>
+                            <th className="sortable-header" style={{ cursor: 'pointer' }} onClick={() => handleSort('end_time')}>
+                              Bitiş {getSortIcon('end_time')}
+                            </th>
                             <th>Süre</th>
-                            <th>İşlenen Kayıt</th>
-                            <th>Durum</th>
+                            <th className="sortable-header" style={{ cursor: 'pointer' }} onClick={() => handleSort('processed_count')}>
+                              İşlenen Kayıt {getSortIcon('processed_count')}
+                            </th>
+                            <th className="sortable-header" style={{ cursor: 'pointer' }} onClick={() => handleSort('status')}>
+                              Durum {getSortIcon('status')}
+                            </th>
                             <th className="text-end">Detay</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {history.length ? (
-                            history.map((item: JobHistory) => (
+                          {sortedHistory.length ? (
+                            sortedHistory.map((item: JobHistory) => (
                               <tr key={item.id}>
                                 <td>{new Date(item.start_time).toLocaleString()}</td>
                                 <td>{item.end_time ? new Date(item.end_time).toLocaleString() : '-'}</td>

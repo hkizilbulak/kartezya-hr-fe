@@ -101,7 +101,7 @@ const AdminExpenseRequests: React.FC = () => {
       direction = 'desc';
     }
     setSortConfig({ key, direction });
-    fetchExpenseRequests(currentPage, statusFilter, key, direction);
+    fetchExpenseRequests(1, statusFilter, key, direction);
   };
 
   const getSortIcon = (columnKey: string) => {
@@ -314,11 +314,11 @@ const AdminExpenseRequests: React.FC = () => {
                 <Table hover className="mb-0">
                   <thead>
                     <tr>
-                      <th onClick={() => handleSort('employee_id')} className="sortable-header" style={{ cursor: 'pointer' }}>
-                        Çalışan {getSortIcon('employee_id')}
+                      <th onClick={() => handleSort('employee_name')} className="sortable-header" style={{ cursor: 'pointer' }}>
+                        Çalışan {getSortIcon('employee_name')}
                       </th>
-                      <th onClick={() => handleSort('expense_type_id')} className="sortable-header" style={{ cursor: 'pointer' }}>
-                        Masraf Türü {getSortIcon('expense_type_id')}
+                      <th onClick={() => handleSort('expense_type_name')} className="sortable-header" style={{ cursor: 'pointer' }}>
+                        Masraf Türü {getSortIcon('expense_type_name')}
                       </th>
                       <th onClick={() => handleSort('description')} className="sortable-header" style={{ cursor: 'pointer' }}>
                         Açıklama {getSortIcon('description')}
