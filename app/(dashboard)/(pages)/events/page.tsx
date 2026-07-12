@@ -33,7 +33,7 @@ const EventsPage = () => {
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const [sortConfig, setSortConfig] = useState<{
-    key: 'name' | 'start_date' | 'location' | 'audience_filter' | null;
+    key: 'name' | 'start_date' | 'end_date' | 'location' | 'audience_filter' | 'status' | null;
     direction: 'ASC' | 'DESC';
   }>({
     key: null,
@@ -69,16 +69,16 @@ const EventsPage = () => {
     fetchEvents(1);
   }, []);
 
-  const handleSort = (key: 'name' | 'start_date' | 'location' | 'audience_filter') => {
+  const handleSort = (key: 'name' | 'start_date' | 'end_date' | 'location' | 'audience_filter' | 'status') => {
     let direction: 'ASC' | 'DESC' = 'ASC';
     if (sortConfig.key === key && sortConfig.direction === 'ASC') {
       direction = 'DESC';
     }
     setSortConfig({ key, direction });
-    fetchEvents(currentPage, itemsPerPage, key, direction);
+    fetchEvents(1, itemsPerPage, key, direction);
   };
 
-  const getSortIcon = (columnKey: 'name' | 'start_date' | 'location' | 'audience_filter') => {
+  const getSortIcon = (columnKey: 'name' | 'start_date' | 'end_date' | 'location' | 'audience_filter' | 'status') => {
     if (sortConfig.key !== columnKey) return null;
     return sortConfig.direction === 'ASC' ? 
         <ChevronUp size={16} className="ms-1" style={{ display: 'inline' }} /> : 
@@ -197,7 +197,10 @@ const EventsPage = () => {
                                 Etkinlik Adı {getSortIcon('name')}
                             </th>
                             <th onClick={() => handleSort('start_date')} className="sortable-header" style={{cursor: 'pointer'}}>
-                                Tarih {getSortIcon('start_date')}
+                                Başlangıç {getSortIcon('start_date')}
+                            </th>
+                            <th onClick={() => handleSort('end_date')} className="sortable-header" style={{cursor: 'pointer'}}>
+                                Bitiş {getSortIcon('end_date')}
                             </th>
                             <th onClick={() => handleSort('location')} className="sortable-header" style={{cursor: 'pointer'}}>
                                 Lokasyon {getSortIcon('location')}
@@ -205,7 +208,9 @@ const EventsPage = () => {
                             <th onClick={() => handleSort('audience_filter')} className="sortable-header" style={{cursor: 'pointer'}}>
                                 Kitle {getSortIcon('audience_filter')}
                             </th>
-                            <th>Durum</th>
+                            <th onClick={() => handleSort('status')} className="sortable-header" style={{cursor: 'pointer'}}>
+                                Durum {getSortIcon('status')}
+                            </th>
                             <th className="text-end">İşlemler</th>
                           </tr>
                         </thead>
@@ -215,6 +220,7 @@ const EventsPage = () => {
                               <tr key={event.id}>
                                 <td>{event.name}</td>
                                 <td>{moment(event.start_date).format('DD.MM.YYYY HH:mm')}</td>
+                                <td>{event.end_date ? moment(event.end_date).format('DD.MM.YYYY HH:mm') : '-'}</td>
                                 <td>{event.location || '-'}</td>
                                 <td>{event.audience_filter === 'TARGETED' ? 'Özel Davetliler' : 'Tüm Şirket'}</td>
                                 <td>
@@ -270,7 +276,7 @@ const EventsPage = () => {
                           ) : (
                             !isLoading && (
                               <tr>
-                                <td colSpan={6} className="text-center py-4">
+                                <td colSpan={7} className="text-center py-4">
                                   Kayıt bulunamadı
                                 </td>
                               </tr>

@@ -102,7 +102,8 @@ export default function ContractsPage() {
       direction = 'DESC';
     }
     setSortConfig({ key, direction });
-    fetchContracts(currentPage, undefined, key, direction);
+    setCurrentPage(1);
+    fetchContracts(1, undefined, key, direction);
   };
 
   const getSortIcon = (columnKey: string) => {

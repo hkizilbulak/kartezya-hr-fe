@@ -22,7 +22,8 @@ import { leaveTypeService } from '@/services/leave-type.service';
 const LeaveRequestsPage = () => {
   const { user } = useAuth();
   const canApproveLeave = hasCapability(user?.roles, Capability.CanApproveLeave);
-  const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
+  const [pendingRequests, setPendingRequests] = useState<LeaveRequest[]>([]);
+  const [completedRequests, setCompletedRequests] = useState<LeaveRequest[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
@@ -39,12 +40,13 @@ const LeaveRequestsPage = () => {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedDetailRequest, setSelectedDetailRequest] = useState<LeaveRequest | null>(null);
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalItems, setTotalItems] = useState(0);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [pendingPage, setPendingPage] = useState(1);
   const [completedPage, setCompletedPage] = useState(1);
+  const [pendingTotalPages, setPendingTotalPages] = useState(1);
+  const [completedTotalPages, setCompletedTotalPages] = useState(1);
+  const [pendingTotalItems, setPendingTotalItems] = useState(0);
+  const [completedTotalItems, setCompletedTotalItems] = useState(0);
 
   const [filterStatus, setFilterStatus] = useState<string>('');
   const [filterLeaveTypeId, setFilterLeaveTypeId] = useState<string>('');
@@ -52,7 +54,14 @@ const LeaveRequestsPage = () => {
   const [filterEndDate, setFilterEndDate] = useState<string>('');
   const [leaveTypes, setLeaveTypes] = useState<any[]>([]);
 
-  const [sortConfig, setSortConfig] = useState<{
+  const [pendingSortConfig, setPendingSortConfig] = useState<{
+    key: string;
+    direction: 'ASC' | 'DESC';
+  }>({
+    key: 'created_at',
+    direction: 'DESC'
+  });
+  const [completedSortConfig, setCompletedSortConfig] = useState<{
     key: string;
     direction: 'ASC' | 'DESC';
   }>({
@@ -60,35 +69,60 @@ const LeaveRequestsPage = () => {
     direction: 'DESC'
   });
 
-  const fetchLeaveRequests = async (page: number = 1, sortKey: string = 'created_at', sortDir: 'ASC' | 'DESC' = 'DESC', perPage?: number) => {
+  const buildSharedParams = (page: number, sortKey: string, sortDir: 'ASC' | 'DESC', perPage: number, listGroup: 'pending' | 'completed') => {
+    const params: any = {
+      page,
+      limit: perPage,
+      sort: sortKey,
+      direction: sortDir,
+      list_group: listGroup,
+    };
+    if (filterStatus) params.status = filterStatus;
+    if (filterLeaveTypeId) params.leave_type_id = filterLeaveTypeId;
+    if (filterStartDate) params.start_date = filterStartDate;
+    if (filterEndDate) params.end_date = filterEndDate;
+    return params;
+  };
+
+  const fetchPendingRequests = async (
+    page: number = pendingPage,
+    sortKey: string = pendingSortConfig.key,
+    sortDir: 'ASC' | 'DESC' = pendingSortConfig.direction,
+    perPage: number = itemsPerPage
+  ) => {
+    const response = await leaveRequestService.getAll(buildSharedParams(page, sortKey, sortDir, perPage, 'pending'));
+    setPendingRequests(response.data || []);
+    setPendingTotalPages(response.page?.total_pages || 1);
+    setPendingTotalItems(response.page?.total || 0);
+    setPendingPage(page);
+  };
+
+  const fetchCompletedRequests = async (
+    page: number = completedPage,
+    sortKey: string = completedSortConfig.key,
+    sortDir: 'ASC' | 'DESC' = completedSortConfig.direction,
+    perPage: number = itemsPerPage
+  ) => {
+    const response = await leaveRequestService.getAll(buildSharedParams(page, sortKey, sortDir, perPage, 'completed'));
+    setCompletedRequests(response.data || []);
+    setCompletedTotalPages(response.page?.total_pages || 1);
+    setCompletedTotalItems(response.page?.total || 0);
+    setCompletedPage(page);
+  };
+
+  const refreshLeaveLists = async (
+    pendingPg: number = pendingPage,
+    completedPg: number = completedPage,
+    perPage: number = itemsPerPage,
+    pendingSort: { key: string; direction: 'ASC' | 'DESC' } = pendingSortConfig,
+    completedSort: { key: string; direction: 'ASC' | 'DESC' } = completedSortConfig
+  ) => {
     try {
       setIsLoading(true);
-
-      const params: any = { 
-        page, 
-        limit: 100, // Tüm verileri çek (frontend'de pagination yapacağız)
-        sort: sortKey,
-        direction: sortDir
-      };
-
-      if (filterStatus) params.status = filterStatus;
-      if (filterLeaveTypeId) params.leave_type_id = filterLeaveTypeId;
-      if (filterStartDate) params.start_date = filterStartDate;
-      if (filterEndDate) params.end_date = filterEndDate;
-
-      const response = await leaveRequestService.getAll(params);
-      
-      if (response.data) {
-        setLeaveRequests(response.data);
-        setTotalPages(response.page?.total_pages || 1);
-        setTotalItems(response.page?.total || 0);
-        setCurrentPage(page);
-      } else {
-        setLeaveRequests([]);
-        setTotalPages(1);
-        setTotalItems(0);
-        setCurrentPage(page);
-      }
+      await Promise.all([
+        fetchPendingRequests(pendingPg, pendingSort.key, pendingSort.direction, perPage),
+        fetchCompletedRequests(completedPg, completedSort.key, completedSort.direction, perPage),
+      ]);
     } catch (error: any) {
       const errorMessage = error.response?.data?.error || error.message || 'Veri çekme sırasında hata oluştu';
       toast.error(translateErrorMessage(errorMessage));
@@ -109,65 +143,68 @@ const LeaveRequestsPage = () => {
   };
 
   useEffect(() => {
-    fetchLeaveRequests(1, sortConfig.key, sortConfig.direction);
+    refreshLeaveLists(1, 1, itemsPerPage, pendingSortConfig, completedSortConfig);
     fetchLeaveTypes();
   }, [filterStatus, filterLeaveTypeId, filterStartDate, filterEndDate]);
 
   // İptal butonunun gösterilip gösterilmeyeceğini kontrol et
   const canCancelRequest = (request: LeaveRequest): boolean => {
-    // Status APPROVED olmalı
     if (request.status !== 'APPROVED') return false;
-    
-    // Başlangıç tarihi bugünden sonra olmalı
     const startDateStr = request.start_date || request.start_date;
     if (!startDateStr) return false;
-    
     const startDate = new Date(startDateStr);
     const today = new Date();
-    today.setHours(0, 0, 0, 0); // Bugünün başlangıcı
+    today.setHours(0, 0, 0, 0);
     startDate.setHours(0, 0, 0, 0);
-    
     return startDate > today;
   };
 
-  // Bekleyen ve tamamlanmış talepleri ayır
-  const pendingRequests = leaveRequests.filter(request => 
-    request.status === 'PENDING' || (request.status === 'APPROVED' && canCancelRequest(request))
-  );
-  const completedRequests = leaveRequests.filter(request => 
-    (request.status === 'APPROVED' && !canCancelRequest(request)) || 
-    request.status === 'REJECTED' || 
-    request.status === 'CANCELLED'
-  );
-
-  // Pagination için sayılar
-  const pendingTotalPages = Math.ceil(pendingRequests.length / itemsPerPage);
-  const completedTotalPages = Math.ceil(completedRequests.length / itemsPerPage);
-
-  // Sayfalanmış veriler
-  const paginatedPendingRequests = pendingRequests.slice(
-    (pendingPage - 1) * itemsPerPage,
-    pendingPage * itemsPerPage
-  );
-  const paginatedCompletedRequests = completedRequests.slice(
-    (completedPage - 1) * itemsPerPage,
-    completedPage * itemsPerPage
-  );
-
-  const handleSort = (key: string) => {
+  const handlePendingSort = (key: string) => {
     let direction: 'ASC' | 'DESC' = 'ASC';
-    if (sortConfig.key === key && sortConfig.direction === 'ASC') {
+    if (pendingSortConfig.key === key && pendingSortConfig.direction === 'ASC') {
       direction = 'DESC';
     }
-    setSortConfig({ key, direction });
-    fetchLeaveRequests(1, key, direction);
+    const next = { key, direction };
+    setPendingSortConfig(next);
+    setPendingPage(1);
+    setIsLoading(true);
+    fetchPendingRequests(1, key, direction, itemsPerPage)
+      .catch((error: any) => {
+        toast.error(translateErrorMessage(error.response?.data?.error || error.message || 'Veri çekme sırasında hata oluştu'));
+      })
+      .finally(() => setIsLoading(false));
   };
 
-  const getSortIcon = (columnKey: string) => {
-    if (sortConfig.key !== columnKey) {
+  const handleCompletedSort = (key: string) => {
+    let direction: 'ASC' | 'DESC' = 'ASC';
+    if (completedSortConfig.key === key && completedSortConfig.direction === 'ASC') {
+      direction = 'DESC';
+    }
+    const next = { key, direction };
+    setCompletedSortConfig(next);
+    setCompletedPage(1);
+    setIsLoading(true);
+    fetchCompletedRequests(1, key, direction, itemsPerPage)
+      .catch((error: any) => {
+        toast.error(translateErrorMessage(error.response?.data?.error || error.message || 'Veri çekme sırasında hata oluştu'));
+      })
+      .finally(() => setIsLoading(false));
+  };
+
+  const getPendingSortIcon = (columnKey: string) => {
+    if (pendingSortConfig.key !== columnKey) {
       return null;
     }
-    return sortConfig.direction === 'ASC' ?
+    return pendingSortConfig.direction === 'ASC' ?
+      <ChevronUp size={16} className="ms-1" style={{ display: 'inline' }} /> :
+      <ChevronDown size={16} className="ms-1" style={{ display: 'inline' }} />;
+  };
+
+  const getCompletedSortIcon = (columnKey: string) => {
+    if (completedSortConfig.key !== columnKey) {
+      return null;
+    }
+    return completedSortConfig.direction === 'ASC' ?
       <ChevronUp size={16} className="ms-1" style={{ display: 'inline' }} /> :
       <ChevronDown size={16} className="ms-1" style={{ display: 'inline' }} />;
   };
@@ -186,7 +223,7 @@ const LeaveRequestsPage = () => {
     setShowDocumentModal(false);
     setSelectedDocumentRequest(null);
     // Refresh data to update document count
-    fetchLeaveRequests(currentPage, sortConfig.key, sortConfig.direction);
+    refreshLeaveLists();
   };
 
   const handleApprove = async (request: LeaveRequest) => {
@@ -216,7 +253,7 @@ const LeaveRequestsPage = () => {
     try {
       await leaveRequestService.approveLeaveRequest(request.id, {});
       toast.success('İzin talebi onaylandı');
-      fetchLeaveRequests(currentPage, sortConfig.key || undefined, sortConfig.direction);
+      refreshLeaveLists();
       setShowApproveWarningModal(false);
       setApproveWarningRequest(null);
     } catch (error: any) {
@@ -250,7 +287,7 @@ const LeaveRequestsPage = () => {
       await leaveRequestService.rejectLeaveRequest(selectedRequest.id, { 
         rejectionReason: rejectReason 
       });
-      fetchLeaveRequests(currentPage, sortConfig.key || undefined, sortConfig.direction);
+      refreshLeaveLists();
       setShowRejectModal(false);
       setSelectedRequest(null);
       setRejectReason('');
@@ -274,7 +311,7 @@ const LeaveRequestsPage = () => {
     try {
       await leaveRequestService.cancelLeaveRequest(cancelRequest.id);
       toast.success('İzin talebi iptal edildi');
-      fetchLeaveRequests(currentPage, sortConfig.key || undefined, sortConfig.direction);
+      refreshLeaveLists();
       setShowCancelModal(false);
       setCancelRequest(null);
     } catch (error: any) {
@@ -289,14 +326,23 @@ const LeaveRequestsPage = () => {
     handleCancelClick(request);
   };
 
-  const handlePageChange = (newPage: number) => {
-    fetchLeaveRequests(newPage, sortConfig.key || undefined, sortConfig.direction, itemsPerPage);
+  const handlePendingPageChange = (newPage: number) => {
+    fetchPendingRequests(newPage, pendingSortConfig.key, pendingSortConfig.direction, itemsPerPage).catch((error: any) => {
+      toast.error(translateErrorMessage(error.response?.data?.error || error.message || 'Veri çekme sırasında hata oluştu'));
+    });
+  };
+
+  const handleCompletedPageChange = (newPage: number) => {
+    fetchCompletedRequests(newPage, completedSortConfig.key, completedSortConfig.direction, itemsPerPage).catch((error: any) => {
+      toast.error(translateErrorMessage(error.response?.data?.error || error.message || 'Veri çekme sırasında hata oluştu'));
+    });
   };
 
   const handlePageSizeChange = (newPageSize: number) => {
     setItemsPerPage(newPageSize);
-    setCurrentPage(1);
-    fetchLeaveRequests(1, sortConfig.key || undefined, sortConfig.direction, newPageSize);
+    setPendingPage(1);
+    setCompletedPage(1);
+    refreshLeaveLists(1, 1, newPageSize, pendingSortConfig, completedSortConfig);
   };
 
   const getStatusBadge = (status: string) => {
@@ -364,7 +410,7 @@ const LeaveRequestsPage = () => {
   };
 
   const handleModalSave = () => {
-    fetchLeaveRequests(currentPage, sortConfig.key || undefined, sortConfig.direction);
+    refreshLeaveLists();
   };
 
   return (
@@ -393,25 +439,31 @@ const LeaveRequestsPage = () => {
                         <Table hover className="mb-0">
                           <thead>
                             <tr>
-                              <th onClick={() => handleSort('created_at')} className="sortable-header" style={{ cursor: 'pointer' }}>
-                                Talep Tarihi {getSortIcon('created_at')}
+                              <th onClick={() => handlePendingSort('created_at')} className="sortable-header" style={{ cursor: 'pointer' }}>
+                                Talep Tarihi {getPendingSortIcon('created_at')}
                               </th>
-                              <th onClick={() => handleSort('employee_id')} className="sortable-header" style={{ cursor: 'pointer' }}>
-                                Personel Adı {getSortIcon('employee_id')}
+                              <th onClick={() => handlePendingSort('employee_name')} className="sortable-header" style={{ cursor: 'pointer' }}>
+                                Personel Adı {getPendingSortIcon('employee_name')}
                               </th>
-                              <th onClick={() => handleSort('leave_type_id')} className="sortable-header" style={{ cursor: 'pointer' }}>
-                                İzin Türü {getSortIcon('leave_type_id')}
+                              <th onClick={() => handlePendingSort('leave_type_name')} className="sortable-header" style={{ cursor: 'pointer' }}>
+                                İzin Türü {getPendingSortIcon('leave_type_name')}
                               </th>
-                              <th>Başlangıç Tarihi</th>
-                              <th>Bitiş Tarihi</th>
-                              <th className="text-center">Kullanılan Gün</th>
+                              <th onClick={() => handlePendingSort('start_date')} className="sortable-header" style={{ cursor: 'pointer' }}>
+                                Başlangıç Tarihi {getPendingSortIcon('start_date')}
+                              </th>
+                              <th onClick={() => handlePendingSort('end_date')} className="sortable-header" style={{ cursor: 'pointer' }}>
+                                Bitiş Tarihi {getPendingSortIcon('end_date')}
+                              </th>
+                              <th onClick={() => handlePendingSort('requested_days')} className="sortable-header text-center" style={{ cursor: 'pointer' }}>
+                                Kullanılan Gün {getPendingSortIcon('requested_days')}
+                              </th>
                               <th>Durum</th>
                               <th>İşlemler</th>
                             </tr>
                           </thead>
                           <tbody>
-                            {paginatedPendingRequests.length ? (
-                              paginatedPendingRequests.map((request: LeaveRequest) => {
+                            {pendingRequests.length ? (
+                              pendingRequests.map((request: LeaveRequest) => {
                                 const leaveTypeName = request.leave_type?.name || request.leave_type?.name;
                                 const startDate = request.start_date || request.start_date;
                                 const endDate = request.end_date || request.end_date;
@@ -506,14 +558,14 @@ const LeaveRequestsPage = () => {
               </div>
 
               {/* Bekleyen Talepler Pagination */}
-              {pendingRequests.length > 0 && (
+              {pendingTotalItems > 0 && (
                 <div className="px-3 mt-3">
                   <Pagination
                     currentPage={pendingPage}
                     totalPages={pendingTotalPages}
-                    totalItems={pendingRequests.length}
+                    totalItems={pendingTotalItems}
                     itemsPerPage={itemsPerPage}
-                    onPageChange={(page) => setPendingPage(page)}
+                    onPageChange={handlePendingPageChange}
                     onPageSizeChange={handlePageSizeChange}
                   />
                 </div>
@@ -591,25 +643,31 @@ const LeaveRequestsPage = () => {
                         <Table hover className="mb-0">
                           <thead>
                             <tr>
-                              <th onClick={() => handleSort('created_at')} className="sortable-header" style={{ cursor: 'pointer' }}>
-                                Talep Tarihi {getSortIcon('created_at')}
+                              <th onClick={() => handleCompletedSort('created_at')} className="sortable-header" style={{ cursor: 'pointer' }}>
+                                Talep Tarihi {getCompletedSortIcon('created_at')}
                               </th>
-                              <th onClick={() => handleSort('employee_id')} className="sortable-header" style={{ cursor: 'pointer' }}>
-                                Personel Adı {getSortIcon('employee_id')}
+                              <th onClick={() => handleCompletedSort('employee_name')} className="sortable-header" style={{ cursor: 'pointer' }}>
+                                Personel Adı {getCompletedSortIcon('employee_name')}
                               </th>
-                              <th onClick={() => handleSort('leave_type_id')} className="sortable-header" style={{ cursor: 'pointer' }}>
-                                İzin Türü {getSortIcon('leave_type_id')}
+                              <th onClick={() => handleCompletedSort('leave_type_name')} className="sortable-header" style={{ cursor: 'pointer' }}>
+                                İzin Türü {getCompletedSortIcon('leave_type_name')}
                               </th>
-                              <th>Başlangıç Tarihi</th>
-                              <th>Bitiş Tarihi</th>
-                              <th className="text-center">Kullanılan Gün</th>
+                              <th onClick={() => handleCompletedSort('start_date')} className="sortable-header" style={{ cursor: 'pointer' }}>
+                                Başlangıç Tarihi {getCompletedSortIcon('start_date')}
+                              </th>
+                              <th onClick={() => handleCompletedSort('end_date')} className="sortable-header" style={{ cursor: 'pointer' }}>
+                                Bitiş Tarihi {getCompletedSortIcon('end_date')}
+                              </th>
+                              <th onClick={() => handleCompletedSort('requested_days')} className="sortable-header text-center" style={{ cursor: 'pointer' }}>
+                                Kullanılan Gün {getCompletedSortIcon('requested_days')}
+                              </th>
                               <th>Durum</th>
                               <th>İşlemler</th>
                             </tr>
                           </thead>
                           <tbody>
-                            {paginatedCompletedRequests.length ? (
-                              paginatedCompletedRequests.map((request: LeaveRequest) => {
+                            {completedRequests.length ? (
+                              completedRequests.map((request: LeaveRequest) => {
                                 const leaveTypeName = request.leave_type?.name || request.leave_type?.name;
                                 const startDate = request.start_date || request.start_date;
                                 const endDate = request.end_date || request.end_date;
@@ -673,14 +731,14 @@ const LeaveRequestsPage = () => {
               </div>
 
               {/* Tamamlanmış Talepler Pagination */}
-              {completedRequests.length > 0 && (
+              {completedTotalItems > 0 && (
                 <div className="px-3 mt-3">
                   <Pagination
                     currentPage={completedPage}
                     totalPages={completedTotalPages}
-                    totalItems={completedRequests.length}
+                    totalItems={completedTotalItems}
                     itemsPerPage={itemsPerPage}
-                    onPageChange={(page) => setCompletedPage(page)}
+                    onPageChange={handleCompletedPageChange}
                     onPageSizeChange={handlePageSizeChange}
                   />
                 </div>

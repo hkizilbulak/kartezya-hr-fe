@@ -58,9 +58,16 @@ const FormSelectField = ({
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-                setIsOpen(false);
+            const selectElement = selectRef.current;
+            const dropdownElement = dropdownRef.current;
+            
+            if (selectElement && selectElement.contains(event.target as Node)) {
+                return;
             }
+            if (dropdownElement && dropdownElement.contains(event.target as Node)) {
+                return;
+            }
+            setIsOpen(false);
         };
 
         if (isOpen) {
@@ -268,7 +275,7 @@ const FormSelectField = ({
         <>
             <Form.Group as={as} md={md} controlId={controlId} className="mb-3">
                 {label && <Form.Label>{label}</Form.Label>}
-                <div className="position-relative" ref={dropdownRef}>
+                <div className="position-relative">
                     {/* Custom Select Button */}
                     <div
                         ref={selectRef}

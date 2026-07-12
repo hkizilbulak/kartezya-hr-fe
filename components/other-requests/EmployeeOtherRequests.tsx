@@ -35,7 +35,7 @@ const EmployeeOtherRequests = () => {
 
     // Sıralama State
     const [sortConfig, setSortConfig] = useState<{
-        key: 'request_type' | 'description' | 'created_at' | null;
+        key: 'request_type_name' | 'description' | 'created_at' | null;
         direction: 'ASC' | 'DESC';
     }>({ key: null, direction: 'DESC' });
 
@@ -73,7 +73,7 @@ const EmployeeOtherRequests = () => {
         }
     };
 
-    const handleSort = (key: 'request_type' | 'description' | 'created_at') => {
+    const handleSort = (key: 'request_type_name' | 'description' | 'created_at') => {
         let direction: 'ASC' | 'DESC' = 'ASC';
         if (sortConfig.key === key && sortConfig.direction === 'ASC') {
             direction = 'DESC';
@@ -140,15 +140,21 @@ const EmployeeOtherRequests = () => {
         let valA: any = "";
         let valB: any = "";
 
-        if (sortConfig.key === 'request_type') {
+        if (sortConfig.key === 'request_type_name') {
             valA = a.request_type?.name || "";
             valB = b.request_type?.name || "";
+            return sortConfig.direction === 'ASC'
+                ? String(valA).localeCompare(String(valB), 'tr-TR')
+                : String(valB).localeCompare(String(valA), 'tr-TR');
         } else if (sortConfig.key === 'created_at') {
             valA = dayjs(a.created_at).valueOf();
             valB = dayjs(b.created_at).valueOf();
         } else {
             valA = (a as any)[sortConfig.key] || "";
             valB = (b as any)[sortConfig.key] || "";
+            return sortConfig.direction === 'ASC'
+                ? String(valA).localeCompare(String(valB), 'tr-TR')
+                : String(valB).localeCompare(String(valA), 'tr-TR');
         }
 
         if (valA < valB) return sortConfig.direction === 'ASC' ? -1 : 1;
@@ -242,7 +248,7 @@ const EmployeeOtherRequests = () => {
                                             <Table hover className="mb-0">
                                                 <thead>
                                                     <tr>
-                                                        <th className="sortable-header" style={{ cursor: 'pointer' }} onClick={() => handleSort('request_type')}>Talep Türü {getSortIcon('request_type')}</th>
+                                                        <th className="sortable-header" style={{ cursor: 'pointer' }} onClick={() => handleSort('request_type_name')}>Talep Türü {getSortIcon('request_type_name')}</th>
                                                         <th className="sortable-header" style={{ cursor: 'pointer' }} onClick={() => handleSort('description')}>Açıklama {getSortIcon('description')}</th>
                                                         <th className="sortable-header" style={{ cursor: 'pointer' }} onClick={() => handleSort('created_at')}>Tarih {getSortIcon('created_at')}</th>
                                                         <th>Durum</th>

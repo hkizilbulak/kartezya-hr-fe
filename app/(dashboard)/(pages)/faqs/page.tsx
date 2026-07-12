@@ -28,7 +28,7 @@ const FaqsPage = () => {
   const [deleteLoading, setDeleteLoading] = useState(false);
 
   const [sortConfig, setSortConfig] = useState<{
-    key: 'title' | 'created_at' | 'updated_at' | null;
+    key: 'title' | 'created_at' | 'updated_at' | 'status' | null;
     direction: 'ASC' | 'DESC';
   }>({
     key: null,
@@ -68,13 +68,14 @@ const FaqsPage = () => {
     fetchFaqs(1);
   }, []);
 
-  const handleSort = (key: 'title' | 'created_at' | 'updated_at') => {
+  const handleSort = (key: 'title' | 'created_at' | 'updated_at' | 'status') => {
     let direction: 'ASC' | 'DESC' = 'ASC';
     if (sortConfig.key === key && sortConfig.direction === 'ASC') {
       direction = 'DESC';
     }
     setSortConfig({ key, direction });
-    fetchFaqs(currentPage, itemsPerPage, key, direction);
+    setCurrentPage(1);
+    fetchFaqs(1, itemsPerPage, key, direction);
   };
 
   const getSortIcon = (columnKey: 'title' | 'created_at' | 'updated_at') => {
@@ -147,7 +148,9 @@ const FaqsPage = () => {
                           <th onClick={() => handleSort('title')} className="sortable-header" style={{cursor: 'pointer'}}>
                             Başlık {getSortIcon('title')}
                           </th>
-                          <th>Durum</th>
+                          <th onClick={() => handleSort('status')} className="sortable-header" style={{cursor: 'pointer'}}>
+                            Durum {getSortIcon('status')}
+                          </th>
                           <th onClick={() => handleSort('created_at')} className="sortable-header" style={{cursor: 'pointer'}}>
                             Oluşturulma Tarihi {getSortIcon('created_at')}
                           </th>

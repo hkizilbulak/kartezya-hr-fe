@@ -39,9 +39,9 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
 
   // Sıralama State
   const [sortConfig, setSortConfig] = useState<{
-    key: 'leave_type' | null;
+    key: string;
     direction: 'ASC' | 'DESC';
-  }>({ key: null, direction: 'DESC' });
+  }>({ key: 'created_at', direction: 'DESC' });
 
   const itemsPerPage = 10;
   const [currentPage, setCurrentPage] = useState(1);
@@ -54,14 +54,14 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
   const [filterEndDate, setFilterEndDate] = useState<string>('');
   const [leaveTypes, setLeaveTypes] = useState<any[]>([]);
 
-  const fetchLeaveRequests = async (page: number = 1) => {
+  const fetchLeaveRequests = async (page: number = 1, sortKey: string = sortConfig.key, sortDir: 'ASC' | 'DESC' = sortConfig.direction) => {
     try {
       setIsLoading(true);
       const params: any = {
         page,
         limit: itemsPerPage,
-        sort: 'created_at',
-        direction: 'DESC',
+        sort: sortKey,
+        direction: sortDir,
       };
       if (filterStatus) params.status = filterStatus;
       if (filterLeaveTypeId) params.leave_type_id = filterLeaveTypeId;
@@ -122,27 +122,20 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
   };
 
   // --- Sıralama Fonksiyonları ---
-  const handleSort = (key: 'leave_type') => {
+  const handleSort = (key: string) => {
     let direction: 'ASC' | 'DESC' = 'ASC';
     if (sortConfig.key === key && sortConfig.direction === 'ASC') {
       direction = 'DESC';
     }
     setSortConfig({ key, direction });
+    setCurrentPage(1);
+    fetchLeaveRequests(1, key, direction);
   };
 
   const getSortIcon = (columnKey: string) => {
     if (sortConfig.key !== columnKey) return null;
     return sortConfig.direction === 'ASC' ? <ChevronUp size={14} className="ms-1" /> : <ChevronDown size={14} className="ms-1" />;
   };
-
-  const sortedData = [...leaveRequests].sort((a, b) => {
-    if (!sortConfig.key) return 0;
-    const valA = a.leave_type?.name || "";
-    const valB = b.leave_type?.name || "";
-    if (valA < valB) return sortConfig.direction === 'ASC' ? -1 : 1;
-    if (valA > valB) return sortConfig.direction === 'ASC' ? 1 : -1;
-    return 0;
-  });
 
   useEffect(() => {
     fetchLeaveRequests(1);
@@ -373,22 +366,24 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
                     <Table hover className="mb-0">
                       <thead>
                         <tr>
-                          <th className="sortable-header" style={{ cursor: 'pointer' }} onClick={() => handleSort('leave_type')}>İzin Türü {getSortIcon('leave_type')}</th>
-                          <th>Başlangıç Tarihi</th>
-                          <th>Bitiş Tarihi</th>
-                          <th>Kullanılan Gün</th>
+                          <th className="sortable-header" style={{ cursor: 'pointer' }} onClick={() => handleSort('leave_type_name')}>İzin Türü {getSortIcon('leave_type_name')}</th>
+                          <th className="sortable-header" style={{ cursor: 'pointer' }} onClick={() => handleSort('start_date')}>Başlangıç Tarihi {getSortIcon('start_date')}</th>
+                          <th className="sortable-header" style={{ cursor: 'pointer' }} onClick={() => handleSort('end_date')}>Bitiş Tarihi {getSortIcon('end_date')}</th>
+                          <th className="sortable-header" style={{ cursor: 'pointer' }} onClick={() => handleSort('requested_days')}>Kullanılan Gün {getSortIcon('requested_days')}</th>
+                          <th className="sortable-header" style={{ cursor: 'pointer' }} onClick={() => handleSort('created_at')}>Talep Tarihi {getSortIcon('created_at')}</th>
                           <th>Durum</th>
                           <th className="text-end">İşlemler</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {sortedData.length ? (
-                          sortedData.map((request: LeaveRequest) => (
+                        {leaveRequests.length ? (
+                          leaveRequests.map((request: LeaveRequest) => (
                             <tr key={request.id}>
                               <td>{request.leave_type?.name || '-'}</td>
                               <td>{formatDate(request.start_date)}</td>
                               <td>{formatDate(request.end_date)}</td>
                               <td>{request.requested_days || '-'}</td>
+                              <td>{formatDate(request.created_at)}</td>
                               <td>{getStatusBadge(request.status)}</td>
                               <td className="text-end">
                                 <div className="d-flex justify-content-end gap-2">
@@ -442,7 +437,7 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
                         ) : (
                           !isLoading && (
                             <tr>
-                              <td colSpan={6} className="text-center py-4">İzin talebi bulunamadı</td>
+                              <td colSpan={7} className="text-center py-4">İzin talebi bulunamadı</td>
                             </tr>
                           )
                         )}

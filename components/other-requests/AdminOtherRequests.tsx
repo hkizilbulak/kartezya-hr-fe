@@ -207,11 +207,11 @@ const AdminOtherRequests = () => {
                                 <Table hover className="mb-0">
                                     <thead>
                                         <tr>
-                                            <th onClick={() => handleSort('employee_id')} className="sortable-header" style={{cursor: 'pointer'}}>
-                                                Çalışan Adı Soyadı {getSortIcon('employee_id')}
+                                            <th onClick={() => handleSort('employee_name')} className="sortable-header" style={{cursor: 'pointer'}}>
+                                                Çalışan Adı Soyadı {getSortIcon('employee_name')}
                                             </th>
-                                            <th onClick={() => handleSort('request_type_id')} className="sortable-header" style={{cursor: 'pointer'}}>
-                                                Talep Türü {getSortIcon('request_type_id')}
+                                            <th onClick={() => handleSort('request_type_name')} className="sortable-header" style={{cursor: 'pointer'}}>
+                                                Talep Türü {getSortIcon('request_type_name')}
                                             </th>
                                             <th onClick={() => handleSort('description')} className="sortable-header" style={{cursor: 'pointer'}}>
                                                 Talep Açıklaması {getSortIcon('description')}
