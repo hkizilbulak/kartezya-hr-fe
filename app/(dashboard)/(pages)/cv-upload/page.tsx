@@ -12,8 +12,8 @@ import { toast } from 'react-toastify';
 import '@/styles/table-list.scss';
 import '@/styles/components/table-common.scss';
 
-const MAX_FILES = 10;
-const MAX_FILE_SIZE_MB = 1;
+const MAX_FILES = 20;
+const MAX_FILE_SIZE_MB = 5;
 const ALLOWED_EXTENSIONS = ['.pdf', '.docx', '.txt'];
 const POLL_INTERVAL_MS = 3000;
 
@@ -103,7 +103,7 @@ const CvUploadPage = () => {
         continue;
       }
       if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
-        errors.push(`"${file.name}" 1 MB sınırını aşıyor.`);
+        errors.push(`"${file.name}" ${MAX_FILE_SIZE_MB} MB sınırını aşıyor.`);
         continue;
       }
       if (currentCount + newFiles.length >= MAX_FILES) {
@@ -231,7 +231,7 @@ const CvUploadPage = () => {
                     Dosyaları buraya sürükleyin veya seçmek için tıklayın
                   </p>
                   <p className="text-muted small mb-0">
-                    PDF, DOCX, TXT · Maksimum {MAX_FILES} dosya · Dosya başına 1 MB
+                    PDF, DOCX, TXT · Maksimum {MAX_FILES} dosya · Dosya başına {MAX_FILE_SIZE_MB} MB
                   </p>
                   <Form.Control
                     ref={fileInputRef}
