@@ -151,7 +151,10 @@ const EmployeeDetailPage = () => {
       } else if (activeTab === 'contract-info') {
         fetchEmployeeContracts(employee.id);
       } else if (activeTab === 'document-info') {
-        fetchEmployeeDocuments(employee.id);
+        const ownerUserId = getEmployeeOwnerUserId(employee);
+        if (ownerUserId) {
+          fetchEmployeeDocuments(ownerUserId);
+        }
       } else if (activeTab === 'cv-info') {
         fetchEmployeeCvDocuments(employee.id);
       }
@@ -290,15 +293,25 @@ const EmployeeDetailPage = () => {
     }
   };
 
+  const getEmployeeOwnerUserId = (emp: typeof employee): number | null => {
+    if (!emp) return null;
+    const nestedId = emp.user?.id;
+    if (typeof nestedId === 'number' && nestedId > 0) {
+      return nestedId;
+    }
+    return null;
+  };
+
   const fetchEmployeeDocuments = async (
-    empId: number,
+    ownerUserId: number,
     page = 1,
     limit = 10,
     sort: string = docSortConfig.key,
     direction: 'ASC' | 'DESC' = docSortConfig.direction
   ) => {
     try {
-      const response = await documentService.getUserDocuments(empId, {
+      // Backend /documents/user/:id expects OwnerID (user id), not employee id.
+      const response = await documentService.getUserDocuments(ownerUserId, {
         page,
         limit,
         sort,
@@ -331,8 +344,9 @@ const EmployeeDetailPage = () => {
     }
     setDocSortConfig({ key, direction });
     setDocPage(1);
-    if (employee) {
-      fetchEmployeeDocuments(employee.id, 1, docLimit, key, direction);
+    const ownerUserId = getEmployeeOwnerUserId(employee);
+    if (ownerUserId) {
+      fetchEmployeeDocuments(ownerUserId, 1, docLimit, key, direction);
     }
   };
 
@@ -1360,7 +1374,10 @@ const EmployeeDetailPage = () => {
                                           try {
                                             await documentService.delete(doc.id);
                                             toast.success('Doküman silindi');
-                                            fetchEmployeeDocuments(employee.id, docPage, docLimit, docSortConfig.key, docSortConfig.direction);
+                                            const ownerUserId = getEmployeeOwnerUserId(employee);
+                                            if (ownerUserId) {
+                                              fetchEmployeeDocuments(ownerUserId, docPage, docLimit, docSortConfig.key, docSortConfig.direction);
+                                            }
                                           } catch (error) {
                                             toast.error('Silme başarısız');
                                           }
@@ -1392,7 +1409,10 @@ const EmployeeDetailPage = () => {
                             itemsPerPage={docLimit}
                             onPageChange={(page) => {
                               setDocPage(page);
-                              fetchEmployeeDocuments(employee.id, page, docLimit, docSortConfig.key, docSortConfig.direction);
+                              const ownerUserId = getEmployeeOwnerUserId(employee);
+                              if (ownerUserId) {
+                                fetchEmployeeDocuments(ownerUserId, page, docLimit, docSortConfig.key, docSortConfig.direction);
+                              }
                             }}
                           />
                         </div>
