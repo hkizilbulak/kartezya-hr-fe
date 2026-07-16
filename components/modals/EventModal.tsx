@@ -47,7 +47,7 @@ const EventModal: React.FC<EventModalProps> = ({
     resend_template_id: ''
   });
   const [loading, setLoading] = useState(false);
-  const [fieldErrors, setFieldErrors] = useState<{[key: string]: string}>({});
+  const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
 
   const [companies, setCompanies] = useState<CompanyLookup[]>([]);
   const [departments, setDepartments] = useState<DepartmentLookup[]>([]);
@@ -166,7 +166,7 @@ const EventModal: React.FC<EventModalProps> = ({
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const target = e.target as HTMLInputElement;
     const { name, value, type, checked } = target;
-    setFormData(prev => ({
+    setFormData((prev: any) => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : (name === 'quota' || name === 'max_companion' ? parseInt(value) || 0 : value)
     }));
@@ -180,8 +180,8 @@ const EventModal: React.FC<EventModalProps> = ({
   };
 
   const validateForm = (): boolean => {
-    const errors: {[key: string]: string} = {};
-    
+    const errors: { [key: string]: string } = {};
+
     if (!formData.name?.trim()) errors.name = 'Etkinlik adı zorunludur';
     if (!formData.type?.trim()) errors.type = 'Etkinlik tipi zorunludur';
     if (!formData.start_date) errors.start_date = 'Başlangıç tarihi zorunludur';
@@ -193,7 +193,7 @@ const EventModal: React.FC<EventModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
 
     setLoading(true);
@@ -207,7 +207,7 @@ const EventModal: React.FC<EventModalProps> = ({
       }
       submitData.start_date = new Date(`${submitData.start_date}T${submitData.start_time || '00:00'}`).toISOString();
       submitData.end_date = new Date(`${submitData.end_date}T${submitData.end_time || '00:00'}`).toISOString();
-      
+
       delete submitData.start_time;
       delete submitData.end_time;
       delete submitData.last_change_time;
@@ -233,11 +233,11 @@ const EventModal: React.FC<EventModalProps> = ({
     <Modal show={show} onHide={onHide} size="xl" enforceFocus={false}>
       <div className="position-relative">
         <LoadingOverlay show={loading} message="Kaydediliyor..." />
-        
+
         <Modal.Header closeButton>
           <Modal.Title>{isEdit ? 'Etkinlik Düzenle' : 'Yeni Etkinlik'}</Modal.Title>
         </Modal.Header>
-        
+
         <Form onSubmit={handleSubmit}>
           <Modal.Body>
             <h5 className="mb-3">Temel Bilgiler</h5>
@@ -324,7 +324,7 @@ const EventModal: React.FC<EventModalProps> = ({
                       value={selectedCompany}
                       onChange={(e: any) => {
                         setSelectedCompany(e.target.value);
-                        setSelectedDepartmentIds([]); 
+                        setSelectedDepartmentIds([]);
                       }}
                       disabled={loading}
                     >
@@ -352,7 +352,7 @@ const EventModal: React.FC<EventModalProps> = ({
                     </Form.Group>
                   </Col>
                 </Row>
-                
+
                 <Row className="mb-3">
                   <Col md={12}>
                     <Form.Label>Etkinliğe Eklenecek Çalışanlar</Form.Label>
@@ -364,8 +364,8 @@ const EventModal: React.FC<EventModalProps> = ({
                           {employees
                             .filter(emp => !selectedEmployees.includes(emp.id.toString()))
                             .map(emp => (
-                              <div 
-                                key={'avail-'+emp.id}
+                              <div
+                                key={'avail-' + emp.id}
                                 className="p-2 border-bottom cursor-pointer d-flex justify-content-between align-items-center"
                                 onClick={() => setSelectedEmployees(prev => [...prev, emp.id.toString()])}
                                 style={{ cursor: 'pointer' }}
@@ -374,7 +374,7 @@ const EventModal: React.FC<EventModalProps> = ({
                                 <span>{emp.first_name} {emp.last_name}</span>
                                 <span className="text-primary fw-bold">+</span>
                               </div>
-                          ))}
+                            ))}
                           {employees.filter(emp => !selectedEmployees.includes(emp.id.toString())).length === 0 && (
                             <div className="text-muted text-center mt-3">Listelenecek çalışan bulunamadı. Filtreleri kullanın.</div>
                           )}
@@ -396,15 +396,15 @@ const EventModal: React.FC<EventModalProps> = ({
                             const name = emp ? `${emp.first_name} ${emp.last_name}` : (participantNames[empId] || `Katılımcı #${empId} (Yüklü Değil)`);
                             const status = participantStatuses[empId];
                             const statusBadge = status === 'ATTENDING'
-                              ? <span className="badge bg-success ms-1" style={{fontSize:'10px'}}>Katılacak</span>
+                              ? <span className="badge bg-success ms-1" style={{ fontSize: '10px' }}>Katılacak</span>
                               : status === 'NOT_ATTENDING'
-                              ? <span className="badge bg-danger ms-1" style={{fontSize:'10px'}}>Katılmayacak</span>
-                              : status === 'PENDING'
-                              ? <span className="badge bg-warning text-dark ms-1" style={{fontSize:'10px'}}>Bekliyor</span>
-                              : null;
+                                ? <span className="badge bg-danger ms-1" style={{ fontSize: '10px' }}>Katılmayacak</span>
+                                : status === 'PENDING'
+                                  ? <span className="badge bg-warning text-dark ms-1" style={{ fontSize: '10px' }}>Bekliyor</span>
+                                  : null;
                             return (
-                              <div 
-                                key={'sel-'+empId}
+                              <div
+                                key={'sel-' + empId}
                                 className="p-2 border-bottom cursor-pointer d-flex justify-content-between align-items-center"
                                 onClick={() => setSelectedEmployees(prev => prev.filter(id => id !== empId))}
                                 style={{ cursor: 'pointer' }}

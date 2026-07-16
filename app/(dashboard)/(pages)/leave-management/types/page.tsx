@@ -40,13 +40,13 @@ const LeaveTypesPage = () => {
     try {
       setIsLoading(true);
 
-      const response = await leaveTypeService.getAll({ 
-        page, 
+      const response = await leaveTypeService.getAll({
+        page,
         limit: perPage || itemsPerPage,
         sort: sortKey,
         direction: sortDir
       });
-      
+
       if (response.data) {
         setLeaveTypes(response.data);
         setTotalPages(response.page?.total_pages || 1);
@@ -75,7 +75,7 @@ const LeaveTypesPage = () => {
     fetchLeaveTypes(1, key, direction);
   };
 
-  const getSortIcon = (columnKey: 'name' | 'limit_amount') => {
+  const getSortIcon = (columnKey: 'name' | 'limit_amount' | 'is_paid' | 'is_accrual' | 'is_required_document') => {
     if (sortConfig.key !== columnKey) {
       return null;
     }
@@ -161,10 +161,10 @@ const LeaveTypesPage = () => {
   return (
     <>
       <Container fluid className="page-container">
-      <LoadingOverlay show={isLoading} message="İzin türleri yükleniyor..." />
+        <LoadingOverlay show={isLoading} message="İzin türleri yükleniyor..." />
 
         <div className="page-heading-wrapper">
-          <PageHeading 
+          <PageHeading
             heading="İzin Türleri"
             showCreateButton={true}
             showFilterButton={false}

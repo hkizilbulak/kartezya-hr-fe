@@ -127,71 +127,42 @@
   }
 }
 
-// İnfo Row - Üst ve Alt satırlar
-.infoRow {
-  display: flex;
-  align-items: center;
-  gap: 2rem;
-  width: 100%;
-  padding: 1rem 0;
-
-  &:not(:last-child) {
-    border-bottom: 1px solid #e5e7eb;
-  }
-
-  @media (max-width: 1200px) {
-    gap: 1.5rem;
-  }
-
-  @media (max-width: 768px) {
-    width: 100%;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
-    padding: 0.5rem 0;
-  }
-}
-
 .infoItem {
   display: flex;
-  align-items: baseline;
-  gap: 0.5rem;
-  min-width: fit-content;
+  flex-direction: column;
+  gap: 0.25rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background-color: #f8fafc; /* Slate 50 */
+  border-radius: 8px;
+  border-left: 3px solid #6366f1; /* Indigo left border */
+  height: 100%;
+  transition: all 0.2s ease-in-out;
 
-  @media (max-width: 768px) {
-    width: 100%;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.25rem;
+  &:hover {
+    background-color: #f1f5f9; /* Slate 100 */
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
   }
 }
 
 .infoLabel {
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 700;
-  color: #6b7280;
+  color: #64748b; /* Slate 500 */
   text-transform: uppercase;
   letter-spacing: 0.05em;
   white-space: nowrap;
 }
 
 .infoValue {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
-  color: #1f2937;
+  color: #1e293b; /* Slate 800 */
+  word-break: break-all;
+  line-height: 1.4;
 
   @media (max-width: 768px) {
-    font-size: 13px;
-  }
-}
-
-.divider {
-  width: 1px;
-  height: 40px;
-  background-color: #e5e7eb;
-  flex-shrink: 0;
-
-  @media (max-width: 768px) {
-    display: none;
+    font-size: 12px;
   }
 }
