@@ -10,7 +10,7 @@ type IProps = {
     cancelLabel?: string;
     confirmLabel?: string;
     loadingLabel?: string;
-    variant?: 'danger' | 'warning';
+    variant?: 'danger' | 'warning' | 'success';
 }
 
 export default function DeleteModal({ 
