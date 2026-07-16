@@ -22,7 +22,7 @@ const ExpenseTypeManagement: React.FC = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedType, setSelectedType] = useState<ExpenseType | null>(null);
   const [isEdit, setIsEdit] = useState(false);
-  
+
   const [sortConfig, setSortConfig] = useState<{
     key: 'name' | 'description' | 'max_amount' | 'active' | 'requires_receipt' | 'role_name' | null;
     direction: 'ASC' | 'DESC';
@@ -40,7 +40,7 @@ const ExpenseTypeManagement: React.FC = () => {
     role_id: '' as string | number
   });
 
-  const [fieldErrors, setFieldErrors] = useState<{[key: string]: string}>({});
+  const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
 
   useEffect(() => {
     fetchExpenseTypes();
@@ -71,11 +71,11 @@ const ExpenseTypeManagement: React.FC = () => {
     fetchExpenseTypes(key, direction);
   };
 
-  const getSortIcon = (columnKey: 'name' | 'description' | 'max_amount' | 'active') => {
+  const getSortIcon = (columnKey: 'name' | 'description' | 'max_amount' | 'active' | 'requires_receipt' | 'role_name') => {
     if (sortConfig.key !== columnKey) return null;
-    return sortConfig.direction === 'ASC' ? 
-        <ChevronUp size={16} className="ms-1" style={{ display: 'inline' }} /> : 
-        <ChevronDown size={16} className="ms-1" style={{ display: 'inline' }} />;
+    return sortConfig.direction === 'ASC' ?
+      <ChevronUp size={16} className="ms-1" style={{ display: 'inline' }} /> :
+      <ChevronDown size={16} className="ms-1" style={{ display: 'inline' }} />;
   };
 
   const fetchRoles = async () => {
@@ -123,7 +123,7 @@ const ExpenseTypeManagement: React.FC = () => {
   };
 
   const validateForm = (): boolean => {
-    const errors: {[key: string]: string} = {};
+    const errors: { [key: string]: string } = {};
 
     if (!formData.name?.trim()) {
       errors.name = 'Masraf türü adı giriniz';
@@ -206,8 +206,8 @@ const ExpenseTypeManagement: React.FC = () => {
   return (
     <>
       <LoadingOverlay show={isLoading} />
-      
-      <PageHeading 
+
+      <PageHeading
         heading="Masraf Türleri"
         showCreateButton={true}
         showFilterButton={false}
@@ -221,22 +221,22 @@ const ExpenseTypeManagement: React.FC = () => {
             <Table hover>
               <thead>
                 <tr>
-                  <th onClick={() => handleSort('name')} className="sortable-header" style={{cursor: 'pointer'}}>
+                  <th onClick={() => handleSort('name')} className="sortable-header" style={{ cursor: 'pointer' }}>
                     Ad {getSortIcon('name')}
                   </th>
-                  <th onClick={() => handleSort('description')} className="sortable-header" style={{cursor: 'pointer'}}>
+                  <th onClick={() => handleSort('description')} className="sortable-header" style={{ cursor: 'pointer' }}>
                     Açıklama {getSortIcon('description')}
                   </th>
-                  <th onClick={() => handleSort('max_amount')} className="sortable-header" style={{cursor: 'pointer'}}>
+                  <th onClick={() => handleSort('max_amount')} className="sortable-header" style={{ cursor: 'pointer' }}>
                     Maksimum Tutar {getSortIcon('max_amount')}
                   </th>
-                  <th onClick={() => handleSort('requires_receipt')} className="sortable-header" style={{cursor: 'pointer'}}>
+                  <th onClick={() => handleSort('requires_receipt')} className="sortable-header" style={{ cursor: 'pointer' }}>
                     Makbuz Gerekli {getSortIcon('requires_receipt')}
                   </th>
-                  <th onClick={() => handleSort('role_name')} className="sortable-header" style={{cursor: 'pointer'}}>
+                  <th onClick={() => handleSort('role_name')} className="sortable-header" style={{ cursor: 'pointer' }}>
                     Rol {getSortIcon('role_name')}
                   </th>
-                  <th onClick={() => handleSort('active')} className="sortable-header" style={{cursor: 'pointer'}}>
+                  <th onClick={() => handleSort('active')} className="sortable-header" style={{ cursor: 'pointer' }}>
                     Durum {getSortIcon('active')}
                   </th>
                   <th className="text-end">İşlemler</th>
@@ -319,7 +319,7 @@ const ExpenseTypeManagement: React.FC = () => {
               <Form.Control
                 type="text"
                 value={formData.name}
-                onChange={(e) => setFormData({...formData, name: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 isInvalid={!!fieldErrors.name}
               />
               {fieldErrors.name && (
@@ -337,7 +337,7 @@ const ExpenseTypeManagement: React.FC = () => {
                 as="textarea"
                 rows={3}
                 value={formData.description}
-                onChange={(e) => setFormData({...formData, description: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 isInvalid={!!fieldErrors.description}
               />
               {fieldErrors.description && (
@@ -355,7 +355,7 @@ const ExpenseTypeManagement: React.FC = () => {
                     type="number"
                     step="0.01"
                     value={formData.max_amount}
-                    onChange={(e) => setFormData({...formData, max_amount: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, max_amount: e.target.value })}
                     isInvalid={!!fieldErrors.max_amount}
                     placeholder="Boş bırakılırsa limit yok"
                   />
@@ -371,7 +371,7 @@ const ExpenseTypeManagement: React.FC = () => {
                   <Form.Label>Rol Kısıtlaması</Form.Label>
                   <Form.Select
                     value={formData.role_id}
-                    onChange={(e) => setFormData({...formData, role_id: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, role_id: e.target.value })}
                   >
                     <option value="">Tüm roller görebilir</option>
                     {roles.map((role) => (
@@ -392,7 +392,7 @@ const ExpenseTypeManagement: React.FC = () => {
                 type="checkbox"
                 label="Makbuz/Fatura Gerekli"
                 checked={formData.requires_receipt}
-                onChange={(e) => setFormData({...formData, requires_receipt: e.target.checked})}
+                onChange={(e) => setFormData({ ...formData, requires_receipt: e.target.checked })}
               />
             </Form.Group>
 
@@ -401,7 +401,7 @@ const ExpenseTypeManagement: React.FC = () => {
                 type="checkbox"
                 label="Aktif"
                 checked={formData.active}
-                onChange={(e) => setFormData({...formData, active: e.target.checked})}
+                onChange={(e) => setFormData({ ...formData, active: e.target.checked })}
               />
             </Form.Group>
           </Modal.Body>

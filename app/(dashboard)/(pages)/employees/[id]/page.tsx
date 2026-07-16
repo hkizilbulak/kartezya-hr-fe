@@ -7,7 +7,7 @@ import { authService } from '@/services/auth.service';
 import { Employee, EmployeeWorkInformation } from '@/models/hr/hr-models';
 import { toast } from 'react-toastify';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
-import { Edit, Trash2, Download, Upload, ChevronUp, ChevronDown } from 'react-feather';
+import { Edit, Trash2, Download, Upload, ChevronUp, ChevronDown, User, FileText, Briefcase, Folder, Award, Clipboard, Shield, Calendar, DollarSign } from 'react-feather';
 import EmployeeHeaderProfile from '@/components/employee-detail/EmployeeHeaderProfile';
 import WorkInformationModal from '@/components/modals/WorkInformationModal';
 import EmployeeGradeModal from '@/components/modals/EmployeeGradeModal';
@@ -45,6 +45,7 @@ const EmployeeDetailPage = () => {
   const [workInformations, setWorkInformations] = useState<EmployeeWorkInformation[]>([]);
   const [employeeGrades, setEmployeeGrades] = useState<any[]>([]);
   const [employeeContracts, setEmployeeContracts] = useState<any[]>([]);
+  const [portalContracts, setPortalContracts] = useState<any[]>([]);
   const [employeeDocuments, setEmployeeDocuments] = useState<any[]>([]);
   const [docPage, setDocPage] = useState(1);
   const [docTotalPages, setDocTotalPages] = useState(1);
@@ -137,11 +138,6 @@ const EmployeeDetailPage = () => {
   useEffect(() => {
     if (!employee) return;
 
-    if (!canManageEmployees && ['work-info', 'grade-info', 'contract-info', 'leave-info'].includes(activeTab)) {
-      setActiveTab('employee-info');
-      return;
-    }
-    
     if (!fetchedTabs.current.has(activeTab)) {
       if (activeTab === 'work-info') {
         fetchWorkInformations(employee.id);
@@ -150,6 +146,8 @@ const EmployeeDetailPage = () => {
         fetchEmployeeGrades(employee.id);
       } else if (activeTab === 'contract-info') {
         fetchEmployeeContracts(employee.id);
+      } else if (activeTab === 'portal-contract-info') {
+        fetchPortalContracts(employee.id);
       } else if (activeTab === 'document-info') {
         const ownerUserId = getEmployeeOwnerUserId(employee);
         if (ownerUserId) {
@@ -258,6 +256,19 @@ const EmployeeDetailPage = () => {
       }
     } catch (error) {
       setEmployeeGrades([]);
+    }
+  };
+
+  const fetchPortalContracts = async (empId: number) => {
+    try {
+      const response = await employeeService.getPortalContracts(empId);
+      if (response.success && response.data) {
+        setPortalContracts(response.data);
+      } else {
+        setPortalContracts([]);
+      }
+    } catch (error) {
+      setPortalContracts([]);
     }
   };
 
@@ -741,17 +752,17 @@ const EmployeeDetailPage = () => {
         case 'manager': return wi.department?.manager || '-';
       }
     }
-    
+
     // 2. Try to get from employee detail API response (which returns work_information as an array)
     if (Array.isArray(employee.work_information) && employee.work_information.length > 0) {
       return employee.work_information[0][field] || '-';
     }
-    
+
     // 3. Try to get from employee list API response style (which returns object)
     if (employee.work_information && !Array.isArray(employee.work_information)) {
       return (employee.work_information as any)[field] || '-';
     }
-    
+
     return '-';
   };
 
@@ -796,90 +807,74 @@ const EmployeeDetailPage = () => {
           )}
 
           <Tab.Container id="employee-tabs" activeKey={activeTab} onSelect={(k) => setActiveTab(k || 'employee-info')}>
-            <Card className="border-0 shadow-sm">
-              <Card.Header className="border-bottom-0 bg-transparent">
-                <Nav
-                  variant="tabs"
-                  className="custom-nav-tabs"
-                  style={{
-                    display: 'flex',
-                    overflowX: 'auto',
-                    overflowY: 'hidden',
-                    WebkitOverflowScrolling: 'touch',
-                    flexWrap: 'nowrap',
-                    scrollBehavior: 'smooth',
-                    scrollbarWidth: 'none',
-                    msOverflowStyle: 'none',
-                  }}
-                >
-                  <Nav.Item style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>
-                    <Nav.Link
-                      eventKey="employee-info"
-                    >
-                      Çalışan Bilgileri
-                    </Nav.Link>
-                  </Nav.Item>
-                  <Nav.Item style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>
-                    <Nav.Link
-                      eventKey="cv-info"
-                    >
-                      CV Bilgileri
-                    </Nav.Link>
-                  </Nav.Item>
-                  {canManageEmployees && (
-                    <Nav.Item style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>
-                      <Nav.Link
-                        eventKey="work-info"
-                      >
-                        İş Bilgileri
-                      </Nav.Link>
-                    </Nav.Item>
-                  )}
-                  <Nav.Item style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>
-                    <Nav.Link
-                      eventKey="document-info"
-                    >
-                      Doküman Bilgileri
-                    </Nav.Link>
-                  </Nav.Item>
-                  {canManageEmployees && (
-                    <Nav.Item style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>
-                      <Nav.Link
-                        eventKey="grade-info"
-                      >
-                        Grade Bilgileri
-                      </Nav.Link>
-                    </Nav.Item>
-                  )}
-                  {canManageEmployees && (
-                    <Nav.Item style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>
-                      <Nav.Link
-                        eventKey="contract-info"
-                      >
-                        Sözleşme Bilgileri
-                      </Nav.Link>
-                    </Nav.Item>
-                  )}
-                  {canManageEmployees && (
-                    <Nav.Item style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>
-                      <Nav.Link
-                        eventKey="leave-info"
-                      >
-                        İzin Bilgileri
-                      </Nav.Link>
-                    </Nav.Item>
-                  )}
-                  <Nav.Item style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>
-                    <Nav.Link
-                      eventKey="expense-info"
-                    >
-                      Masraf Bilgileri
-                    </Nav.Link>
-                  </Nav.Item>
-                </Nav>
-              </Card.Header>
-              <Card.Body>
-                <Tab.Content>
+            <Row className="g-4">
+              <Col lg={3} md={4}>
+                <Card className="border-0 shadow-sm h-100">
+                  <Card.Body className="p-3">
+                    <Nav variant="pills" className="flex-column custom-vertical-nav">
+                      <Nav.Item className="mb-1">
+                        <Nav.Link eventKey="employee-info" className="d-flex align-items-center gap-2 py-2 px-3">
+                          <User size={16} />
+                          <span>Çalışan Bilgileri</span>
+                        </Nav.Link>
+                      </Nav.Item>
+                      <Nav.Item className="mb-1">
+                        <Nav.Link eventKey="cv-info" className="d-flex align-items-center gap-2 py-2 px-3">
+                          <FileText size={16} />
+                          <span>CV Bilgileri</span>
+                        </Nav.Link>
+                      </Nav.Item>
+                      <Nav.Item className="mb-1">
+                        <Nav.Link eventKey="work-info" className="d-flex align-items-center gap-2 py-2 px-3">
+                          <Briefcase size={16} />
+                          <span>İş Bilgileri</span>
+                        </Nav.Link>
+                      </Nav.Item>
+                      <Nav.Item className="mb-1">
+                        <Nav.Link eventKey="document-info" className="d-flex align-items-center gap-2 py-2 px-3">
+                          <Folder size={16} />
+                          <span>Doküman Bilgileri</span>
+                        </Nav.Link>
+                      </Nav.Item>
+                      <Nav.Item className="mb-1">
+                        <Nav.Link eventKey="grade-info" className="d-flex align-items-center gap-2 py-2 px-3">
+                          <Award size={16} />
+                          <span>Grade Bilgileri</span>
+                        </Nav.Link>
+                      </Nav.Item>
+                      <Nav.Item className="mb-1">
+                        <Nav.Link eventKey="contract-info" className="d-flex align-items-center gap-2 py-2 px-3">
+                          <Clipboard size={16} />
+                          <span>Sözleşme Bilgileri</span>
+                        </Nav.Link>
+                      </Nav.Item>
+                      <Nav.Item className="mb-1">
+                        <Nav.Link eventKey="portal-contract-info" className="d-flex align-items-center gap-2 py-2 px-3">
+                          <Shield size={16} />
+                          <span>Sözleşme Onayları</span>
+                        </Nav.Link>
+                      </Nav.Item>
+                      <Nav.Item className="mb-1">
+                        <Nav.Link eventKey="leave-info" className="d-flex align-items-center gap-2 py-2 px-3">
+                          <Calendar size={16} />
+                          <span>İzin Bilgileri</span>
+                        </Nav.Link>
+                      </Nav.Item>
+                      <Nav.Item className="mb-1">
+                        <Nav.Link eventKey="expense-info" className="d-flex align-items-center gap-2 py-2 px-3">
+                          <DollarSign size={16} />
+                          <span>Masraf Bilgileri</span>
+                        </Nav.Link>
+                      </Nav.Item>
+                    </Nav>
+                  </Card.Body>
+                </Card>
+              </Col>
+
+              <Col lg={9} md={8}>
+                <Card className="border-0 shadow-sm">
+                  <Card.Body className="p-4">
+                    <Tab.Content>
                   {/* Çalışan Bilgileri Tab */}
                   <Tab.Pane eventKey="employee-info">
                     <div className="mb-4">
@@ -1321,22 +1316,22 @@ const EmployeeDetailPage = () => {
                                   {doc.type === 1
                                     ? 'Fatura'
                                     : doc.type === 2
-                                    ? 'Sağlık Raporu'
-                                    : doc.type === 3
-                                    ? 'Profil Resmi'
-                                    : doc.type === 4
-                                    ? 'Makbuz'
-                                    : doc.type === 5
-                                    ? 'Sözleşme'
-                                    : doc.type === 6
-                                    ? 'Kimlik'
-                                    : doc.type === 7
-                                    ? 'Diploma'
-                                    : doc.type === 8
-                                    ? 'Sertifika'
-                                    : doc.type === 9
-                                    ? 'CV / Özgeçmiş'
-                                    : 'Diğer'
+                                      ? 'Sağlık Raporu'
+                                      : doc.type === 3
+                                        ? 'Profil Resmi'
+                                        : doc.type === 4
+                                          ? 'Makbuz'
+                                          : doc.type === 5
+                                            ? 'Sözleşme'
+                                            : doc.type === 6
+                                              ? 'Kimlik'
+                                              : doc.type === 7
+                                                ? 'Diploma'
+                                                : doc.type === 8
+                                                  ? 'Sertifika'
+                                                  : doc.type === 9
+                                                    ? 'CV / Özgeçmiş'
+                                                    : 'Diğer'
                                   }
                                 </td>
                                 <td>
@@ -1552,16 +1547,15 @@ const EmployeeDetailPage = () => {
                                   <td>{contract.start_date ? formatDate(contract.start_date) : '-'}</td>
                                   <td>{contract.end_date ? formatDate(contract.end_date) : '-'}</td>
                                   <td>
-                                    <span className={`badge ${
-                                      contract.status === 'ACTIVE' ? 'bg-success' : 
-                                      contract.status === 'COMPLETED' ? 'bg-primary' : 
-                                      contract.status === 'CANCELLED' ? 'bg-danger' : 
-                                      'bg-secondary'
-                                    }`}>
+                                    <span className={`badge ${contract.status === 'ACTIVE' ? 'bg-success' :
+                                      contract.status === 'COMPLETED' ? 'bg-primary' :
+                                        contract.status === 'CANCELLED' ? 'bg-danger' :
+                                          'bg-secondary'
+                                      }`}>
                                       {contract.status || '-'}
                                     </span>
                                   </td>
-                                  
+
                                   <td>
                                     {canEditEmployee && (
                                   <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
@@ -1607,6 +1601,49 @@ const EmployeeDetailPage = () => {
                     </div>
                   </Tab.Pane>
                   )}
+
+                  {/* Sözleşme Onay Durumları Tab */}
+                  <Tab.Pane eventKey="portal-contract-info">
+                    <div className={styles.section}>
+                      {portalContracts.length > 0 ? (
+                        <Table responsive className="table-list">
+                          <thead>
+                            <tr>
+                              <th style={{ verticalAlign: 'middle', width: '50%' }}>Sözleşme Başlığı</th>
+                              <th className="text-center" style={{ verticalAlign: 'middle', width: '25%' }}>Onay Tarihi</th>
+                              <th className="text-center" style={{ verticalAlign: 'middle', width: '25%' }}>Durum</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {portalContracts.map((portalContract) => (
+                              <tr key={portalContract.contract_id}>
+                                <td style={{ verticalAlign: 'middle' }}>{portalContract.title || '-'}</td>
+                                <td className="text-center" style={{ verticalAlign: 'middle' }}>{portalContract.approved_at ? formatDate(portalContract.approved_at) : '-'}</td>
+                                <td className="text-center" style={{ verticalAlign: 'middle' }}>
+                                  <span className={`badge ${portalContract.status === 'approved' ? 'bg-success' :
+                                      portalContract.status === 'pending' ? 'bg-warning text-dark' :
+                                        portalContract.status === 'rejected' ? 'bg-danger' :
+                                          'bg-secondary'
+                                    }`} style={{ minWidth: '110px', padding: '0.45rem 0.6rem', fontSize: '0.8rem', fontWeight: 600, borderRadius: '6px' }}>
+                                    {portalContract.status === 'approved' ? 'Onaylandı' :
+                                      portalContract.status === 'pending' ? 'Onay Bekliyor' :
+                                        portalContract.status === 'rejected' ? 'Reddedildi' :
+                                          portalContract.status || '-'}
+                                  </span>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </Table>
+                      ) : (
+                        <Card className="border-0 shadow-sm">
+                          <Card.Body className="py-5 text-center">
+                            <p className="text-muted mb-0">Sözleşme onay bilgisi kaydı bulunamadı</p>
+                          </Card.Body>
+                        </Card>
+                      )}
+                    </div>
+                  </Tab.Pane>
 
                   {/* İzin Bilgileri Tab */}
                   {canManageEmployees && (
@@ -1805,9 +1842,11 @@ const EmployeeDetailPage = () => {
 
                     </div>
                   </Tab.Pane>
-                </Tab.Content>
-              </Card.Body>
-            </Card>
+                    </Tab.Content>
+                  </Card.Body>
+                </Card>
+              </Col>
+            </Row>
           </Tab.Container>
         </Container>
       </div>

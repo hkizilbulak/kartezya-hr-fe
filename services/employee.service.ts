@@ -53,6 +53,15 @@ class EmployeeService extends BaseService<Employee> {
       throw error;
     }
   }
+
+  async getPortalContracts(employeeId: number | string) {
+    try {
+      const response = await axiosInstance.get(`${this.baseUrl}/${employeeId}/contracts`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  }
 }
 
 export const employeeService = new EmployeeService();

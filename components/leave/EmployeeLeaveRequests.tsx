@@ -216,9 +216,12 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
 
   const calculateProgressPercentage = (usedValue: number | undefined | null, totalValue: number | undefined | null): number => {
     const used = usedValue ? Number(usedValue) : 0;
-    const total = totalValue ? Number(totalValue) : 0;
-    if (!total || total === 0 || used <= 0) return 0;
-    return Math.min((used / total) * 100, 100);
+    let total = totalValue ? Number(totalValue) : 0;
+    if (total === 0) {
+      total = 1;
+    }
+    if (used <= 0) return 0;
+    return (used / total) * 100;
   };
 
   return (
@@ -240,7 +243,7 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
 
         {employeeId && !hideCreateButton && (
           <div className="d-flex justify-content-between align-items-center mb-4">
-            <h6 style={{ color: '#495057', fontWeight: 700, fontSize: '16px' }}>İzin Talepleri</h6>
+            <h6 style={{ color: '#495057', fontWeight: 700, fontSize: '16px' }}>İzin Bakiye Bilgisi</h6>
             <Button variant="primary" onClick={handleNew} className="d-flex align-items-center gap-2">
               <Plus size={16} /> Yeni İzin Talebi
             </Button>
@@ -249,218 +252,237 @@ const EmployeeLeaveRequests: React.FC<EmployeeLeaveRequestsProps> = ({ employeeI
 
         {employeeId && hideCreateButton && (
           <div className="mb-4">
-            <h6 style={{ color: '#495057', fontWeight: 700, fontSize: '16px' }}>İzin Talepleri</h6>
+            <h6 style={{ color: '#495057', fontWeight: 700, fontSize: '16px' }}>İzin Bakiye Bilgisi</h6>
           </div>
         )}
 
-        <Row className="g-3">
-          <Col lg={3} md={12} sm={12} className="sidebar-wrapper mb-4 mb-lg-0">
-            <h6 className="text-secondary mb-3 d-lg-none" style={{ fontSize: '14px', fontWeight: 700 }}>İZİN BAKİYE BİLGİSİ</h6>
-            {balanceLoading ? (
-              <Card className="border-0 shadow-sm"><Card.Body className="text-center py-4 text-muted">Yükleniyor...</Card.Body></Card>
-            ) : leaveBalances.length > 0 ? (
-              leaveBalances.map((balance, index) => (
-                <Card key={index} className="border-0 shadow-sm mb-3 position-relative" style={{ top: index === 0 ? '20px' : '0' }}>
-                  <Card.Body>
-                    <h6 className="text-secondary mb-4" style={{ fontSize: '14px', fontWeight: 700 }}>
-                      {(balance.leave_type?.name || 'YILLIK İZİN')} BAKİYESİ
-                    </h6>
-                    <div className="mb-4">
-                      <div className="d-flex justify-content-between align-items-center mb-2">
-                        <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>Hakedilen İzin</span>
-                        <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>{balance.total_days || 0}</span>
-                      </div>
-                      <div style={{ width: '100%', height: '8px', backgroundColor: '#e5e7eb', borderRadius: '4px', overflow: 'hidden' }}>
-                        <div style={{ height: '100%', backgroundColor: '#3b82f6', width: `${balance.total_days ? 100 : 0}%`, borderRadius: '4px' }}></div>
-                      </div>
-                    </div>
-                    <div className="mb-4">
-                      <div className="d-flex justify-content-between align-items-center mb-2">
-                        <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>Kullanılan İzin</span>
-                        <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>{balance.used_days || 0}</span>
-                      </div>
-                      <div style={{ width: '100%', height: '8px', backgroundColor: '#e5e7eb', borderRadius: '4px', overflow: 'hidden' }}>
-                        <div style={{ height: '100%', backgroundColor: '#f59e0b', width: `${calculateProgressPercentage(balance.used_days, balance.total_days)}%`, borderRadius: '4px' }}></div>
-                      </div>
-                    </div>
-                    <div>
-                      <div className="d-flex justify-content-between align-items-center mb-2">
-                        <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>Kalan İzin</span>
-                        <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500 }}>{balance.remaining_days || 0}</span>
-                      </div>
-                      <div style={{ width: '100%', height: '8px', backgroundColor: '#e5e7eb', borderRadius: '4px', overflow: 'hidden' }}>
-                        <div style={{ height: '100%', backgroundColor: '#10b981', width: `${calculateProgressPercentage(balance.remaining_days, balance.total_days)}%`, borderRadius: '4px' }}></div>
-                      </div>
-                    </div>
-                  </Card.Body>
-                </Card>
-              ))
-            ) : (
-              <Card className="border-0 shadow-sm" style={{ top: '20px' }}>
-                <Card.Body className="text-center py-4">
-                  <p className="text-muted mb-0" style={{ fontSize: '14px' }}>Kayıtlı izin bakiyesi bulunmuyor</p>
-                </Card.Body>
-              </Card>
-            )}
-          </Col>
-
-          <Col lg={9} md={12} sm={12} className="content-wrapper">
-            <h6 className="mb-3" style={{ fontWeight: 700, fontSize: '16px' }}>
-              {employeeId ? 'İzin Talepleri' : 'Taleplerim'}
-            </h6>
-
-            <Card className="border-0 shadow-sm mb-3">
-              <Card.Body className="py-2 px-3">
-                <Row className="g-2 align-items-end">
-                  <Col md={3}>
-                    <FormSelectField
-                      label="Durum"
-                      name="filterStatus"
-                      value={filterStatus}
-                      onChange={(e: any) => setFilterStatus(e.target.value)}
-                    >
-                      <option value="">Tümü</option>
-                      <option value="PENDING">Onay Bekliyor</option>
-                      <option value="APPROVED">Onaylandı</option>
-                      <option value="REJECTED">Reddedildi</option>
-                      <option value="CANCELLED">İptal Edildi</option>
-                    </FormSelectField>
-                  </Col>
-                  <Col md={3}>
-                    <FormSelectField
-                      label="İzin Türü"
-                      name="filterLeaveTypeId"
-                      value={filterLeaveTypeId}
-                      onChange={(e: any) => setFilterLeaveTypeId(e.target.value)}
-                    >
-                      <option value="">Tümü</option>
-                      {leaveTypes.map(lt => (
-                        <option key={lt.id} value={lt.id}>{lt.name}</option>
-                      ))}
-                    </FormSelectField>
-                  </Col>
-                  <Col md={3}>
-                    <FormDateField
-                      label="Başlangıç Tarihi"
-                      name="filterStartDate"
-                      value={filterStartDate}
-                      onChange={(e: any) => setFilterStartDate(e.target.value)}
-                    />
-                  </Col>
-                  <Col md={3}>
-                    <FormDateField
-                      label="Bitiş Tarihi"
-                      name="filterEndDate"
-                      value={filterEndDate}
-                      onChange={(e: any) => setFilterEndDate(e.target.value)}
-                    />
-                  </Col>
-                </Row>
-              </Card.Body>
-            </Card>
-
-            <Card className="border-0 shadow-sm position-relative">
-              <Card.Body className="p-0">
-                <div className="table-box">
-                  <div className="table-responsive">
-                    <Table hover className="mb-0">
-                      <thead>
-                        <tr>
-                          <th className="sortable-header" style={{ cursor: 'pointer' }} onClick={() => handleSort('leave_type_name')}>İzin Türü {getSortIcon('leave_type_name')}</th>
-                          <th className="sortable-header" style={{ cursor: 'pointer' }} onClick={() => handleSort('start_date')}>Başlangıç Tarihi {getSortIcon('start_date')}</th>
-                          <th className="sortable-header" style={{ cursor: 'pointer' }} onClick={() => handleSort('end_date')}>Bitiş Tarihi {getSortIcon('end_date')}</th>
-                          <th className="sortable-header" style={{ cursor: 'pointer' }} onClick={() => handleSort('requested_days')}>Kullanılan Gün {getSortIcon('requested_days')}</th>
-                          <th className="sortable-header" style={{ cursor: 'pointer' }} onClick={() => handleSort('created_at')}>Talep Tarihi {getSortIcon('created_at')}</th>
-                          <th>Durum</th>
-                          <th className="text-end">İşlemler</th>
+        {/* Horizontal Leave Balances Table */}
+        {balanceLoading ? (
+          <Card className="border-0 shadow-sm mb-4">
+            <Card.Body className="text-center py-4 text-muted">Bakiyeler yükleniyor...</Card.Body>
+          </Card>
+        ) : leaveBalances.length > 0 ? (
+          <Card className="border-0 shadow-sm mb-4">
+            <Card.Body className="p-0">
+              <div className="table-responsive">
+                <Table hover className="mb-0 align-middle">
+                  <thead className="table-light">
+                    <tr>
+                      <th style={{ paddingLeft: '1.5rem', width: '25%' }}>İzin Türü</th>
+                      <th className="text-center" style={{ width: '15%' }}>Toplam Gün</th>
+                      <th className="text-center" style={{ width: '15%' }}>Kullanılan Gün</th>
+                      <th className="text-center" style={{ width: '15%' }}>Kalan Gün</th>
+                      <th style={{ paddingRight: '1.5rem', width: '30%' }}>Kullanım Oranı</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {leaveBalances.map((balance, index) => {
+                      const total = balance.total_days || 0;
+                      const used = balance.used_days || 0;
+                      const remaining = balance.remaining_days || 0;
+                      const progress = calculateProgressPercentage(used, total);
+                      return (
+                        <tr key={index}>
+                          <td style={{ paddingLeft: '1.5rem', fontWeight: 600, color: '#334155' }}>
+                            {balance.leave_type?.name || 'Yıllık İzin'}
+                          </td>
+                          <td className="text-center font-weight-bold text-dark">{total}</td>
+                          <td className="text-center font-weight-bold text-warning">{used}</td>
+                          <td className="text-center font-weight-bold text-success">{remaining}</td>
+                          <td style={{ paddingRight: '1.5rem' }}>
+                            <div className="d-flex align-items-center gap-3">
+                              <div style={{ flex: 1, height: '8px', backgroundColor: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
+                                <div style={{ 
+                                  height: '100%', 
+                                  backgroundColor: progress > 100 ? '#dc2626' : '#10b981', 
+                                  width: `${Math.min(progress, 100)}%`, 
+                                  borderRadius: '4px' 
+                                }}></div>
+                              </div>
+                              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: progress > 100 ? '#dc2626' : '#64748b', minWidth: '40px', textAlign: 'right' }}>
+                                %{Math.round(progress)}
+                              </span>
+                            </div>
+                          </td>
                         </tr>
-                      </thead>
-                      <tbody>
-                        {leaveRequests.length ? (
-                          leaveRequests.map((request: LeaveRequest) => (
-                            <tr key={request.id}>
-                              <td>{request.leave_type?.name || '-'}</td>
-                              <td>{formatDate(request.start_date)}</td>
-                              <td>{formatDate(request.end_date)}</td>
-                              <td>{request.requested_days || '-'}</td>
-                              <td>{formatDate(request.created_at)}</td>
-                              <td>{getStatusBadge(request.status)}</td>
-                              <td className="text-end">
-                                <div className="d-flex justify-content-end gap-2">
-                                  {request.status === 'PENDING' && !employeeId && (
-                                    <Button
-                                      variant="outline-primary"
-                                      size="sm"
-                                      title="Düzenle"
-                                      onClick={() => handleEdit(request)}
-                                      disabled={isLoading || actionLoading}
-                                    >
-                                      <Edit size={14} />
-                                    </Button>
-                                  )}
-                                  {request.leave_type?.is_required_document && (
-                                    <Button
-                                      variant="outline-secondary"
-                                      size="sm"
-                                      title="Dökümanlar"
-                                      onClick={() => handleShowDocuments(request)}
-                                    >
-                                      <FileText size={16} />
-                                      {(!request.document_count || request.document_count === 0) && (
-                                        <Badge bg="warning" className="ms-1" style={{ fontSize: '0.6em' }}>!</Badge>
-                                      )}
-                                    </Button>
-                                  )}
-                                  {!employeeId && (request.status === 'PENDING' || canCancelRequest(request)) && (
-                                    <Button
-                                      variant="outline-warning"
-                                      size="sm"
-                                      title="İptal Et"
-                                      onClick={() => { setSelectedRequest(request); setShowCancelConfirm(true); }}
-                                      disabled={isLoading || actionLoading}
-                                    >
-                                      <X size={14} />
-                                    </Button>
-                                  )}
-                                  <Button
-                                    variant="outline-info"
-                                    size="sm"
-                                    title="Detaylar"
-                                    onClick={() => handleShowDetail(request)}
-                                  >
-                                    <Info size={14} />
-                                  </Button>
-                                </div>
-                              </td>
-                            </tr>
-                          ))
-                        ) : (
-                          !isLoading && (
-                            <tr>
-                              <td colSpan={7} className="text-center py-4">İzin talebi bulunamadı</td>
-                            </tr>
-                          )
-                        )}
-                      </tbody>
-                    </Table>
-                  </div>
-                </div>
-              </Card.Body>
-            </Card>
-
-            {totalPages > 1 && (
-              <div className="mt-3">
-                <Pagination
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  onPageChange={(page) => fetchLeaveRequests(page)}
-                  totalItems={totalItems}
-                  itemsPerPage={itemsPerPage}
-                />
+                      );
+                    })}
+                  </tbody>
+                </Table>
               </div>
-            )}
-          </Col>
-        </Row>
+            </Card.Body>
+          </Card>
+        ) : (
+          <Card className="border-0 shadow-sm mb-4">
+            <Card.Body className="text-center py-4 text-muted">Kayıtlı izin bakiyesi bulunmuyor</Card.Body>
+          </Card>
+        )}
+
+        <hr className="my-4" style={{ borderColor: '#e2e8f0' }} />
+
+        {/* Leave Requests Header */}
+        <div className="mb-3">
+          <h6 style={{ fontWeight: 700, fontSize: '16px', color: '#495057' }}>
+            {employeeId ? 'İzin Talepleri' : 'Taleplerim'}
+          </h6>
+        </div>
+
+        {/* Filters Card */}
+        <Card className="border-0 shadow-sm mb-3">
+          <Card.Body className="py-2 px-3">
+            <Row className="g-2 align-items-end">
+              <Col md={3}>
+                <FormSelectField
+                  label="Durum"
+                  name="filterStatus"
+                  value={filterStatus}
+                  onChange={(e: any) => setFilterStatus(e.target.value)}
+                >
+                  <option value="">Tümü</option>
+                  <option value="PENDING">Onay Bekliyor</option>
+                  <option value="APPROVED">Onaylandı</option>
+                  <option value="REJECTED">Reddedildi</option>
+                  <option value="CANCELLED">İptal Edildi</option>
+                </FormSelectField>
+              </Col>
+              <Col md={3}>
+                <FormSelectField
+                  label="İzin Türü"
+                  name="filterLeaveTypeId"
+                  value={filterLeaveTypeId}
+                  onChange={(e: any) => setFilterLeaveTypeId(e.target.value)}
+                >
+                  <option value="">Tümü</option>
+                  {leaveTypes.map(lt => (
+                    <option key={lt.id} value={lt.id}>{lt.name}</option>
+                  ))}
+                </FormSelectField>
+              </Col>
+              <Col md={3}>
+                <FormDateField
+                  label="Başlangıç Tarihi"
+                  name="filterStartDate"
+                  value={filterStartDate}
+                  onChange={(e: any) => setFilterStartDate(e.target.value)}
+                />
+              </Col>
+              <Col md={3}>
+                <FormDateField
+                  label="Bitiş Tarihi"
+                  name="filterEndDate"
+                  value={filterEndDate}
+                  onChange={(e: any) => setFilterEndDate(e.target.value)}
+                />
+              </Col>
+            </Row>
+          </Card.Body>
+        </Card>
+
+        {/* Requests Table */}
+        <Card className="border-0 shadow-sm position-relative mb-3">
+          <Card.Body className="p-0">
+            <div className="table-box">
+              <div className="table-responsive">
+                <Table hover className="mb-0">
+                  <thead>
+                    <tr>
+                      <th className="sortable-header" style={{ cursor: 'pointer', verticalAlign: 'middle' }} onClick={() => handleSort('leave_type_name')}>İzin Türü {getSortIcon('leave_type_name')}</th>
+                      <th className="sortable-header" style={{ cursor: 'pointer', verticalAlign: 'middle' }} onClick={() => handleSort('start_date')}>Başlangıç Tarihi {getSortIcon('start_date')}</th>
+                      <th className="sortable-header" style={{ cursor: 'pointer', verticalAlign: 'middle' }} onClick={() => handleSort('end_date')}>Bitiş Tarihi {getSortIcon('end_date')}</th>
+                      <th className="sortable-header text-center" style={{ cursor: 'pointer', verticalAlign: 'middle' }} onClick={() => handleSort('requested_days')}>Kullanılan Gün {getSortIcon('requested_days')}</th>
+                      <th className="sortable-header" style={{ cursor: 'pointer', verticalAlign: 'middle' }} onClick={() => handleSort('created_at')}>Talep Tarihi {getSortIcon('created_at')}</th>
+                      <th className="text-center" style={{ verticalAlign: 'middle' }}>Durum</th>
+                      <th className="text-end" style={{ verticalAlign: 'middle' }}>İşlemler</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {leaveRequests.length ? (
+                      leaveRequests.map((request: LeaveRequest) => (
+                        <tr key={request.id}>
+                          <td style={{ verticalAlign: 'middle' }}>{request.leave_type?.name || '-'}</td>
+                          <td style={{ verticalAlign: 'middle' }}>{formatDate(request.start_date)}</td>
+                          <td style={{ verticalAlign: 'middle' }}>{formatDate(request.end_date)}</td>
+                          <td className="text-center" style={{ verticalAlign: 'middle' }}>{request.requested_days || '-'}</td>
+                          <td style={{ verticalAlign: 'middle' }}>{formatDate(request.created_at)}</td>
+                          <td className="text-center" style={{ verticalAlign: 'middle' }}>
+                            <span style={{ display: 'inline-block', minWidth: '100px', textAlign: 'center' }}>
+                              {getStatusBadge(request.status)}
+                            </span>
+                          </td>
+                          <td className="text-end" style={{ verticalAlign: 'middle' }}>
+                            <div className="d-flex justify-content-end gap-2">
+                              {request.status === 'PENDING' && !employeeId && (
+                                <Button
+                                  variant="outline-primary"
+                                  size="sm"
+                                  title="Düzenle"
+                                  onClick={() => handleEdit(request)}
+                                  disabled={isLoading || actionLoading}
+                                >
+                                  <Edit size={14} />
+                                </Button>
+                              )}
+                              {request.leave_type?.is_required_document && (
+                                <Button
+                                  variant="outline-secondary"
+                                  size="sm"
+                                  title="Dökümanlar"
+                                  onClick={() => handleShowDocuments(request)}
+                                >
+                                  <FileText size={16} />
+                                  {(!request.document_count || request.document_count === 0) && (
+                                    <Badge bg="warning" className="ms-1" style={{ fontSize: '0.6em' }}>!</Badge>
+                                  )}
+                                </Button>
+                              )}
+                              {!employeeId && (request.status === 'PENDING' || canCancelRequest(request)) && (
+                                <Button
+                                  variant="outline-warning"
+                                  size="sm"
+                                  title="İptal Et"
+                                  onClick={() => { setSelectedRequest(request); setShowCancelConfirm(true); }}
+                                  disabled={isLoading || actionLoading}
+                                >
+                                  <X size={14} />
+                                </Button>
+                              )}
+                              <Button
+                                variant="outline-info"
+                                size="sm"
+                                title="Detaylar"
+                                onClick={() => handleShowDetail(request)}
+                              >
+                                <Info size={14} />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      !isLoading && (
+                        <tr>
+                          <td colSpan={7} className="text-center py-4">İzin talebi bulunamadı</td>
+                        </tr>
+                      )
+                    )}
+                  </tbody>
+                </Table>
+              </div>
+            </div>
+          </Card.Body>
+        </Card>
+
+        {totalPages > 1 && (
+          <div className="mt-3">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={(page) => fetchLeaveRequests(page)}
+              totalItems={totalItems}
+              itemsPerPage={itemsPerPage}
+            />
+          </div>
+        )}
       </div>
 
       <LeaveRequestModal
