@@ -43,13 +43,13 @@ const CompaniesPage = () => {
     try {
       setIsLoading(true);
 
-      const response = await companyService.getAll({ 
-        page, 
+      const response = await companyService.getAll({
+        page,
         limit: perPage || itemsPerPage,
         sort: sortKey,
         direction: sortDir
       });
-      
+
       if (response.data) {
         setCompanies(response.data);
         setTotalPages(response.page?.total_pages || 1);
@@ -78,7 +78,7 @@ const CompaniesPage = () => {
     fetchCompanies(1, key, direction);
   };
 
-  const getSortIcon = (columnKey: 'name' | 'email' | 'phone') => {
+  const getSortIcon = (columnKey: 'name' | 'email' | 'phone' | 'address') => {
     if (sortConfig.key !== columnKey) {
       return null;
     }
@@ -119,7 +119,7 @@ const CompaniesPage = () => {
         setSelectedCompany(null);
       } catch (error: any) {
         let errorMessage = '';
-        
+
         if (error.response?.data?.message) {
           errorMessage = error.response.data.message;
         } else if (error.response?.data?.error) {
@@ -131,7 +131,7 @@ const CompaniesPage = () => {
         } else {
           errorMessage = 'Silme işlemi sırasında bir hata oluştu';
         }
-        
+
         const translatedError = translateErrorMessage(errorMessage);
         toast.error(translatedError);
       } finally {
@@ -167,11 +167,11 @@ const CompaniesPage = () => {
 
   return (
     <>
-      <Container fluid className="page-container">      
+      <Container fluid className="page-container">
         <LoadingOverlay show={isLoading} message="Şirketler yükleniyor..." />
-  
+
         <div className="page-heading-wrapper">
-          <PageHeading 
+          <PageHeading
             heading="Şirketler"
             showCreateButton={true}
             showFilterButton={false}
@@ -191,7 +191,7 @@ const CompaniesPage = () => {
                         <thead>
                           <tr>
                             <th>ID</th>
-                            <th 
+                            <th
                               onClick={() => handleSort('name')}
                               className="sortable-header"
                             >

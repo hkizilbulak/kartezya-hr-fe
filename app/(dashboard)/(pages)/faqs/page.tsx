@@ -78,11 +78,11 @@ const FaqsPage = () => {
     fetchFaqs(1, itemsPerPage, key, direction);
   };
 
-  const getSortIcon = (columnKey: 'title' | 'created_at' | 'updated_at') => {
+  const getSortIcon = (columnKey: 'title' | 'created_at' | 'updated_at' | 'status') => {
     if (sortConfig.key !== columnKey) return null;
-    return sortConfig.direction === 'ASC' ? 
-        <ChevronUp size={16} className="ms-1" style={{ display: 'inline' }} /> : 
-        <ChevronDown size={16} className="ms-1" style={{ display: 'inline' }} />;
+    return sortConfig.direction === 'ASC' ?
+      <ChevronUp size={16} className="ms-1" style={{ display: 'inline' }} /> :
+      <ChevronDown size={16} className="ms-1" style={{ display: 'inline' }} />;
   };
 
   // Modal İşlemleri
@@ -145,16 +145,16 @@ const FaqsPage = () => {
                     <Table hover className="mb-0">
                       <thead>
                         <tr>
-                          <th onClick={() => handleSort('title')} className="sortable-header" style={{cursor: 'pointer'}}>
+                          <th onClick={() => handleSort('title')} className="sortable-header" style={{ cursor: 'pointer' }}>
                             Başlık {getSortIcon('title')}
                           </th>
-                          <th onClick={() => handleSort('status')} className="sortable-header" style={{cursor: 'pointer'}}>
+                          <th onClick={() => handleSort('status')} className="sortable-header" style={{ cursor: 'pointer' }}>
                             Durum {getSortIcon('status')}
                           </th>
-                          <th onClick={() => handleSort('created_at')} className="sortable-header" style={{cursor: 'pointer'}}>
+                          <th onClick={() => handleSort('created_at')} className="sortable-header" style={{ cursor: 'pointer' }}>
                             Oluşturulma Tarihi {getSortIcon('created_at')}
                           </th>
-                          <th onClick={() => handleSort('updated_at')} className="sortable-header" style={{cursor: 'pointer'}}>
+                          <th onClick={() => handleSort('updated_at')} className="sortable-header" style={{ cursor: 'pointer' }}>
                             Güncellenme Tarihi {getSortIcon('updated_at')}
                           </th>
                           <th className="text-end">İşlemler</th>

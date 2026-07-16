@@ -35,52 +35,56 @@ export default function EmployeeHeaderProfile({
   return (
     <div className={styles.headerContainer}>
       <div className={styles.headerCard}>
-        {/* Üst Bölüm - Avatar, Ad Soyad, Şirket, Departman, Yönetici */}
-        <div className={styles.headerTop}>
-          <div className={styles.headerLeft}>
+        <Row className="align-items-center g-4">
+          <Col lg={3} md={12} className="d-flex align-items-center gap-3">
             <div className={styles.avatar}>{employee.initials}</div>
             <div className={styles.nameSection}>
               <h3 className={styles.name}>{employee.name}</h3>
               <p className={styles.jobTitle}>{employee.jobTitle}</p>
             </div>
-          </div>
-
-          <div className={styles.headerMiddle}>
-            <div className={styles.infoRow}>
-              <div className={styles.infoItem}>
-                <span className={styles.infoLabel}>Şirket:</span>
-                <span className={styles.infoValue}>{employee.company}</span>
-              </div>
-              <div className={styles.divider}></div>
-              <div className={styles.infoItem}>
-                <span className={styles.infoLabel}>Departman:</span>
-                <span className={styles.infoValue}>{employee.department}</span>
-              </div>
-              <div className={styles.divider}></div>
-              <div className={styles.infoItem}>
-                <span className={styles.infoLabel}>Yönetici:</span>
-                <span className={styles.infoValue}>{employee.manager}</span>
-              </div>
-            </div>
-
-            <div className={styles.infoRow}>
-              <div className={styles.infoItem}>
-                <span className={styles.infoLabel}>E-Posta:</span>
-                <span className={styles.infoValue}>{employee.email}</span>
-              </div>
-              <div className={styles.divider}></div>
-              <div className={styles.infoItem}>
-                <span className={styles.infoLabel}>Telefon:</span>
-                <span className={styles.infoValue}>{employee.phone}</span>
-              </div>
-              <div className={styles.divider}></div>
-              <div className={styles.infoItem}>
-                <span className={styles.infoLabel}>Toplam Tecrübe:</span>
-                <span className={styles.infoValue}>{employee.totalExperience}</span>
-              </div>
-            </div>
-          </div>
-        </div>
+          </Col>
+          
+          <Col lg={9} md={12}>
+            <Row className="g-3">
+              <Col md={4} sm={6} xs={12}>
+                <div className={styles.infoItem}>
+                  <span className={styles.infoLabel}>Şirket</span>
+                  <span className={styles.infoValue}>{employee.company || '-'}</span>
+                </div>
+              </Col>
+              <Col md={4} sm={6} xs={12}>
+                <div className={styles.infoItem}>
+                  <span className={styles.infoLabel}>Departman</span>
+                  <span className={styles.infoValue} style={{ wordBreak: 'break-word' }}>{employee.department || '-'}</span>
+                </div>
+              </Col>
+              <Col md={4} sm={6} xs={12}>
+                <div className={styles.infoItem}>
+                  <span className={styles.infoLabel}>Yönetici</span>
+                  <span className={styles.infoValue}>{employee.manager || '-'}</span>
+                </div>
+              </Col>
+              <Col md={4} sm={6} xs={12}>
+                <div className={styles.infoItem}>
+                  <span className={styles.infoLabel}>E-Posta</span>
+                  <span className={styles.infoValue} style={{ wordBreak: 'break-all' }}>{employee.email || '-'}</span>
+                </div>
+              </Col>
+              <Col md={4} sm={6} xs={12}>
+                <div className={styles.infoItem}>
+                  <span className={styles.infoLabel}>Telefon</span>
+                  <span className={styles.infoValue}>{employee.phone || '-'}</span>
+                </div>
+              </Col>
+              <Col md={4} sm={6} xs={12}>
+                <div className={styles.infoItem}>
+                  <span className={styles.infoLabel}>Toplam Tecrübe</span>
+                  <span className={styles.infoValue}>{employee.totalExperience || '-'}</span>
+                </div>
+              </Col>
+            </Row>
+          </Col>
+        </Row>
       </div>
     </div>
   );

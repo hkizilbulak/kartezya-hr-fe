@@ -18,7 +18,7 @@
     "isolatedModules": true,
     "jsx": "react-jsx",
     "incremental": true,
-    "ignoreDeprecations": "6.0",
+    "ignoreDeprecations": "5.0",
     "plugins": [
       {
         "name": "next"
@@ -38,6 +38,10 @@
     ".next/dev/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.spec.ts",
+    "**/*.spec.tsx"
   ]
 }

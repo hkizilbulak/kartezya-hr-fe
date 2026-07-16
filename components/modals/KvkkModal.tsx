@@ -13,7 +13,7 @@ export default function KvkkModal() {
     const [show, setShow] = useState(false);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    
+
     // Wizard Steps: 1, 2, 3, 4
     const [step, setStep] = useState(1);
 
@@ -47,9 +47,9 @@ export default function KvkkModal() {
                     const settings = response.data;
                     // If any of the required document consents are not met, show the modal.
                     const isComplete = settings.kvkk_text === 'READ' &&
-                                      settings.privacy_policy === 'READ' &&
-                                      settings.anti_bribery_policy === 'READ' &&
-                                      (settings.photo_consent === 'APPROVED' || settings.photo_consent === 'REJECTED');
+                        settings.privacy_policy === 'READ' &&
+                        settings.anti_bribery_policy === 'READ' &&
+                        (settings.photo_consent === 'APPROVED' || settings.photo_consent === 'REJECTED');
                     if (!isComplete) {
                         setShow(true);
                     }
@@ -64,7 +64,7 @@ export default function KvkkModal() {
         checkConsent();
     }, [user]);
 
-    const handleScroll = (stepNumber: number, ref: React.RefObject<HTMLDivElement>) => {
+    const handleScroll = (stepNumber: number, ref: React.RefObject<HTMLDivElement | null>) => {
         const container = ref.current;
         if (!container || readSteps[stepNumber]) return;
 
@@ -160,13 +160,13 @@ export default function KvkkModal() {
         >
             <div className="position-relative">
                 <LoadingOverlay show={saving} message="Tercihleriniz kaydediliyor..." />
-                
+
                 <Modal.Header className="border-bottom-0 pb-0 d-flex flex-column pt-4 px-4 align-items-stretch">
                     <div className="d-flex align-items-center gap-2 text-primary font-weight-bold mb-2">
                         <Shield size={28} className="text-success" />
                         <h5 className="mb-0 font-weight-bold">Yasal Uyum ve Sözleşme Onay Portalı</h5>
                     </div>
-                    
+
                     {/* Step Indicators */}
                     <div className="d-flex justify-content-between align-items-center mb-3 mt-2" style={{ fontSize: '0.8rem' }}>
                         <div className={`font-weight-bold ${step === 1 ? 'text-primary' : 'text-muted'}`}>
@@ -200,10 +200,10 @@ export default function KvkkModal() {
                                 <FileText size={18} className="text-secondary" />
                                 <strong className="text-secondary">Personel Aydınlatma Metni</strong>
                             </div>
-                            <div 
+                            <div
                                 ref={scrollRef1}
                                 onScroll={() => handleScroll(1, scrollRef1)}
-                                className="p-3 overflow-auto" 
+                                className="p-3 overflow-auto"
                                 style={{ maxHeight: '300px', fontSize: '0.85rem', lineHeight: '1.6', color: '#4a4a4a' }}
                             >
                                 <h6 className="text-center font-weight-bold mb-3">PERSONEL AYDINLATMA METNİ</h6>
@@ -257,7 +257,7 @@ export default function KvkkModal() {
                                         <span className="text-success font-weight-bold">✓ Metin sonuna ulaşıldı</span>
                                     )}
                                 </span>
-                                <Button 
+                                <Button
                                     variant={choices.kvkkTextAccepted ? "success" : "outline-primary"}
                                     size="sm"
                                     disabled={!readSteps[1]}
@@ -276,10 +276,10 @@ export default function KvkkModal() {
                                 <FileText size={18} className="text-secondary" />
                                 <strong className="text-secondary">Personel Gizlilik Sözleşmesi</strong>
                             </div>
-                            <div 
+                            <div
                                 ref={scrollRef2}
                                 onScroll={() => handleScroll(2, scrollRef2)}
-                                className="p-3 overflow-auto" 
+                                className="p-3 overflow-auto"
                                 style={{ maxHeight: '300px', fontSize: '0.85rem', lineHeight: '1.6', color: '#4a4a4a' }}
                             >
                                 <h6 className="text-center font-weight-bold mb-3">PERSONEL GİZLİLİK SÖZLEŞMESİ</h6>
@@ -320,7 +320,7 @@ export default function KvkkModal() {
                                         <span className="text-success font-weight-bold">✓ Metin sonuna ulaşıldı</span>
                                     )}
                                 </span>
-                                <Button 
+                                <Button
                                     variant={choices.privacyPolicyAccepted ? "success" : "outline-primary"}
                                     size="sm"
                                     disabled={!readSteps[2]}
@@ -339,10 +339,10 @@ export default function KvkkModal() {
                                 <FileText size={18} className="text-secondary" />
                                 <strong className="text-secondary">Rüşvet ve Yolsuzlukla Mücadele Politikası</strong>
                             </div>
-                            <div 
+                            <div
                                 ref={scrollRef3}
                                 onScroll={() => handleScroll(3, scrollRef3)}
-                                className="p-3 overflow-auto" 
+                                className="p-3 overflow-auto"
                                 style={{ maxHeight: '300px', fontSize: '0.85rem', lineHeight: '1.6', color: '#4a4a4a' }}
                             >
                                 <h6 className="text-center font-weight-bold mb-3">RÜŞVET VE YOLSUZLUKLA MÜCADELE POLİTİKASI</h6>
@@ -379,7 +379,7 @@ export default function KvkkModal() {
                                         <span className="text-success font-weight-bold">✓ Metin sonuna ulaşıldı</span>
                                     )}
                                 </span>
-                                <Button 
+                                <Button
                                     variant={choices.antiBriberyPolicyAccepted ? "success" : "outline-primary"}
                                     size="sm"
                                     disabled={!readSteps[3]}
@@ -404,7 +404,7 @@ export default function KvkkModal() {
                                 <p className="mb-3 font-weight-bold text-dark">
                                     Konuyla ilgili tarafıma sunulan Personel Aydınlatma Metni'ni okuduğumu, haklarımı anladığımı bilerek, hiçbir baskı altında kalmadan özgür irademle AÇIK RIZA VERİYORUM / KABUL EDİYORUM.
                                 </p>
-                                
+
                                 <div className="d-flex justify-content-center gap-3 mt-3">
                                     <Button
                                         variant={choices.photoConsentChoice === 'REJECTED' ? 'danger' : 'outline-danger'}
@@ -431,8 +431,8 @@ export default function KvkkModal() {
                 <Modal.Footer className="border-top-0 pt-0 px-4 pb-4 d-flex flex-column align-items-center gap-3">
                     <div className="d-flex justify-content-between align-items-center w-100">
                         {step > 1 ? (
-                            <Button 
-                                variant="outline-secondary" 
+                            <Button
+                                variant="outline-secondary"
                                 onClick={prevStep}
                                 className="d-flex align-items-center gap-1"
                                 style={{ borderRadius: '6px' }}
@@ -444,8 +444,8 @@ export default function KvkkModal() {
                         )}
 
                         {step < 4 ? (
-                            <Button 
-                                variant="primary" 
+                            <Button
+                                variant="primary"
                                 onClick={nextStep}
                                 className="d-flex align-items-center gap-1"
                                 style={{ borderRadius: '6px' }}
@@ -453,8 +453,8 @@ export default function KvkkModal() {
                                 İleri <ArrowRight size={16} />
                             </Button>
                         ) : (
-                            <Button 
-                                variant="success" 
+                            <Button
+                                variant="success"
                                 onClick={handleSubmit}
                                 disabled={!choices.photoConsentChoice || saving}
                                 className="d-flex align-items-center gap-1"
@@ -464,7 +464,7 @@ export default function KvkkModal() {
                             </Button>
                         )}
                     </div>
-                    
+
                     <button
                         type="button"
                         onClick={handlePostpone}
