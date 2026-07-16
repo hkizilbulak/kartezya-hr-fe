@@ -14,6 +14,8 @@ type IProps = {
     disabled?: boolean;
     isInvalid?: boolean;
     errorMessage?: string;
+    /** When false, hides the search input. Defaults to true. */
+    searchable?: boolean;
 };
 
 const FormSelectField = ({
@@ -27,7 +29,8 @@ const FormSelectField = ({
     children,
     disabled = false,
     isInvalid = false,
-    errorMessage
+    errorMessage,
+    searchable = true
 }: IProps) => {
     const [isOpen, setIsOpen] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
@@ -72,7 +75,7 @@ const FormSelectField = ({
             document.body.classList.add('modal-open');
             // Focus search input when dropdown opens
             setTimeout(() => {
-                if (searchInputRef.current && !isMobile) {
+                if (searchable && searchInputRef.current && !isMobile) {
                     searchInputRef.current.focus();
                 }
             }, 100);
@@ -85,7 +88,7 @@ const FormSelectField = ({
             document.removeEventListener('mousedown', handleClickOutside);
             document.body.classList.remove('modal-open');
         };
-    }, [isOpen, isMobile]);
+    }, [isOpen, isMobile, searchable]);
 
     useEffect(() => {
         const handleScroll = () => {
@@ -210,13 +213,15 @@ const FormSelectField = ({
             React.Children.forEach(children, (child, index) => {
                 if (React.isValidElement(child)) {
                     if (child.type === 'option') {
-                        // Filter by search query
-                        const optionLabel = String((child as any).props.children || '');
-                        const optionValue = String((child as any).props.value || '');
-                        const query = searchQuery.toLowerCase().trim();
-                        
-                        if (query && !optionLabel.toLowerCase().includes(query) && !optionValue.toLowerCase().includes(query)) {
-                            return; // Skip this option if it doesn't match search
+                        // Filter by search query (only when searchable)
+                        if (searchable) {
+                            const optionLabel = String((child as any).props.children || '');
+                            const optionValue = String((child as any).props.value || '');
+                            const query = searchQuery.toLowerCase().trim();
+                            
+                            if (query && !optionLabel.toLowerCase().includes(query) && !optionValue.toLowerCase().includes(query)) {
+                                return; // Skip this option if it doesn't match search
+                            }
                         }
                         
                         const isSelected = (child as any).props.value === value;
@@ -255,7 +260,7 @@ const FormSelectField = ({
         processChildren(children);
         
         // If no options match the search, show "no results" message
-        if (options.length === 0 && searchQuery) {
+        if (searchable && options.length === 0 && searchQuery) {
             return (
                 <div className="list-group-item border-0 text-center text-muted py-3">
                     Sonuç bulunamadı
@@ -361,20 +366,21 @@ const FormSelectField = ({
                                     maxHeight: `${dropdownPosition.maxHeight}px`
                                 }}
                             >
-                                {/* Search Input */}
-                                <div className="p-2 border-bottom bg-light sticky-top">
-                                    <input
-                                        ref={searchInputRef}
-                                        type="text"
-                                        className="form-control form-control-sm"
-                                        placeholder="Ara..."
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                        onClick={(e) => e.stopPropagation()}
-                                    />
-                                </div>
+                                {searchable && (
+                                    <div className="p-2 border-bottom bg-light sticky-top">
+                                        <input
+                                            ref={searchInputRef}
+                                            type="text"
+                                            className="form-control form-control-sm"
+                                            placeholder="Ara..."
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            onClick={(e) => e.stopPropagation()}
+                                        />
+                                    </div>
+                                )}
                                 
-                                <div className="overflow-auto" style={{ maxHeight: `${dropdownPosition.maxHeight - 50}px` }}>
+                                <div className="overflow-auto" style={{ maxHeight: searchable ? `${dropdownPosition.maxHeight - 50}px` : `${dropdownPosition.maxHeight}px` }}>
                                     <div className="list-group list-group-flush">
                                         {renderOptions()}
                                     </div>
@@ -398,21 +404,22 @@ const FormSelectField = ({
                                 <div className="py-2">
                                 </div>
                                 
-                                {/* Search Input for Mobile */}
-                                <div className="px-3 pb-2 border-bottom bg-light">
-                                    <input
-                                        ref={searchInputRef}
-                                        type="text"
-                                        className="form-control"
-                                        placeholder="Ara..."
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                        onClick={(e) => e.stopPropagation()}
-                                    />
-                                </div>
+                                {searchable && (
+                                    <div className="px-3 pb-2 border-bottom bg-light">
+                                        <input
+                                            ref={searchInputRef}
+                                            type="text"
+                                            className="form-control"
+                                            placeholder="Ara..."
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            onClick={(e) => e.stopPropagation()}
+                                        />
+                                    </div>
+                                )}
                                 
                                 {/* Options */}
-                                <div className="overflow-auto" style={{ maxHeight: 'calc(60vh - 120px)' }}>
+                                <div className="overflow-auto" style={{ maxHeight: searchable ? 'calc(60vh - 120px)' : 'calc(60vh - 40px)' }}>
                                     <div className="list-group list-group-flush">
                                         {renderOptions()}
                                     </div>

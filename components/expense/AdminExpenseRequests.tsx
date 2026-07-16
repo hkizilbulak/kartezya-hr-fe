@@ -12,10 +12,16 @@ import Pagination from '@/components/Pagination';
 import { Check, X, DollarSign, FileText, Info, ChevronUp, ChevronDown } from 'react-feather';
 import { toast } from 'react-toastify';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
+import { useAuth } from '@/hooks/useAuth';
+import { Capability, hasCapability } from '@/lib/authz/capabilities';
 import '@/styles/table-list.scss';
 import '@/styles/components/table-common.scss';
 
 const AdminExpenseRequests: React.FC = () => {
+  const { user } = useAuth();
+  const canApproveExpense = hasCapability(user?.roles, Capability.CanApproveExpense);
+  const canPayExpense = hasCapability(user?.roles, Capability.CanPayExpense);
+  const canManageExpenseTypes = hasCapability(user?.roles, Capability.CanManageExpenseTypes);
   const [expenseRequests, setExpenseRequests] = useState<ExpenseRequest[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
@@ -51,7 +57,10 @@ const AdminExpenseRequests: React.FC = () => {
 
   const fetchExpenseTypes = async () => {
     try {
-      const response = await expenseService.getExpenseTypes();
+      // Filter dropdown is read-only; use active types unless the caller can manage types.
+      const response = canManageExpenseTypes
+        ? await expenseService.getExpenseTypes()
+        : await expenseService.getActiveExpenseTypes();
       if (response.data) {
         setExpenseTypes(response.data);
       }
@@ -371,7 +380,7 @@ const AdminExpenseRequests: React.FC = () => {
                                   <Badge bg="warning" className="ms-1" style={{ fontSize: '0.6em' }}>!</Badge>
                                 )}
                               </Button>
-                              {request.status === 'PENDING' && (
+                              {request.status === 'PENDING' && canApproveExpense && (
                                 <>
                                   <Button
                                     variant="outline-success"
@@ -396,7 +405,7 @@ const AdminExpenseRequests: React.FC = () => {
                                   </Button>
                                 </>
                               )}
-                              {request.status === 'APPROVED' && (
+                              {request.status === 'APPROVED' && canPayExpense && (
                                 <Button
                                   variant="outline-primary"
                                   size="sm"

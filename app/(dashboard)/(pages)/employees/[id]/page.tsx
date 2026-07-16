@@ -29,11 +29,17 @@ import { documentService } from '@/services/document.service';
 import { ATTACHMENT_RELATED_TYPE_EMPLOYEE, ATTACHMENT_TYPE_CV } from '@/services/document.service';
 import axiosInstance from '@/helpers/api/axiosInstance';
 import CustomPagination from '@/components/Pagination';
+import { useAuth } from '@/hooks/useAuth';
+import { Capability, hasCapability } from '@/lib/authz/capabilities';
 
 const EmployeeDetailPage = () => {
   const router = useRouter();
   const params = useParams();
   const employeeId = params.id as string;
+  const { user } = useAuth();
+  const canManageEmployees = hasCapability(user?.roles, Capability.CanManageEmployees);
+  const isActorAdmin = !!user?.roles?.includes(UserRole.ADMIN);
+  const isActorHR = !isActorAdmin && !!user?.roles?.includes(UserRole.HR);
 
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [workInformations, setWorkInformations] = useState<EmployeeWorkInformation[]>([]);
@@ -82,6 +88,11 @@ const EmployeeDetailPage = () => {
   const [grades, setGrades] = useState<GradeLookup[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [roles, setRoles] = useState<string[]>(['EMPLOYEE']);
+  const targetHasAdmin = roles.includes(UserRole.ADMIN);
+  const canEditEmployee = canManageEmployees && !(isActorHR && targetHasAdmin);
+  const assignableRoles = isActorAdmin
+    ? Object.values(UserRole)
+    : [UserRole.EMPLOYEE, UserRole.HR, UserRole.FINANCE];
   const [deleteItemType, setDeleteItemType] = useState<'workinfo' | 'grade' | 'contract' | null>(null);
   const [activeTab, setActiveTab] = useState<string>('employee-info');
   const [showPasswordResetModal, setShowPasswordResetModal] = useState(false);
@@ -138,13 +149,16 @@ const EmployeeDetailPage = () => {
       } else if (activeTab === 'portal-contract-info') {
         fetchPortalContracts(employee.id);
       } else if (activeTab === 'document-info') {
-        fetchEmployeeDocuments(employee.id);
+        const ownerUserId = getEmployeeOwnerUserId(employee);
+        if (ownerUserId) {
+          fetchEmployeeDocuments(ownerUserId);
+        }
       } else if (activeTab === 'cv-info') {
         fetchEmployeeCvDocuments(employee.id);
       }
       fetchedTabs.current.add(activeTab);
     }
-  }, [activeTab, employee]);
+  }, [activeTab, employee, canManageEmployees]);
 
   useEffect(() => {
     // Rol bilgisini employee state'inden al
@@ -290,15 +304,25 @@ const EmployeeDetailPage = () => {
     }
   };
 
+  const getEmployeeOwnerUserId = (emp: typeof employee): number | null => {
+    if (!emp) return null;
+    const nestedId = emp.user?.id;
+    if (typeof nestedId === 'number' && nestedId > 0) {
+      return nestedId;
+    }
+    return null;
+  };
+
   const fetchEmployeeDocuments = async (
-    empId: number,
+    ownerUserId: number,
     page = 1,
     limit = 10,
     sort: string = docSortConfig.key,
     direction: 'ASC' | 'DESC' = docSortConfig.direction
   ) => {
     try {
-      const response = await documentService.getUserDocuments(empId, {
+      // Backend /documents/user/:id expects OwnerID (user id), not employee id.
+      const response = await documentService.getUserDocuments(ownerUserId, {
         page,
         limit,
         sort,
@@ -331,8 +355,9 @@ const EmployeeDetailPage = () => {
     }
     setDocSortConfig({ key, direction });
     setDocPage(1);
-    if (employee) {
-      fetchEmployeeDocuments(employee.id, 1, docLimit, key, direction);
+    const ownerUserId = getEmployeeOwnerUserId(employee);
+    if (ownerUserId) {
+      fetchEmployeeDocuments(ownerUserId, 1, docLimit, key, direction);
     }
   };
 
@@ -453,7 +478,7 @@ const EmployeeDetailPage = () => {
   };
 
   const handleDeleteWorkInfo = async () => {
-    if (!workInfoToDelete) return;
+    if (!workInfoToDelete || !canEditEmployee) return;
 
     setIsDeleting(true);
     try {
@@ -473,7 +498,7 @@ const EmployeeDetailPage = () => {
   };
 
   const handleDeleteGrade = async () => {
-    if (!gradeToDelete) return;
+    if (!gradeToDelete || !canEditEmployee) return;
 
     setIsDeleting(true);
     try {
@@ -493,7 +518,7 @@ const EmployeeDetailPage = () => {
   };
 
   const handleDeleteContract = async () => {
-    if (!contractToDelete) return;
+    if (!contractToDelete || !canEditEmployee) return;
 
     setIsDeleting(true);
     try {
@@ -513,6 +538,7 @@ const EmployeeDetailPage = () => {
   };
 
   const handleRoleChange = (role: string) => {
+    if (!canEditEmployee) return;
     setRoles(prev => {
       const newRoles = prev.includes(role)
         ? prev.filter(r => r !== role)
@@ -522,7 +548,7 @@ const EmployeeDetailPage = () => {
   };
 
   const handleSaveEmployee = async () => {
-    if (!employee) return;
+    if (!employee || !canEditEmployee) return;
 
     setIsSaving(true);
     try {
@@ -582,7 +608,7 @@ const EmployeeDetailPage = () => {
   };
 
   const handleSendPasswordResetEmail = async () => {
-    if (!employee?.user?.id) return;
+    if (!employee?.user?.id || !canEditEmployee) return;
     setIsSendingResetEmail(true);
     try {
       await authService.sendPasswordResetEmail(employee.user.id);
@@ -767,16 +793,18 @@ const EmployeeDetailPage = () => {
             <p className="text-muted mb-0">{getWorkInfoField('job_title')}</p>
           </div>
 
-          <div className="d-flex justify-content-end mb-3">
-            <Button
-              variant="outline-primary"
-              size="sm"
-              onClick={() => setShowPasswordResetModal(true)}
-              disabled={isSendingResetEmail}
-            >
-              {isSendingResetEmail ? 'Gönderiliyor...' : 'Şifre Sıfırlama Maili Gönder'}
-            </Button>
-          </div>
+          {canEditEmployee && (
+            <div className="d-flex justify-content-end mb-3">
+              <Button
+                variant="outline-primary"
+                size="sm"
+                onClick={() => setShowPasswordResetModal(true)}
+                disabled={isSendingResetEmail}
+              >
+                {isSendingResetEmail ? 'Gönderiliyor...' : 'Şifre Sıfırlama Maili Gönder'}
+              </Button>
+            </div>
+          )}
 
           <Tab.Container id="employee-tabs" activeKey={activeTab} onSelect={(k) => setActiveTab(k || 'employee-info')}>
             <Row className="g-4">
@@ -859,6 +887,7 @@ const EmployeeDetailPage = () => {
                             name="first_name"
                             value={employee.first_name}
                             onChange={(name, value) => setEmployee({ ...employee, first_name: value })}
+                          disabled={!canEditEmployee}
                           />
                         </Col>
                         <Col md={4}>
@@ -868,6 +897,7 @@ const EmployeeDetailPage = () => {
                             name="last_name"
                             value={employee.last_name}
                             onChange={(name, value) => setEmployee({ ...employee, last_name: value })}
+                          disabled={!canEditEmployee}
                           />
                         </Col>
                         <Col md={4}>
@@ -876,6 +906,7 @@ const EmployeeDetailPage = () => {
                             name="date_of_birth"
                             value={employee.date_of_birth ? employee.date_of_birth.split('T')[0] : ''}
                             onChange={(e) => setEmployee({ ...employee, date_of_birth: e.target.value })}
+                          disabled={!canEditEmployee}
                           />
                         </Col>
                       </Row>
@@ -886,6 +917,7 @@ const EmployeeDetailPage = () => {
                             label="Cinsiyet"
                             value={employee.gender || ''}
                             onChange={(e) => setEmployee({ ...employee, gender: e.target.value })}
+                            disabled={!canEditEmployee}
                           >
                             <option value="">Cinsiyet seçiniz</option>
                             {genderOptions.map((option) => (
@@ -901,6 +933,7 @@ const EmployeeDetailPage = () => {
                             label="Medeni Durum"
                             value={employee.marital_status || ''}
                             onChange={(e) => setEmployee({ ...employee, marital_status: e.target.value })}
+                            disabled={!canEditEmployee}
                           >
                             <option value="">Medeni durum seçiniz</option>
                             {maritalStatusOptions.map((option) => (
@@ -917,6 +950,7 @@ const EmployeeDetailPage = () => {
                             name="father_name"
                             value={(employee as any).father_name || ''}
                             onChange={(name, value) => setEmployee({ ...employee, father_name: value } as any)}
+                          disabled={!canEditEmployee}
                           />
                         </Col>
                       </Row>
@@ -935,6 +969,7 @@ const EmployeeDetailPage = () => {
                             type="email"
                             value={employee.email}
                             onChange={(name, value) => setEmployee({ ...employee, email: value })}
+                          disabled={!canEditEmployee}
                           />
                         </Col>
                         <Col md={4}>
@@ -945,6 +980,7 @@ const EmployeeDetailPage = () => {
                             type="email"
                             value={employee.company_email || ''}
                             onChange={(name, value) => setEmployee({ ...employee, company_email: value })}
+                          disabled={!canEditEmployee}
                           />
                         </Col>
                         <Col md={4}>
@@ -954,6 +990,7 @@ const EmployeeDetailPage = () => {
                             name="phone"
                             value={employee.phone || ''}
                             onChange={(name, value) => setEmployee({ ...employee, phone: value })}
+                          disabled={!canEditEmployee}
                           />
                         </Col>
                       </Row>
@@ -965,6 +1002,7 @@ const EmployeeDetailPage = () => {
                             name="city"
                             value={employee.city || ''}
                             onChange={(name, value) => setEmployee({ ...employee, city: value })}
+                          disabled={!canEditEmployee}
                           />
                         </Col>
                         <Col md={4}>
@@ -974,6 +1012,7 @@ const EmployeeDetailPage = () => {
                             name="state"
                             value={employee.state || ''}
                             onChange={(name, value) => setEmployee({ ...employee, state: value })}
+                          disabled={!canEditEmployee}
                           />
                         </Col>
                         <Col md={4}>
@@ -984,6 +1023,7 @@ const EmployeeDetailPage = () => {
                             value={employee.address || ''}
                             onChange={(name, value) => setEmployee({ ...employee, address: value })}
                             rows={2}
+                          disabled={!canEditEmployee}
                           />
                         </Col>
                       </Row>
@@ -1000,6 +1040,7 @@ const EmployeeDetailPage = () => {
                             name="profession_start_date"
                             value={(employee as any).profession_start_date ? (employee as any).profession_start_date.split('T')[0] : ''}
                             onChange={(e) => setEmployee({ ...employee, profession_start_date: e.target.value } as any)}
+                          disabled={!canEditEmployee}
                           />
                         </Col>
                         <Col md={4}>
@@ -1008,6 +1049,7 @@ const EmployeeDetailPage = () => {
                             name="hire_date"
                             value={employee.hire_date ? employee.hire_date.split('T')[0] : ''}
                             onChange={(e) => setEmployee({ ...employee, hire_date: e.target.value })}
+                          disabled={!canEditEmployee}
                           />
                         </Col>
                         <Col md={4}>
@@ -1016,6 +1058,7 @@ const EmployeeDetailPage = () => {
                             name="leave_date"
                             value={employee.leave_date ? employee.leave_date.split('T')[0] : ''}
                             onChange={(e) => setEmployee({ ...employee, leave_date: e.target.value })}
+                          disabled={!canEditEmployee}
                           />
                         </Col>
                       </Row>
@@ -1030,6 +1073,7 @@ const EmployeeDetailPage = () => {
                               value={employee.total_gap}
                               onChange={(e) => setEmployee({ ...employee, total_gap: e.target.value || 0 } as any)}
                               placeholder="0"
+                              disabled={!canEditEmployee}
                             />
                           </Form.Group>
                         </Col>
@@ -1039,6 +1083,7 @@ const EmployeeDetailPage = () => {
                             label="Statü"
                             value={employee.status || ''}
                             onChange={(e) => setEmployee({ ...employee, status: e.target.value as "ACTIVE" | "PASSIVE" | undefined })}
+                            disabled={!canEditEmployee}
                           >
                             <option value="">Statü seçiniz</option>
                             {statusOptions.map((option) => (
@@ -1060,6 +1105,7 @@ const EmployeeDetailPage = () => {
                             type="textarea"
                             rows={4}
                             placeholder="Not giriniz"
+                          disabled={!canEditEmployee}
                           />
                         </Col>
                       </Row>
@@ -1077,6 +1123,7 @@ const EmployeeDetailPage = () => {
                             name="emergency_contact_name"
                             value={employee.emergency_contact_name || ''}
                             onChange={(name, value) => setEmployee({ ...employee, emergency_contact_name: value })}
+                          disabled={!canEditEmployee}
                           />
                         </Col>
                         <Col md={4}>
@@ -1086,6 +1133,7 @@ const EmployeeDetailPage = () => {
                             name="emergency_contact"
                             value={employee.emergency_contact || ''}
                             onChange={(name, value) => setEmployee({ ...employee, emergency_contact: value })}
+                          disabled={!canEditEmployee}
                           />
                         </Col>
                         <Col md={4}>
@@ -1094,6 +1142,7 @@ const EmployeeDetailPage = () => {
                             label="İlişki"
                             value={employee.emergency_contact_relation || ''}
                             onChange={(e) => setEmployee({ ...employee, emergency_contact_relation: e.target.value })}
+                            disabled={!canEditEmployee}
                           >
                             <option value="">İlişki seçiniz</option>
                             {emergencyContactRelationOptions.map((option) => (
@@ -1111,55 +1160,66 @@ const EmployeeDetailPage = () => {
                     {/* Roles */}
                     <h6 style={{ color: '#495057', fontWeight: 700, fontSize: '14px', marginBottom: '1rem' }}>Rol Bilgileri</h6>
 
-                    <div className="mb-3 p-3" style={{ backgroundColor: '#f8f9fa', borderRadius: '4px' }}>
-                      {Object.values(UserRole).map(role => (
-                        <Form.Check
-                          key={role}
-                          type="checkbox"
-                          id={`role-${role}`}
-                          label={role}
-                          checked={roles.includes(role)}
-                          onChange={() => handleRoleChange(role)}
-                          className="mb-2"
-                        />
-                      ))}
-                    </div>
+                    {canEditEmployee ? (
+                      <div className="mb-3 p-3" style={{ backgroundColor: '#f8f9fa', borderRadius: '4px' }}>
+                        {assignableRoles.map(role => (
+                          <Form.Check
+                            key={role}
+                            type="checkbox"
+                            id={`role-${role}`}
+                            label={role}
+                            checked={roles.includes(role)}
+                            onChange={() => handleRoleChange(role)}
+                            className="mb-2"
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="mb-3 p-3" style={{ backgroundColor: '#f8f9fa', borderRadius: '4px' }}>
+                        {roles.length ? roles.join(', ') : '-'}
+                      </div>
+                    )}
 
-                    <hr style={{ margin: '1rem 0', borderColor: '#e9ecef' }} />
-
-                    {/* Action Buttons */}
-                    <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
-                      <Button
-                        variant="primary"
-                        onClick={handleSaveEmployee}
-                        disabled={isSaving}
-                        className="d-flex align-items-center"
-                      >
-                        {isSaving ? 'Kaydediliyor...' : 'Kaydet'}
-                      </Button>
-                    </div>
+                    {canEditEmployee && (
+                      <>
+                        <hr style={{ margin: '1rem 0', borderColor: '#e9ecef' }} />
+                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
+                          <Button
+                            variant="primary"
+                            onClick={handleSaveEmployee}
+                            disabled={isSaving}
+                            className="d-flex align-items-center"
+                          >
+                            {isSaving ? 'Kaydediliyor...' : 'Kaydet'}
+                          </Button>
+                        </div>
+                      </>
+                    )}
 
                     <LoadingOverlay show={isSaving} message="Kaydediliyor..." />
 
                   </Tab.Pane>
 
                   {/* İş Bilgileri Tab */}
+                  {canManageEmployees && (
                   <Tab.Pane eventKey="work-info">
                     <div className={styles.section}>
-                      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '1.5rem' }}>
-                        <Button
-                          className="d-flex align-items-center"
-                          variant="primary"
-                          onClick={() => {
-                            setSelectedWorkInfo(null);
-                            setIsWorkInfoEdit(false);
-                            setShowWorkInfoModal(true);
-                          }}
-                        >
-                          <i className="fe fe-plus"></i>
-                          <span className="d-none d-lg-flex ms-2">Yeni İş Bilgisi</span>
-                        </Button>
-                      </div>
+                      {canEditEmployee && (
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '1.5rem' }}>
+                          <Button
+                            className="d-flex align-items-center"
+                            variant="primary"
+                            onClick={() => {
+                              setSelectedWorkInfo(null);
+                              setIsWorkInfoEdit(false);
+                              setShowWorkInfoModal(true);
+                            }}
+                          >
+                            <i className="fe fe-plus"></i>
+                            <span className="d-none d-lg-flex ms-2">Yeni İş Bilgisi</span>
+                          </Button>
+                        </div>
+                      )}
 
                       {workInformations.length > 0 ? (
                         <Table responsive className="table-list">
@@ -1182,6 +1242,7 @@ const EmployeeDetailPage = () => {
                                 <td>{workInfo.start_date ? formatDate(workInfo.start_date) : '-'}</td>
                                 <td>{workInfo.end_date ? formatDate(workInfo.end_date) : '-'}</td>
                                 <td>
+                                  {canEditEmployee && (
                                   <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
                                     <Button
                                       variant="outline-primary"
@@ -1208,6 +1269,7 @@ const EmployeeDetailPage = () => {
                                       <Trash2 size={14} />
                                     </Button>
                                   </div>
+                                  )}
                                 </td>
                               </tr>
                             ))}
@@ -1222,6 +1284,7 @@ const EmployeeDetailPage = () => {
                       )}
                     </div>
                   </Tab.Pane>
+                  )}
 
                   {/* Doküman Bilgileri Tab */}
                   <Tab.Pane eventKey="document-info">
@@ -1298,22 +1361,27 @@ const EmployeeDetailPage = () => {
                                     >
                                       <Download size={14} />
                                     </Button>
-                                    <Button
-                                      variant="outline-danger"
-                                      size="sm"
-                                      onClick={async () => {
-                                        try {
-                                          await documentService.delete(doc.id);
-                                          toast.success('Doküman silindi');
-                                          fetchEmployeeDocuments(employee.id, docPage, docLimit, docSortConfig.key, docSortConfig.direction);
-                                        } catch (error) {
-                                          toast.error('Silme başarısız');
-                                        }
-                                      }}
-                                      title="Sil"
-                                    >
-                                      <Trash2 size={14} />
-                                    </Button>
+                                    {canEditEmployee && (
+                                      <Button
+                                        variant="outline-danger"
+                                        size="sm"
+                                        onClick={async () => {
+                                          try {
+                                            await documentService.delete(doc.id);
+                                            toast.success('Doküman silindi');
+                                            const ownerUserId = getEmployeeOwnerUserId(employee);
+                                            if (ownerUserId) {
+                                              fetchEmployeeDocuments(ownerUserId, docPage, docLimit, docSortConfig.key, docSortConfig.direction);
+                                            }
+                                          } catch (error) {
+                                            toast.error('Silme başarısız');
+                                          }
+                                        }}
+                                        title="Sil"
+                                      >
+                                        <Trash2 size={14} />
+                                      </Button>
+                                    )}
                                   </div>
                                 </td>
                               </tr>
@@ -1336,7 +1404,10 @@ const EmployeeDetailPage = () => {
                             itemsPerPage={docLimit}
                             onPageChange={(page) => {
                               setDocPage(page);
-                              fetchEmployeeDocuments(employee.id, page, docLimit, docSortConfig.key, docSortConfig.direction);
+                              const ownerUserId = getEmployeeOwnerUserId(employee);
+                              if (ownerUserId) {
+                                fetchEmployeeDocuments(ownerUserId, page, docLimit, docSortConfig.key, docSortConfig.direction);
+                              }
                             }}
                           />
                         </div>
@@ -1345,22 +1416,25 @@ const EmployeeDetailPage = () => {
                   </Tab.Pane>
 
                   {/* Grade Bilgileri Tab */}
+                  {canManageEmployees && (
                   <Tab.Pane eventKey="grade-info">
                     <div className={styles.section}>
-                      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '1.5rem' }}>
-                        <Button
-                          className="d-flex align-items-center"
-                          variant="primary"
-                          onClick={() => {
-                            setSelectedGrade(null);
-                            setIsGradeEdit(false);
-                            setShowGradeModal(true);
-                          }}
-                        >
-                          <i className="fe fe-plus"></i>
-                          <span className="d-none d-lg-flex ms-2">Yeni Grade Bilgisi</span>
-                        </Button>
-                      </div>
+                      {canEditEmployee && (
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '1.5rem' }}>
+                          <Button
+                            className="d-flex align-items-center"
+                            variant="primary"
+                            onClick={() => {
+                              setSelectedGrade(null);
+                              setIsGradeEdit(false);
+                              setShowGradeModal(true);
+                            }}
+                          >
+                            <i className="fe fe-plus"></i>
+                            <span className="d-none d-lg-flex ms-2">Yeni Grade Bilgisi</span>
+                          </Button>
+                        </div>
+                      )}
 
                       {employeeGrades.length > 0 ? (
                         <Table responsive className="table-list">
@@ -1379,6 +1453,7 @@ const EmployeeDetailPage = () => {
                                 <td>{grade.start_date ? formatDate(grade.start_date) : '-'}</td>
                                 <td>{grade.end_date ? formatDate(grade.end_date) : '-'}</td>
                                 <td>
+                                  {canEditEmployee && (
                                   <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
                                     <Button
                                       variant="outline-primary"
@@ -1405,6 +1480,7 @@ const EmployeeDetailPage = () => {
                                       <Trash2 size={14} />
                                     </Button>
                                   </div>
+                                  )}
                                 </td>
                               </tr>
                             ))}
@@ -1419,11 +1495,14 @@ const EmployeeDetailPage = () => {
                       )}
                     </div>
                   </Tab.Pane>
+                  )}
 
                   {/* Sözleşme Bilgileri Tab */}
+                  {canManageEmployees && (
                   <Tab.Pane eventKey="contract-info">
                     <div className={styles.section}>
-                      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '1.5rem' }}>
+                      {canEditEmployee && (
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '1.5rem' }}>
                         <Button
                           className="d-flex align-items-center"
                           variant="primary"
@@ -1441,6 +1520,7 @@ const EmployeeDetailPage = () => {
                           <span className="d-none d-lg-flex ms-2">Yeni Sözleşme</span>
                         </Button>
                       </div>
+                      )}
 
                       {employeeContracts.length > 0 ? (
                         <Table responsive className="table-list">
@@ -1477,7 +1557,8 @@ const EmployeeDetailPage = () => {
                                   </td>
 
                                   <td>
-                                    <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                                    {canEditEmployee && (
+                                  <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
                                       <Button
                                         variant="outline-primary"
                                         size="sm"
@@ -1503,6 +1584,7 @@ const EmployeeDetailPage = () => {
                                         <Trash2 size={14} />
                                       </Button>
                                     </div>
+                                  )}
                                   </td>
                                 </tr>
                               );
@@ -1518,6 +1600,7 @@ const EmployeeDetailPage = () => {
                       )}
                     </div>
                   </Tab.Pane>
+                  )}
 
                   {/* Sözleşme Onay Durumları Tab */}
                   <Tab.Pane eventKey="portal-contract-info">
@@ -1563,6 +1646,7 @@ const EmployeeDetailPage = () => {
                   </Tab.Pane>
 
                   {/* İzin Bilgileri Tab */}
+                  {canManageEmployees && (
                   <Tab.Pane eventKey="leave-info">
                     <div className={styles.section}>
                       {activeTab === 'leave-info' && (
@@ -1570,6 +1654,7 @@ const EmployeeDetailPage = () => {
                       )}
                     </div>
                   </Tab.Pane>
+                  )}
 
                   {/* Masraf Bilgileri Tab */}
                   <Tab.Pane eventKey="expense-info">
@@ -1585,6 +1670,8 @@ const EmployeeDetailPage = () => {
                     <div className={styles.section}>
 
                       {/* Upload Alanı */}
+                      {canEditEmployee && (
+                      <>
                       <div
                         onDragOver={(e) => { e.preventDefault(); setCvDragOver(true); }}
                         onDragLeave={() => setCvDragOver(false)}
@@ -1649,6 +1736,8 @@ const EmployeeDetailPage = () => {
                           </Button>
                         </div>
                       )}
+                      </>
+                      )}
 
                       {/* CV Listesi */}
                       {employeeCvDocuments.length > 0 ? (
@@ -1712,14 +1801,16 @@ const EmployeeDetailPage = () => {
                                     >
                                       <Download size={14} />
                                     </Button>
-                                    <Button
-                                      variant="outline-danger"
-                                      size="sm"
-                                      title="Sil"
-                                      onClick={() => handleCvDelete(doc.id)}
-                                    >
-                                      <Trash2 size={14} />
-                                    </Button>
+                                    {canEditEmployee && (
+                                      <Button
+                                        variant="outline-danger"
+                                        size="sm"
+                                        title="Sil"
+                                        onClick={() => handleCvDelete(doc.id)}
+                                      >
+                                        <Trash2 size={14} />
+                                      </Button>
+                                    )}
                                   </div>
                                 </td>
                               </tr>

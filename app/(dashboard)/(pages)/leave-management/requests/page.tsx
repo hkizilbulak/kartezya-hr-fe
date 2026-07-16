@@ -13,11 +13,15 @@ import FormDateField from '@/components/FormDateField';
 import { Check, X, Edit, ChevronUp, ChevronDown, FileText, Info } from 'react-feather';
 import { toast } from 'react-toastify';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
+import { useAuth } from '@/hooks/useAuth';
+import { Capability, hasCapability } from '@/lib/authz/capabilities';
 import '@/styles/table-list.scss';
 import '@/styles/components/table-common.scss';
 import { leaveTypeService } from '@/services/leave-type.service';
 
 const LeaveRequestsPage = () => {
+  const { user } = useAuth();
+  const canApproveLeave = hasCapability(user?.roles, Capability.CanApproveLeave);
   const [pendingRequests, setPendingRequests] = useState<LeaveRequest[]>([]);
   const [completedRequests, setCompletedRequests] = useState<LeaveRequest[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -492,7 +496,7 @@ const LeaveRequestsPage = () => {
                                               )}
                                             </Button>
                                           )}
-                                          {request.status === 'PENDING' ? (
+                                          {request.status === 'PENDING' && canApproveLeave ? (
                                             <>
                                               <Button
                                                 variant="outline-success"
@@ -513,7 +517,7 @@ const LeaveRequestsPage = () => {
                                                 <X size={14} />
                                               </Button>
                                             </>
-                                          ) : canCancelRequest(request) ? (
+                                          ) : canApproveLeave && canCancelRequest(request) ? (
                                             <Button
                                               variant="outline-warning"
                                               size="sm"

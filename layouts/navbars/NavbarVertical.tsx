@@ -17,8 +17,9 @@ import { useAccordionButton } from 'react-bootstrap/AccordionButton';
 import SimpleBar from 'simplebar-react';
 import 'simplebar/dist/simplebar.min.css';
 
-import { DashboardMenu } from '@/routes/DashboardRoutes';
+import { DashboardMenu, IMenuProps } from '@/routes/DashboardRoutes';
 import { useAuth } from '@/hooks/useAuth';
+import { hasCapability } from '@/lib/authz/capabilities';
 
 type IProps = {
 	showMenu: boolean;
@@ -31,50 +32,34 @@ type IToggleProps = {
 	icon?: string;
 }
 
-interface IMenuProps {
-	id: string;
-	title?: string;
-	name?: string;
-	icon?: string;
-	link?: string;
-	grouptitle?: boolean;
-	children?: IMenuProps[];
-	badge?: string;
-	badgecolor?: string;
-	requiredRoles?: string[];
-}
-
 const NavbarVertical = (props: IProps) => {
 	const location = usePathname()
 	const { user, isLoading } = useAuth();
 	
-	// Check if user has required role for a menu item - memoized with useCallback
-	const hasRequiredRole = useCallback((requiredRoles?: string[]): boolean => {		
-		// If still loading, don't render restricted items
+	const canAccessMenuItem = useCallback((item: Pick<IMenuProps, 'requiredCapability' | 'requiredRoles'>): boolean => {
+		const { requiredCapability, requiredRoles } = item;
+
 		if (isLoading) {
-			return !requiredRoles || requiredRoles.length === 0;
+			return !requiredCapability && (!requiredRoles || requiredRoles.length === 0);
 		}
 
-		// Eğer role requirement yoksa (undefined veya boş array), tüm kullanıcılar görebilir
-		if (!requiredRoles || requiredRoles.length === 0) {
-			return true; // No role restriction - everyone can see
+		if (!requiredCapability && (!requiredRoles || requiredRoles.length === 0)) {
+			return true;
 		}
-		
-		// Role requirement var
-		if (!user) {
+
+		if (!user?.roles || !Array.isArray(user.roles) || user.roles.length === 0) {
 			return false;
 		}
 
-		// Kritik: roles yoksa veya boş array ise, EMPLOYEE gibi davran = erişim yok
-		if (!user.roles || !Array.isArray(user.roles) || user.roles.length === 0) {
+		if (requiredCapability && !hasCapability(user.roles, requiredCapability)) {
 			return false;
 		}
 
-		// Roles varsa, gerekli role'ün içinde olup olmadığını kontrol et
-		const hasRole = requiredRoles.some(requiredRole => 
-			user.roles?.includes(requiredRole)
-		);
-		return hasRole;
+		if (requiredRoles && requiredRoles.length > 0) {
+			return requiredRoles.some((requiredRole) => user.roles?.includes(requiredRole));
+		}
+
+		return true;
 	}, [user, isLoading]);
 	
 	// Mevcut URL'ye göre hangi accordion'ın açık olması gerektiğini belirle
@@ -192,8 +177,7 @@ const NavbarVertical = (props: IProps) => {
 					style={{ overflow: 'visible' }}
 				>
 					{DashboardMenu.map(function (menu, index) {
-						// Check role access for this menu item
-						if (!hasRequiredRole(menu.requiredRoles)) {
+						if (!canAccessMenuItem(menu)) {
 							return null;
 						}
 
@@ -207,9 +191,8 @@ const NavbarVertical = (props: IProps) => {
 							);
 						} else {
 							if (menu.children) {
-								// Filter children based on role
-								const visibleChildren = menu.children.filter(child => 
-									hasRequiredRole(child.requiredRoles)
+								const visibleChildren = menu.children.filter(child =>
+									canAccessMenuItem(child)
 								);
 
 								// Don't render if no visible children
