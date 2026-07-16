@@ -7,6 +7,7 @@ import { jobService } from '@/services/job.service';
 import { Job } from '@/models/hr/job-models';
 import { PageHeading } from '@/widgets';
 import LoadingOverlay from '@/components/LoadingOverlay';
+import DeleteModal from '@/components/DeleteModal';
 import JobModal from '@/components/modals/JobModal';
 import { Edit, Clock, PlayCircle, ChevronUp, ChevronDown } from 'react-feather';
 import { toast } from 'react-toastify';
@@ -19,6 +20,9 @@ const JobsPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+  const [jobToRun, setJobToRun] = useState<Job | null>(null);
+  const [showRunConfirmModal, setShowRunConfirmModal] = useState(false);
+  const [runLoading, setRunLoading] = useState(false);
 
   const [sortConfig, setSortConfig] = useState<{
     key: 'name' | 'job_key' | 'is_active' | null;
@@ -74,16 +78,32 @@ const JobsPage = () => {
     setShowModal(true);
   };
 
-  const handleRunNow = async (job: Job) => {
+  const handleRunClick = (job: Job) => {
+    setJobToRun(job);
+    setShowRunConfirmModal(true);
+  };
+
+  const handleCloseRunModal = () => {
+    if (runLoading) return;
+    setShowRunConfirmModal(false);
+    setJobToRun(null);
+  };
+
+  const handleRunConfirm = async () => {
+    if (!jobToRun) return;
+    if (runLoading) return;
+
     try {
-      setIsLoading(true);
-      await jobService.runJob(job.id);
-      toast.success(`${job.name} başarıyla tetiklendi. Arka planda çalışıyor.`);
+      setRunLoading(true);
+      await jobService.runJob(jobToRun.id);
+      toast.success(`${jobToRun.name} başarıyla tetiklendi. Arka planda çalışıyor.`);
+      setShowRunConfirmModal(false);
+      setJobToRun(null);
     } catch (error: any) {
       const errorMessage = error.response?.data?.error || error.message || 'Tetikleme sırasında hata oluştu';
       toast.error(translateErrorMessage(errorMessage));
     } finally {
-      setIsLoading(false);
+      setRunLoading(false);
     }
   };
 
@@ -172,7 +192,7 @@ const JobsPage = () => {
                                     variant="outline-success"
                                     size="sm"
                                     className="me-2"
-                                    onClick={() => handleRunNow(job)}
+                                    onClick={() => handleRunClick(job)}
                                     title="Şimdi Çalıştır"
                                   >
                                     <PlayCircle size={14} />
@@ -222,6 +242,20 @@ const JobsPage = () => {
             job={selectedJob}
             onHide={handleCloseModal}
             onSave={handleModalSave}
+          />
+        )}
+
+        {showRunConfirmModal && jobToRun && (
+          <DeleteModal
+            title="Görevi Çalıştır"
+            message={`"${jobToRun.name}" görevi çalıştırılacak. Devam etmek istediğinizden emin misiniz?`}
+            cancelLabel="Vazgeç"
+            confirmLabel="Çalıştır"
+            loadingLabel="Çalıştırılıyor..."
+            variant="success"
+            loading={runLoading}
+            onClose={handleCloseRunModal}
+            onHandleDelete={handleRunConfirm}
           />
         )}
       </Container>
