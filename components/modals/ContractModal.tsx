@@ -287,6 +287,7 @@ const ContractModal: React.FC<ContractModalProps> = ({
                   onChange={handleInputChange}
                 >
                   <option value={ContractStatus.PendingProposal}>Teklif Bekliyor</option>
+                  <option value={ContractStatus.AwaitingResponse}>Yanıt Bekleniyor</option>
                   <option value={ContractStatus.Approved}>Onaylandı</option>
                   <option value={ContractStatus.Active}>Aktif</option>
                   <option value={ContractStatus.Completed}>Tamamlandı</option>
