@@ -171,13 +171,10 @@ const AdminExpenseRequests: React.FC = () => {
   };
 
   const handleMarkPaidConfirm = async () => {
-    if (!selectedRequest || !paymentReference.trim()) {
-      toast.error('Ödeme referans numarası giriniz');
-      return;
-    }
+    if (!selectedRequest) return;
 
     try {
-      await expenseService.markExpenseAsPaid(selectedRequest.id, paymentReference);
+      await expenseService.markExpenseAsPaid(selectedRequest.id, paymentReference.trim());
       toast.success('Masraf ödendi olarak işaretlendi');
       fetchExpenseRequests(currentPage, statusFilter);
       setShowPaidModal(false);
