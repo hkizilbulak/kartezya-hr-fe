@@ -6,14 +6,13 @@ import {
 import { cvSearchService } from '@/services';
 import type { BulkUploadJobResult } from '@/models/cv-search/cv-search.models';
 import { PageHeading } from '@/widgets';
-import LoadingOverlay from '@/components/LoadingOverlay';
 import { Upload, X, RefreshCw } from 'react-feather';
 import { toast } from 'react-toastify';
 import '@/styles/table-list.scss';
 import '@/styles/components/table-common.scss';
 
-const MAX_FILES = 10;
-const MAX_FILE_SIZE_MB = 1;
+const MAX_FILES = 20;
+const MAX_FILE_SIZE_MB = 5;
 const ALLOWED_EXTENSIONS = ['.pdf', '.docx', '.txt'];
 const POLL_INTERVAL_MS = 3000;
 
@@ -33,7 +32,6 @@ const getStatusBadge = (status: string) => {
 
 const CvUploadPage = () => {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [isUploading, setIsUploading] = useState(false);
   const [batchId, setBatchId] = useState<string | null>(null);
   const [jobResults, setJobResults] = useState<BulkUploadJobResult[]>([]);
   const [isPolling, setIsPolling] = useState(false);
@@ -52,7 +50,7 @@ const CvUploadPage = () => {
   }, []);
 
   useEffect(() => {
-    if (!batchId) return;
+    if (!batchId || batchId === 'uploading' || batchId === 'failed') return;
 
     const poll = async () => {
       try {
@@ -103,7 +101,7 @@ const CvUploadPage = () => {
         continue;
       }
       if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
-        errors.push(`"${file.name}" 1 MB sınırını aşıyor.`);
+        errors.push(`"${file.name}" ${MAX_FILE_SIZE_MB} MB sınırını aşıyor.`);
         continue;
       }
       if (currentCount + newFiles.length >= MAX_FILES) {
@@ -151,24 +149,38 @@ const CvUploadPage = () => {
 
   const handleUpload = async () => {
     if (selectedFiles.length === 0) return;
-    setIsUploading(true);
+    
+    // 1. Take a snapshot of files to upload and clear selection
+    const filesToUpload = [...selectedFiles];
+    setSelectedFiles([]);
+    
+    // 2. Set temporary batch state and transition to table immediately
+    setBatchId('uploading');
+    setJobResults(
+      filesToUpload.map((f: File) => ({
+        filename: f.name,
+        status: 'pending' as const,
+      }))
+    );
+    
+    // 3. Perform the upload in the background
     try {
-      const response = await cvSearchService.bulkUpload(selectedFiles);
+      const response = await cvSearchService.bulkUpload(filesToUpload);
       setBatchId(response.batch_id);
+      
       // Seed table with initial statuses from upload response
       if (response.results && response.results.length > 0) {
         setJobResults(response.results);
       } else {
         // Build placeholder rows if API does not return them
         setJobResults(
-          selectedFiles.map((f: File) => ({
+          filesToUpload.map((f: File) => ({
             filename: f.name,
             status: 'pending' as const,
           }))
         );
       }
-      setSelectedFiles([]);
-      toast.info('Dosyalar sıraya alındı, işleme durumu takip ediliyor…');
+      toast.info('Dosyalar başarıyla gönderildi, işleme durumu takip ediliyor…');
     } catch (err: any) {
       const msg =
         err?.response?.data?.error ||
@@ -176,8 +188,16 @@ const CvUploadPage = () => {
         err?.message ||
         'Yükleme sırasında bir hata oluştu.';
       toast.error(msg);
-    } finally {
-      setIsUploading(false);
+      
+      // Update table to show the failure
+      setBatchId('failed');
+      setJobResults(
+        filesToUpload.map((f: File) => ({
+          filename: f.name,
+          status: 'failed' as const,
+          error: msg,
+        }))
+      );
     }
   };
 
@@ -194,8 +214,6 @@ const CvUploadPage = () => {
 
   return (
     <Container fluid className="page-container">
-      <LoadingOverlay show={isUploading} message="Dosyalar yükleniyor…" />
-
       <div className="page-heading-wrapper">
         <PageHeading
           heading="CV Yükleme"
@@ -231,7 +249,7 @@ const CvUploadPage = () => {
                     Dosyaları buraya sürükleyin veya seçmek için tıklayın
                   </p>
                   <p className="text-muted small mb-0">
-                    PDF, DOCX, TXT · Maksimum {MAX_FILES} dosya · Dosya başına 1 MB
+                    PDF, DOCX, TXT · Maksimum {MAX_FILES} dosya · Dosya başına {MAX_FILE_SIZE_MB} MB
                   </p>
                   <Form.Control
                     ref={fileInputRef}
@@ -277,7 +295,7 @@ const CvUploadPage = () => {
                       <Button
                         variant="primary"
                         onClick={handleUpload}
-                        disabled={isUploading || selectedFiles.length === 0}
+                        disabled={selectedFiles.length === 0}
                       >
                         <Upload size={16} className="me-1" />
                         Yükle
@@ -285,7 +303,6 @@ const CvUploadPage = () => {
                       <Button
                         variant="outline-secondary"
                         onClick={() => setSelectedFiles([])}
-                        disabled={isUploading}
                       >
                         Temizle
                       </Button>
@@ -307,10 +324,18 @@ const CvUploadPage = () => {
                 <Card.Header className="bg-white d-flex align-items-center justify-content-between py-3 px-4">
                   <div>
                     <span className="fw-semibold">İşlem Durumu</span>
-                    <span className="text-muted small ms-2">Batch: {batchId}</span>
+                    <span className="text-muted small ms-2">
+                      Batch: {batchId === 'uploading' ? 'Yükleniyor...' : batchId === 'failed' ? 'Yükleme Başarısız' : batchId}
+                    </span>
                   </div>
                   <div className="d-flex gap-2 align-items-center">
-                    {isPolling && (
+                    {batchId === 'uploading' && (
+                      <span className="text-muted small">
+                        <RefreshCw size={14} className="me-1 spin" />
+                        Dosyalar gönderiliyor…
+                      </span>
+                    )}
+                    {isPolling && batchId !== 'uploading' && (
                       <span className="text-muted small">
                         <RefreshCw size={14} className="me-1 spin" />
                         Güncelleniyor…

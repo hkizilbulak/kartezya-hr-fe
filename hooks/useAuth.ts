@@ -43,6 +43,10 @@ export const useAuth = () => {
     try {
       await authService.logout();
     } finally {
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('kvkk_postponed');
+        sessionStorage.removeItem('kvkk_submitted');
+      }
       setUser(null);
       setIsAuthenticated(false);
       setIsLoading(false);
