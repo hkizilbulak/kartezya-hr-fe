@@ -20,7 +20,7 @@ const AdminExpenseRequests: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
 
-  const itemsPerPage = 10;
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
@@ -60,13 +60,19 @@ const AdminExpenseRequests: React.FC = () => {
     }
   };
 
-  const fetchExpenseRequests = async (page: number = 1, status?: string, sortKey: string | null = sortConfig.key, sortDir: 'asc' | 'desc' = sortConfig.direction) => {
+  const fetchExpenseRequests = async (
+    page: number = 1,
+    status?: string,
+    sortKey: string | null = sortConfig.key,
+    sortDir: 'asc' | 'desc' = sortConfig.direction,
+    pageSize: number = itemsPerPage
+  ) => {
     try {
       setIsLoading(true);
 
       const response = await expenseService.getAllExpenseRequests(
         page,
-        itemsPerPage,
+        pageSize,
         undefined,             // Eskiden sortKey buradaydı (HATA VEREN KISIM). Burası employeeId için sayı (number) bekliyor.
         status || undefined,
         sortKey || undefined,  // sortKey parametresinin doğru yeri burası
@@ -431,7 +437,11 @@ const AdminExpenseRequests: React.FC = () => {
               totalItems={totalItems}
               itemsPerPage={itemsPerPage}
               onPageChange={(page) => fetchExpenseRequests(page, statusFilter)}
-              onPageSizeChange={(size) => { }}
+              onPageSizeChange={(size) => {
+                setItemsPerPage(size);
+                setCurrentPage(1);
+                fetchExpenseRequests(1, statusFilter, sortConfig.key, sortConfig.direction, size);
+              }}
             />
           </div>
         )}
