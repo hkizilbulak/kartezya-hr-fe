@@ -11,6 +11,7 @@ export interface CompanyNode {
 }
 
 export interface FusedCandidateResponse {
+  id: number
   rank: number
   name: string
   person_id: string
