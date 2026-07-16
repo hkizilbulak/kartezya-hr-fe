@@ -1,17 +1,19 @@
 "use client";
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
-  Row, Col, Card, Table, Button, Badge, Container, Form,
+  Row, Col, Card, Table, Button, Badge, Container, Form, Modal, Spinner
 } from 'react-bootstrap';
 import { cvSearchService } from '@/services';
 import type {
   FusedCandidateResponse,
   HybridSearchResponse,
   SuggestionResult,
+  CandidateDetail
 } from '@/models/cv-search/cv-search.models';
 import { PageHeading } from '@/widgets';
 import LoadingOverlay from '@/components/LoadingOverlay';
-import { Search, ChevronDown, ChevronUp, Plus } from 'react-feather';
+import { Search, ChevronDown, ChevronUp, Plus, Eye, Mail, Phone, MapPin, Briefcase, Calendar } from 'react-feather';
+import { useRouter } from 'next/navigation';
 import { toast } from 'react-toastify';
 import '@/styles/table-list.scss';
 import '@/styles/components/table-common.scss';
@@ -32,12 +34,97 @@ const suggestionTypeLabel = (type: string) => {
   }
 };
 
+const seniorityScore = (seniority: string): number => {
+  const sen = (seniority || '').toLowerCase();
+  if (sen.includes('junior') || sen.includes('yeni')) return 1;
+  if (sen.includes('mid') || sen.includes('orta')) return 2;
+  if (sen.includes('senior') || sen.includes('deneyimli') || sen.includes('uzman')) return 3;
+  if (sen.includes('lead') || sen.includes('yönetici') || sen.includes('müdür') || sen.includes('principal') || sen.includes('director')) return 4;
+  return 0;
+};
+
+const EXPERIENCE_DOMAINS = [
+  {
+    id: 'bankacilik',
+    label: 'Bankacılık & Finans',
+    keywords: ['bank', 'kredi', 'finans', 'finance', 'factoring', 'sigorta', 'bireysel emeklilik', 'investment', 'yatırım', 'portföy', 'teller', 'gişe']
+  },
+  {
+    id: 'eticaret',
+    label: 'E-Ticaret & Perakende',
+    keywords: ['e-ticaret', 'ecommerce', 'e-commerce', 'perakende', 'retail', 'pazaryeri', 'trendyol', 'hepsiburada', 'n11', 'getir', 'migros']
+  },
+  {
+    id: 'savunma',
+    label: 'Savunma Sanayii',
+    keywords: ['savunma', 'defense', 'aselsan', 'havelsan', 'roketsan', 'tai', 'tusaş', 'baykar', 'stm']
+  },
+  {
+    id: 'telekom',
+    label: 'Telekomünikasyon',
+    keywords: ['telekom', 'telecom', 'turkcell', 'vodafone', 'türk telekom']
+  },
+  {
+    id: 'mobil',
+    label: 'Mobil Geliştirme',
+    keywords: ['mobil', 'mobile', 'ios', 'android', 'flutter', 'react native', 'swift', 'kotlin']
+  },
+  {
+    id: 'yapayzeka',
+    label: 'Yapay Zeka & Veri',
+    keywords: ['yapay zeka', 'ai', 'artificial intelligence', 'machine learning', 'makine öğrenmesi', 'data science', 'veri bilimi', 'deep learning', 'veri analizi']
+  },
+  {
+    id: 'bulut',
+    label: 'Bulut & DevOps',
+    keywords: ['devops', 'cloud', 'aws', 'azure', 'gcp', 'kubernetes', 'docker', 'bulut']
+  }
+];
+
+const hasDomainExperience = (c: FusedCandidateResponse, keywords: string[]): boolean => {
+  const checkText = (text: string) => {
+    if (!text) return false;
+    const lower = text.toLowerCase();
+    return keywords.some(kw => lower.includes(kw.toLowerCase()));
+  };
+
+  if (checkText(c.current_position)) return true;
+
+  if (c.companies && c.companies.length > 0) {
+    for (const co of c.companies) {
+      if (checkText(co.name) || checkText(co.position)) return true;
+    }
+  }
+
+  if (c.skills && c.skills.length > 0) {
+    for (const s of c.skills) {
+      if (checkText(s.name)) return true;
+    }
+  }
+
+  if (checkText(c.llm_reasoning)) return true;
+
+  return false;
+};
+
 const CvSearchPage = () => {
   const [query, setQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [meta, setMeta] = useState<Omit<HybridSearchResponse, 'candidates' | 'config'> | null>(null);
   const [results, setResults] = useState<FusedCandidateResponse[]>([]);
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
+
+  // CV Preview Modal states
+  const [previewCandidate, setPreviewCandidate] = useState<FusedCandidateResponse | null>(null);
+  const [previewDetail, setPreviewDetail] = useState<CandidateDetail | null>(null);
+  const [loadingDetail, setLoadingDetail] = useState(false);
+
+  // Client-side filtering & sorting states
+  const [selectedSeniorities, setSelectedSeniorities] = useState<Set<string>>(new Set());
+  const [selectedSkills, setSelectedSkills] = useState<Set<string>>(new Set());
+  const [selectedExperiences, setSelectedExperiences] = useState<Set<string>>(new Set());
+  const [selectedDomains, setSelectedDomains] = useState<Set<string>>(new Set());
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
 
   // Popular queries
   const [popularQueries, setPopularQueries] = useState<string[]>([]);
@@ -116,6 +203,11 @@ const CvSearchPage = () => {
     setExpandedRows(new Set());
     setMeta(null);
     setShowSuggestions(false);
+    setSelectedSeniorities(new Set());
+    setSelectedSkills(new Set());
+    setSelectedExperiences(new Set());
+    setSelectedDomains(new Set());
+    setSortConfig(null);
     try {
       const response = await cvSearchService.hybridSearch(trimmed);
       setResults(response.candidates || []);
@@ -180,6 +272,23 @@ const CvSearchPage = () => {
     });
   };
 
+  const handleOpenPreview = async (candidate: FusedCandidateResponse) => {
+    setPreviewCandidate(candidate);
+    setPreviewDetail(null);
+    setLoadingDetail(true);
+    try {
+      const candidateId = candidate.id;
+      if (candidateId) {
+        const detail = await cvSearchService.getCandidateDetail(candidateId);
+        setPreviewDetail(detail);
+      }
+    } catch (err) {
+      console.error('Aday detayları yüklenemedi:', err);
+    } finally {
+      setLoadingDetail(false);
+    }
+  };
+
   const currentCompany = (c: FusedCandidateResponse) =>
     c.companies?.find((co) => co.is_current)?.name ||
     c.companies?.[0]?.name ||
@@ -190,6 +299,195 @@ const CvSearchPage = () => {
       ?.slice(0, 5)
       .map((s) => s.name)
       .join(', ') || '—';
+
+  const toggleExperience = (key: string) => {
+    setSelectedExperiences((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  };
+
+  const toggleSeniority = (val: string) => {
+    setSelectedSeniorities((prev) => {
+      const next = new Set(prev);
+      if (next.has(val)) {
+        next.delete(val);
+      } else {
+        next.add(val);
+      }
+      return next;
+    });
+  };
+
+  const toggleSkill = (val: string) => {
+    setSelectedSkills((prev) => {
+      const next = new Set(prev);
+      if (next.has(val)) {
+        next.delete(val);
+      } else {
+        next.add(val);
+      }
+      return next;
+    });
+  };
+
+  const toggleDomain = (val: string) => {
+    setSelectedDomains((prev) => {
+      const next = new Set(prev);
+      if (next.has(val)) {
+        next.delete(val);
+      } else {
+        next.add(val);
+      }
+      return next;
+    });
+  };
+
+  const requestSort = (key: string) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key) {
+      if (sortConfig.direction === 'asc') {
+        direction = 'desc';
+      } else {
+        setSortConfig(null);
+        return;
+      }
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const renderSortIcon = (key: string) => {
+    if (!sortConfig || sortConfig.key !== key) {
+      return null;
+    }
+    return sortConfig.direction === 'asc' ? (
+      <ChevronUp size={14} className="ms-1 text-primary align-middle" />
+    ) : (
+      <ChevronDown size={14} className="ms-1 text-primary align-middle" />
+    );
+  };
+
+  const seniorities = useMemo(() => {
+    return Array.from(new Set(results.map((r) => r.seniority).filter(Boolean))) as string[];
+  }, [results]);
+
+  const topSkillsInResults = useMemo(() => {
+    const counts: Record<string, number> = {};
+    results.forEach((r) => {
+      (r.skills || []).forEach((s) => {
+        if (s.name) {
+          counts[s.name] = (counts[s.name] || 0) + 1;
+        }
+      });
+    });
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map((entry) => entry[0]);
+  }, [results]);
+
+  const availableDomains = useMemo(() => {
+    return EXPERIENCE_DOMAINS.filter((domain) =>
+      results.some((candidate) => hasDomainExperience(candidate, domain.keywords))
+    );
+  }, [results]);
+
+  const filteredAndSortedResults = useMemo(() => {
+    let list = [...results];
+
+    // 1. Client-side filtering by buttons
+    if (selectedSeniorities.size > 0) {
+      list = list.filter((r) => selectedSeniorities.has(r.seniority));
+    }
+
+    if (selectedSkills.size > 0) {
+      list = list.filter((r) => (r.skills || []).some((s) => selectedSkills.has(s.name)));
+    }
+
+    if (selectedExperiences.size > 0) {
+      list = list.filter((r) => {
+        const yrs = r.total_experience_years ?? 0;
+        return Array.from(selectedExperiences).some((expKey) => {
+          if (expKey === 'junior') return yrs < 2;
+          if (expKey === 'mid') return yrs >= 2 && yrs <= 5;
+          if (expKey === 'senior') return yrs > 5;
+          return true;
+        });
+      });
+    }
+
+    if (selectedDomains.size > 0) {
+      list = list.filter((r) => {
+        return Array.from(selectedDomains).some((domId) => {
+          const activeDomain = EXPERIENCE_DOMAINS.find((d) => d.id === domId);
+          return activeDomain ? hasDomainExperience(r, activeDomain.keywords) : false;
+        });
+      });
+    }
+
+    // 2. Client-side sorting
+    if (sortConfig) {
+      list.sort((a, b) => {
+        let valA: any = '';
+        let valB: any = '';
+
+        switch (sortConfig.key) {
+          case 'rank':
+            valA = a.rank ?? 0;
+            valB = b.rank ?? 0;
+            break;
+          case 'name':
+            valA = a.name || '';
+            valB = b.name || '';
+            break;
+          case 'current_position':
+            valA = a.current_position || '';
+            valB = b.current_position || '';
+            break;
+          case 'seniority':
+            valA = seniorityScore(a.seniority);
+            valB = seniorityScore(b.seniority);
+            break;
+          case 'total_experience_years':
+            valA = a.total_experience_years ?? 0;
+            valB = b.total_experience_years ?? 0;
+            break;
+          case 'company':
+            valA = currentCompany(a);
+            valB = currentCompany(b);
+            break;
+          case 'fusion_score':
+            valA = a.fusion_score ?? 0;
+            valB = b.fusion_score ?? 0;
+            break;
+          case 'llm_score':
+            valA = a.llm_score ?? 0;
+            valB = b.llm_score ?? 0;
+            break;
+          default:
+            return 0;
+        }
+
+        if (typeof valA === 'string' && typeof valB === 'string') {
+          const comp = valA.localeCompare(valB, 'tr');
+          return sortConfig.direction === 'asc' ? comp : -comp;
+        } else {
+          if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
+          if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
+          return 0;
+        }
+      });
+    }
+
+    return list;
+  }, [results, selectedSeniorities, selectedSkills, selectedExperiences, selectedDomains, sortConfig]);
+
+  const isFilterActive = selectedSeniorities.size > 0 || selectedSkills.size > 0 || selectedExperiences.size > 0 || selectedDomains.size > 0;
 
   return (
     <Container fluid className="page-container">
@@ -328,12 +626,235 @@ const CvSearchPage = () => {
           <Col lg={12}>
             {/* Meta row */}
             <div className="d-flex align-items-center gap-3 mb-2 px-1">
-              <span className="fw-semibold">{meta.total_found} aday bulundu</span>
+              {isFilterActive ? (
+                <span className="fw-semibold text-dark">
+                  Filtrelenen: <span className="text-primary fw-bold">{filteredAndSortedResults.length}</span> / {results.length} aday listeleniyor
+                </span>
+              ) : (
+                <span className="fw-semibold text-dark">{results.length} aday bulundu</span>
+              )}
               <span className="text-muted small">·</span>
               <span className="text-muted small">{meta.processing_time}</span>
               <span className="text-muted small">·</span>
               <Badge bg="secondary" className="fw-normal">{meta.method}</Badge>
             </div>
+
+            {/* Filter Buttons Facet Card */}
+            <Card className="border-0 shadow-sm mb-3">
+              <Card.Body className="p-3">
+                <div className="d-flex flex-column gap-3">
+                  <div className="d-flex align-items-center justify-content-between border-bottom pb-2">
+                    <span className="fw-semibold text-dark small">Sonuçları Filtrele</span>
+                    {(selectedSeniorities.size > 0 || selectedSkills.size > 0 || selectedExperiences.size > 0 || selectedDomains.size > 0) && (
+                      <Button
+                        variant="link"
+                        size="sm"
+                        className="p-0 text-decoration-none text-danger small"
+                        onClick={() => {
+                          setSelectedSeniorities(new Set());
+                          setSelectedSkills(new Set());
+                          setSelectedExperiences(new Set());
+                          setSelectedDomains(new Set());
+                        }}
+                      >
+                        Filtreleri Sıfırla
+                      </Button>
+                    )}
+                  </div>
+
+                  {/* Experience Brackets */}
+                  <div className="d-flex align-items-center gap-2 flex-wrap">
+                    <span className="text-muted small fw-semibold" style={{ minWidth: '120px' }}>Deneyim Süresi:</span>
+                    <Button
+                      variant={selectedExperiences.size === 0 ? 'primary' : 'outline-secondary'}
+                      size="sm"
+                      className="rounded-pill px-3 py-1"
+                      style={{ fontSize: '0.8rem' }}
+                      onClick={() => setSelectedExperiences(new Set())}
+                    >
+                      Hepsi
+                    </Button>
+                    {[
+                      { key: 'junior', label: '< 2 Yıl' },
+                      { key: 'mid', label: '2-5 Yıl' },
+                      { key: 'senior', label: '5+ Yıl' }
+                    ].map((item) => (
+                      <Button
+                        key={item.key}
+                        variant={selectedExperiences.has(item.key) ? 'primary' : 'outline-secondary'}
+                        size="sm"
+                        className="rounded-pill px-3 py-1"
+                        style={{ fontSize: '0.8rem' }}
+                        onClick={() => toggleExperience(item.key)}
+                      >
+                        {item.label}
+                      </Button>
+                    ))}
+                  </div>
+
+                  {/* Sektör/Tecrübe (Domain) Filters */}
+                  {availableDomains.length > 0 && (
+                    <div className="d-flex align-items-center gap-2 flex-wrap">
+                      <span className="text-muted small fw-semibold" style={{ minWidth: '120px' }}>Sektör/Tecrübe:</span>
+                      <Button
+                        variant={selectedDomains.size === 0 ? 'primary' : 'outline-secondary'}
+                        size="sm"
+                        className="rounded-pill px-3 py-1"
+                        style={{ fontSize: '0.8rem' }}
+                        onClick={() => setSelectedDomains(new Set())}
+                      >
+                        Hepsi
+                      </Button>
+                      {availableDomains.map((dom) => (
+                        <Button
+                          key={dom.id}
+                          variant={selectedDomains.has(dom.id) ? 'primary' : 'outline-secondary'}
+                          size="sm"
+                          className="rounded-pill px-3 py-1"
+                          style={{ fontSize: '0.8rem' }}
+                          onClick={() => toggleDomain(dom.id)}
+                        >
+                          {dom.label}
+                        </Button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Seniority Levels */}
+                  {seniorities.length > 0 && (
+                    <div className="d-flex align-items-center gap-2 flex-wrap">
+                      <span className="text-muted small fw-semibold" style={{ minWidth: '120px' }}>Kıdem Seviyesi:</span>
+                      <Button
+                        variant={selectedSeniorities.size === 0 ? 'primary' : 'outline-secondary'}
+                        size="sm"
+                        className="rounded-pill px-3 py-1"
+                        style={{ fontSize: '0.8rem' }}
+                        onClick={() => setSelectedSeniorities(new Set())}
+                      >
+                        Hepsi
+                      </Button>
+                      {seniorities.map((sen) => (
+                        <Button
+                          key={sen}
+                          variant={selectedSeniorities.has(sen) ? 'primary' : 'outline-secondary'}
+                          size="sm"
+                          className="rounded-pill px-3 py-1"
+                          style={{ fontSize: '0.8rem' }}
+                          onClick={() => toggleSeniority(sen)}
+                        >
+                          {sen}
+                        </Button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Top Skills */}
+                  {topSkillsInResults.length > 0 && (
+                    <div className="d-flex align-items-center gap-2 flex-wrap">
+                      <span className="text-muted small fw-semibold" style={{ minWidth: '120px' }}>Öne Çıkan Yetenek:</span>
+                      <Button
+                        variant={selectedSkills.size === 0 ? 'primary' : 'outline-secondary'}
+                        size="sm"
+                        className="rounded-pill px-3 py-1"
+                        style={{ fontSize: '0.8rem' }}
+                        onClick={() => setSelectedSkills(new Set())}
+                      >
+                        Hepsi
+                      </Button>
+                      {topSkillsInResults.map((sk) => (
+                        <Button
+                          key={sk}
+                          variant={selectedSkills.has(sk) ? 'primary' : 'outline-secondary'}
+                          size="sm"
+                          className="rounded-pill px-3 py-1"
+                          style={{ fontSize: '0.8rem' }}
+                          onClick={() => toggleSkill(sk)}
+                        >
+                          {sk}
+                        </Button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Sıralama Seçenekleri */}
+                  <div className="d-flex align-items-center gap-2 flex-wrap border-top pt-3 mt-1">
+                    <span className="text-muted small fw-semibold" style={{ minWidth: '120px' }}>Sonuçları Sırala:</span>
+                    
+                    {/* Name Sorting */}
+                    <Button
+                      variant={sortConfig?.key === 'name' && sortConfig.direction === 'asc' ? 'primary' : 'outline-secondary'}
+                      size="sm"
+                      className="rounded-pill px-3 py-1"
+                      style={{ fontSize: '0.8rem' }}
+                      onClick={() => setSortConfig({ key: 'name', direction: 'asc' })}
+                    >
+                      İsim (A-Z)
+                    </Button>
+                    <Button
+                      variant={sortConfig?.key === 'name' && sortConfig.direction === 'desc' ? 'primary' : 'outline-secondary'}
+                      size="sm"
+                      className="rounded-pill px-3 py-1"
+                      style={{ fontSize: '0.8rem' }}
+                      onClick={() => setSortConfig({ key: 'name', direction: 'desc' })}
+                    >
+                      İsim (Z-A)
+                    </Button>
+
+                    {/* Experience Sorting */}
+                    <Button
+                      variant={sortConfig?.key === 'total_experience_years' && sortConfig.direction === 'asc' ? 'primary' : 'outline-secondary'}
+                      size="sm"
+                      className="rounded-pill px-3 py-1"
+                      style={{ fontSize: '0.8rem' }}
+                      onClick={() => setSortConfig({ key: 'total_experience_years', direction: 'asc' })}
+                    >
+                      Deneyim (Artan)
+                    </Button>
+                    <Button
+                      variant={sortConfig?.key === 'total_experience_years' && sortConfig.direction === 'desc' ? 'primary' : 'outline-secondary'}
+                      size="sm"
+                      className="rounded-pill px-3 py-1"
+                      style={{ fontSize: '0.8rem' }}
+                      onClick={() => setSortConfig({ key: 'total_experience_years', direction: 'desc' })}
+                    >
+                      Deneyim (Azalan)
+                    </Button>
+
+                    {/* Seniority Sorting */}
+                    <Button
+                      variant={sortConfig?.key === 'seniority' && sortConfig.direction === 'asc' ? 'primary' : 'outline-secondary'}
+                      size="sm"
+                      className="rounded-pill px-3 py-1"
+                      style={{ fontSize: '0.8rem' }}
+                      onClick={() => setSortConfig({ key: 'seniority', direction: 'asc' })}
+                    >
+                      Kıdem (Artan)
+                    </Button>
+                    <Button
+                      variant={sortConfig?.key === 'seniority' && sortConfig.direction === 'desc' ? 'primary' : 'outline-secondary'}
+                      size="sm"
+                      className="rounded-pill px-3 py-1"
+                      style={{ fontSize: '0.8rem' }}
+                      onClick={() => setSortConfig({ key: 'seniority', direction: 'desc' })}
+                    >
+                      Kıdem (Azalan)
+                    </Button>
+
+                    {/* Clear/Reset Sort */}
+                    {sortConfig && (
+                      <Button
+                        variant="link"
+                        size="sm"
+                        className="p-0 text-decoration-none text-danger small ms-2"
+                        onClick={() => setSortConfig(null)}
+                      >
+                        Sıralamayı Sıfırla
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </Card.Body>
+            </Card>
 
             <div className="table-wrapper">
               <Card className="border-0 shadow-sm position-relative">
@@ -343,24 +864,70 @@ const CvSearchPage = () => {
                       <Table hover className="mb-0">
                         <thead>
                           <tr>
-                            <th style={{ width: 50 }} className={`${styles.stickyCol1} ${styles.stickyHeader}`}>Sıra</th>
-                            <th className={`${styles.stickyCol2} ${styles.stickyHeader}`}>Ad</th>
-                            <th>Mevcut Pozisyon</th>
-                            <th style={{ width: 110 }}>Kıdem</th>
-                            <th style={{ width: 90 }}>Deneyim</th>
+                            <th
+                              style={{ width: 50 }}
+                              className={`${styles.stickyCol1} ${styles.stickyHeader} ${styles.sortableHeader}`}
+                              onClick={() => requestSort('rank')}
+                            >
+                              Sıra {renderSortIcon('rank')}
+                            </th>
+                            <th
+                              className={`${styles.stickyCol2} ${styles.stickyHeader} ${styles.sortableHeader}`}
+                              onClick={() => requestSort('name')}
+                            >
+                              Ad {renderSortIcon('name')}
+                            </th>
+                            <th
+                              className={styles.sortableHeader}
+                              onClick={() => requestSort('current_position')}
+                            >
+                              Mevcut Pozisyon {renderSortIcon('current_position')}
+                            </th>
+                            <th
+                              style={{ width: 110 }}
+                              className={styles.sortableHeader}
+                              onClick={() => requestSort('seniority')}
+                            >
+                              Kıdem {renderSortIcon('seniority')}
+                            </th>
+                            <th
+                              style={{ width: 90 }}
+                              className={styles.sortableHeader}
+                              onClick={() => requestSort('total_experience_years')}
+                            >
+                              Deneyim {renderSortIcon('total_experience_years')}
+                            </th>
                             <th>Beceriler</th>
-                            <th>Şirket</th>
-                            <th style={{ width: 110 }}>Fusion Skoru</th>
-                            <th style={{ width: 100 }}>LLM Skoru</th>
-                            <th style={{ width: 80 }}></th>
+                            <th
+                              className={styles.sortableHeader}
+                              onClick={() => requestSort('company')}
+                            >
+                              Şirket {renderSortIcon('company')}
+                            </th>
+                            <th
+                              style={{ width: 110 }}
+                              className={styles.sortableHeader}
+                              onClick={() => requestSort('fusion_score')}
+                            >
+                              Fusion Skoru {renderSortIcon('fusion_score')}
+                            </th>
+                            <th
+                              style={{ width: 100 }}
+                              className={styles.sortableHeader}
+                              onClick={() => requestSort('llm_score')}
+                            >
+                              LLM Skoru {renderSortIcon('llm_score')}
+                            </th>
+                            <th style={{ width: 100 }}></th>
                           </tr>
                         </thead>
                         <tbody>
                           {results.length > 0 ? (
-                            results.map((candidate) => {
-                              const isExpanded = expandedRows.has(candidate.rank);
+                            filteredAndSortedResults.length > 0 ? (
+                              filteredAndSortedResults.map((candidate) => {
+                                const isExpanded = expandedRows.has(candidate.rank);
                               return (
-                                <>
+                                <React.Fragment key={candidate.rank}>
                                   <tr
                                     key={`row-${candidate.rank}`}
                                     className={`${styles.clickableRow}${isExpanded ? ` ${styles.selectedRow}` : ''}`}
@@ -413,18 +980,31 @@ const CvSearchPage = () => {
                                       </span>
                                     </td>
                                     <td>
-                                      <Button
-                                        variant="outline-secondary"
-                                        size="sm"
-                                        onClick={(e) => { e.stopPropagation(); toggleRow(candidate.rank); }}
-                                        title="Detay"
-                                      >
-                                        {isExpanded ? (
-                                          <ChevronUp size={14} />
-                                        ) : (
-                                          <ChevronDown size={14} />
-                                        )}
-                                      </Button>
+                                      <div className="d-flex align-items-center gap-1 justify-content-end">
+                                        <Button
+                                          variant="outline-primary"
+                                          size="sm"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleOpenPreview(candidate);
+                                          }}
+                                          title="CV Görüntüle"
+                                        >
+                                          <Eye size={14} />
+                                        </Button>
+                                        <Button
+                                          variant="outline-secondary"
+                                          size="sm"
+                                          onClick={(e) => { e.stopPropagation(); toggleRow(candidate.rank); }}
+                                          title="Detayları Aç/Kapat"
+                                        >
+                                          {isExpanded ? (
+                                            <ChevronUp size={14} />
+                                          ) : (
+                                            <ChevronDown size={14} />
+                                          )}
+                                        </Button>
+                                      </div>
                                     </td>
                                   </tr>
 
@@ -534,9 +1114,16 @@ const CvSearchPage = () => {
                                       </td>
                                     </tr>
                                   )}
-                                </>
+                                </React.Fragment>
                               );
-                            })
+                              })
+                            ) : (
+                              <tr>
+                                <td colSpan={10} className="text-center py-5 text-muted">
+                                  Filtreyle eşleşen aday bulunamadı
+                                </td>
+                              </tr>
+                            )
                           ) : (
                             <tr>
                               <td colSpan={10} className="text-center py-5 text-muted">
@@ -554,6 +1141,194 @@ const CvSearchPage = () => {
           </Col>
         </Row>
       )}
+
+      {/* Candidate CV Preview Modal */}
+      <Modal
+        show={!!previewCandidate}
+        onHide={() => {
+          setPreviewCandidate(null);
+          setPreviewDetail(null);
+        }}
+        size="lg"
+        centered
+        dialogClassName="cv-preview-modal"
+      >
+        <Modal.Header closeButton className="border-bottom-0 pb-0">
+          <Modal.Title className="fw-bold text-dark">
+            {previewCandidate?.name || 'Aday Detayı'}
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="pt-2">
+          {previewCandidate && (
+            <Row className="gy-4">
+              {/* Left Column: Contact & Basic Info */}
+              <Col md={5} className="border-end">
+                <div className="d-flex flex-column gap-3">
+                  {/* Current Position & Seniority */}
+                  <div>
+                    <h6 className="text-secondary small fw-semibold uppercase mb-1">Mevcut Ünvan</h6>
+                    <div className="fw-semibold text-dark fs-5">
+                      {previewCandidate.current_position || '—'}
+                    </div>
+                    <Badge bg="light" text="dark" className="border mt-1">
+                      {previewCandidate.seniority || '—'}
+                    </Badge>
+                  </div>
+
+                  {/* Contact Info (Loaded from Detail API) */}
+                  <div className="border-top pt-3 mt-1">
+                    <h6 className="text-secondary small fw-semibold mb-2">İletişim & Lokasyon</h6>
+                    {loadingDetail ? (
+                      <div className="d-flex align-items-center gap-2 py-2">
+                        <Spinner animation="border" size="sm" variant="primary" />
+                        <span className="text-muted small">İletişim bilgileri yükleniyor...</span>
+                      </div>
+                    ) : previewDetail ? (
+                      <div className="d-flex flex-column gap-2 text-muted small">
+                        <div className="d-flex align-items-center gap-2">
+                          <Mail size={14} className="text-primary" />
+                          <span>{previewDetail.email || '—'}</span>
+                        </div>
+                        <div className="d-flex align-items-center gap-2">
+                          <Phone size={14} className="text-primary" />
+                          <span>{previewDetail.phone || '—'}</span>
+                        </div>
+                        <div className="d-flex align-items-center gap-2">
+                          <MapPin size={14} className="text-primary" />
+                          <span>{previewDetail.location || '—'}</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="text-muted small">—</span>
+                    )}
+                  </div>
+
+                  {/* Search Metrics */}
+                  <div className="border-top pt-3 mt-1">
+                    <h6 className="text-secondary small fw-semibold mb-2">Arama Skorları</h6>
+                    <div className="d-flex flex-wrap gap-2">
+                      <Badge bg="success" className="px-2 py-1">
+                        Fusion: {previewCandidate.fusion_score != null ? previewCandidate.fusion_score.toFixed(3) : '—'}
+                      </Badge>
+                      <Badge bg="info" className="px-2 py-1">
+                        LLM: {previewCandidate.llm_score != null ? previewCandidate.llm_score.toFixed(3) : '—'}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  {/* Interviews History */}
+                  <div className="border-top pt-3 mt-1">
+                    <h6 className="text-secondary small fw-semibold mb-2">Görüşme Geçmişi</h6>
+                    {loadingDetail ? (
+                      <span className="text-muted small">Yükleniyor...</span>
+                    ) : previewDetail?.interviews && previewDetail.interviews.length > 0 ? (
+                      <div className="d-flex flex-column gap-2" style={{ maxHeight: '180px', overflowY: 'auto' }}>
+                        {previewDetail.interviews.map((iv) => (
+                          <div key={iv.id} className="p-2 border rounded bg-light small">
+                            <div className="d-flex justify-content-between align-items-center mb-1">
+                              <span className="fw-semibold text-dark">{iv.interviewer_name || 'Görüşmeci'}</span>
+                              <Badge bg={iv.outcome === 'passed' ? 'success' : iv.outcome === 'failed' ? 'danger' : 'warning'}>
+                                {iv.outcome === 'passed' ? 'Geçti' : iv.outcome === 'failed' ? 'Geçemedi' : 'Beklemede'}
+                              </Badge>
+                            </div>
+                            <div className="text-muted d-flex align-items-center gap-1" style={{ fontSize: '0.75rem' }}>
+                              <Calendar size={12} />
+                              <span>{iv.interview_date ? new Date(iv.interview_date).toLocaleDateString('tr-TR') : '—'}</span>
+                              <span>·</span>
+                              <span>{iv.interview_type || 'İK'}</span>
+                            </div>
+                            {iv.notes && <div className="text-secondary mt-1 border-top pt-1 text-truncate" style={{ fontSize: '0.72rem' }}>{iv.notes}</div>}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-muted small">Kayıtlı görüşme bulunmamaktadır.</span>
+                    )}
+                  </div>
+                </div>
+              </Col>
+
+              {/* Right Column: Experience, Skills, Reasoning */}
+              <Col md={7}>
+                <div className="d-flex flex-column gap-3" style={{ maxHeight: '550px', overflowY: 'auto', paddingRight: '5px' }}>
+                  {/* LLM Reasoning */}
+                  <div>
+                    <h6 className="text-secondary small fw-semibold mb-2">LLM Aday Gerekçesi</h6>
+                    <div className="p-3 bg-light rounded text-muted small" style={{ whiteSpace: 'pre-wrap', lineHeight: '1.45' }}>
+                      {previewCandidate.llm_reasoning || 'Gerekçe bulunmamaktadır.'}
+                    </div>
+                  </div>
+
+                  {/* Experience Timeline */}
+                  <div className="border-top pt-3">
+                    <h6 className="text-secondary small fw-semibold mb-2">İş Deneyimleri ({previewCandidate.total_experience_years || 0} Yıl)</h6>
+                    {previewCandidate.companies && previewCandidate.companies.length > 0 ? (
+                      <div className="d-flex flex-column gap-3 timeline-container">
+                        {previewCandidate.companies.map((co, index) => (
+                          <div key={index} className="d-flex gap-2 position-relative">
+                            <div className="d-flex flex-column align-items-center mt-1">
+                              <div className="rounded-circle bg-primary" style={{ width: '8px', height: '8px' }}></div>
+                              {index !== previewCandidate.companies.length - 1 && (
+                                <div className="bg-secondary opacity-25 flex-grow-1" style={{ width: '2px', minHeight: '30px' }}></div>
+                              )}
+                            </div>
+                            <div className="small pb-2">
+                              <div className="fw-semibold text-dark">
+                                {co.position || 'Pozisyon Belirtilmemiş'}
+                              </div>
+                              <div className="text-muted d-flex align-items-center gap-1">
+                                <Briefcase size={12} />
+                                <span>{co.name}</span>
+                                {co.is_current && <Badge bg="success" className="ms-1">Güncel</Badge>}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-muted small">—</span>
+                    )}
+                  </div>
+
+                  {/* Skills tags */}
+                  <div className="border-top pt-3">
+                    <h6 className="text-secondary small fw-semibold mb-2">Beceriler</h6>
+                    {previewCandidate.skills && previewCandidate.skills.length > 0 ? (
+                      <div className="d-flex flex-wrap gap-1">
+                        {previewCandidate.skills.map((sk, index) => (
+                          <Badge
+                            key={index}
+                            bg="light"
+                            text="dark"
+                            className="border px-2 py-1 small"
+                            title={sk.years_of_experience ? `${sk.years_of_experience} yıl deneyim` : undefined}
+                          >
+                            {sk.name} {sk.proficiency ? `(${sk.proficiency})` : ''}
+                          </Badge>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-muted small">—</span>
+                    )}
+                  </div>
+                </div>
+              </Col>
+            </Row>
+          )}
+        </Modal.Body>
+        <Modal.Footer className="border-top-0 pt-0">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => {
+              setPreviewCandidate(null);
+              setPreviewDetail(null);
+            }}
+          >
+            Kapat
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </Container>
   );
 };

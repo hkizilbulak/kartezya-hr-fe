@@ -40,3 +40,16 @@
     background-color: #dbeafe !important;
   }
 }
+
+.sortableHeader {
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  transition: background-color 0.15s ease;
+
+  &:hover {
+    background: #f1f3f5 !important;
+    background-color: #f1f3f5 !important;
+  }
+}
+
