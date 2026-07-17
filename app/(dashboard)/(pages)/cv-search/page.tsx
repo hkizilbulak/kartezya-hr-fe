@@ -112,7 +112,6 @@ const CvSearchPage = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [meta, setMeta] = useState<Omit<HybridSearchResponse, 'candidates' | 'config'> | null>(null);
   const [results, setResults] = useState<FusedCandidateResponse[]>([]);
-  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
 
   // CV Preview Modal states
   const [previewCandidate, setPreviewCandidate] = useState<FusedCandidateResponse | null>(null);
@@ -200,7 +199,6 @@ const CvSearchPage = () => {
     }
     setIsSearching(true);
     setResults([]);
-    setExpandedRows(new Set());
     setMeta(null);
     setShowSuggestions(false);
     setSelectedSeniorities(new Set());
@@ -260,17 +258,6 @@ const CvSearchPage = () => {
     textareaRef.current?.focus();
   };
 
-  const toggleRow = (rank: number) => {
-    setExpandedRows((prev) => {
-      const next = new Set(prev);
-      if (next.has(rank)) {
-        next.delete(rank);
-      } else {
-        next.add(rank);
-      }
-      return next;
-    });
-  };
 
   const handleOpenPreview = async (candidate: FusedCandidateResponse) => {
     setPreviewCandidate(candidate);
@@ -865,14 +852,7 @@ const CvSearchPage = () => {
                         <thead>
                           <tr>
                             <th
-                              style={{ width: 50 }}
                               className={`${styles.stickyCol1} ${styles.stickyHeader} ${styles.sortableHeader}`}
-                              onClick={() => requestSort('rank')}
-                            >
-                              Sıra {renderSortIcon('rank')}
-                            </th>
-                            <th
-                              className={`${styles.stickyCol2} ${styles.stickyHeader} ${styles.sortableHeader}`}
                               onClick={() => requestSort('name')}
                             >
                               Ad {renderSortIcon('name')}
@@ -897,13 +877,6 @@ const CvSearchPage = () => {
                             >
                               Deneyim {renderSortIcon('total_experience_years')}
                             </th>
-                            <th>Beceriler</th>
-                            <th
-                              className={styles.sortableHeader}
-                              onClick={() => requestSort('company')}
-                            >
-                              Şirket {renderSortIcon('company')}
-                            </th>
                             <th
                               style={{ width: 110 }}
                               className={styles.sortableHeader}
@@ -916,7 +889,7 @@ const CvSearchPage = () => {
                               className={styles.sortableHeader}
                               onClick={() => requestSort('llm_score')}
                             >
-                              LLM Skoru {renderSortIcon('llm_score')}
+                              LLM Skoru % {renderSortIcon('llm_score')}
                             </th>
                             <th style={{ width: 100 }}></th>
                           </tr>
@@ -925,18 +898,14 @@ const CvSearchPage = () => {
                           {results.length > 0 ? (
                             filteredAndSortedResults.length > 0 ? (
                               filteredAndSortedResults.map((candidate) => {
-                                const isExpanded = expandedRows.has(candidate.rank);
                               return (
                                 <React.Fragment key={candidate.rank}>
                                   <tr
                                     key={`row-${candidate.rank}`}
-                                    className={`${styles.clickableRow}${isExpanded ? ` ${styles.selectedRow}` : ''}`}
-                                    onClick={() => toggleRow(candidate.rank)}
+                                    className={styles.clickableRow}
+                                    onClick={() => handleOpenPreview(candidate)}
                                   >
-                                    <td className={`text-center fw-semibold ${styles.stickyCol1}`}>
-                                      {candidate.rank}
-                                    </td>
-                                    <td className={`fw-semibold ${styles.stickyCol2}`}>
+                                    <td className={`fw-semibold ${styles.stickyCol1}`}>
                                       {candidate.name || '—'}
                                     </td>
                                     <td className="text-muted small">
@@ -949,12 +918,6 @@ const CvSearchPage = () => {
                                       {candidate.total_experience_years != null
                                         ? `${candidate.total_experience_years} yıl`
                                         : '—'}
-                                    </td>
-                                    <td className="small text-muted">
-                                      {topSkills(candidate)}
-                                    </td>
-                                    <td className="small">
-                                      {currentCompany(candidate)}
                                     </td>
                                     <td>
                                       <span
@@ -975,7 +938,7 @@ const CvSearchPage = () => {
                                         }}
                                       >
                                         {candidate.llm_score != null
-                                          ? candidate.llm_score.toFixed(3)
+                                          ? `%${(candidate.llm_score * 100).toFixed(0)}`
                                           : '—'}
                                       </span>
                                     </td>
@@ -992,141 +955,22 @@ const CvSearchPage = () => {
                                         >
                                           <Eye size={14} />
                                         </Button>
-                                        <Button
-                                          variant="outline-secondary"
-                                          size="sm"
-                                          onClick={(e) => { e.stopPropagation(); toggleRow(candidate.rank); }}
-                                          title="Detayları Aç/Kapat"
-                                        >
-                                          {isExpanded ? (
-                                            <ChevronUp size={14} />
-                                          ) : (
-                                            <ChevronDown size={14} />
-                                          )}
-                                        </Button>
                                       </div>
                                     </td>
                                   </tr>
-
-                                  {isExpanded && (
-                                    <tr key={`detail-${candidate.rank}`} className={styles.detailRow}>
-                                      <td colSpan={10} className="p-3">
-                                        <Row>
-                                          {/* LLM Reasoning */}
-                                          <Col md={6}>
-                                            <p className="fw-semibold mb-1 small">LLM Gerekçesi</p>
-                                            <p
-                                              className="small text-muted mb-0"
-                                              style={{ whiteSpace: 'pre-wrap' }}
-                                            >
-                                              {candidate.llm_reasoning || 'Gerekçe mevcut değil.'}
-                                            </p>
-                                          </Col>
-
-                                          {/* Company history */}
-                                          <Col md={3}>
-                                            <p className="fw-semibold mb-1 small">Şirket Geçmişi</p>
-                                            {candidate.companies && candidate.companies.length > 0 ? (
-                                              <ul className="list-unstyled mb-0">
-                                                {candidate.companies.map((co, ci) => (
-                                                  <li key={ci} className="small text-muted mb-1">
-                                                    <span
-                                                      className={co.is_current ? 'fw-semibold text-dark' : ''}
-                                                    >
-                                                      {co.name}
-                                                    </span>
-                                                    {co.position && (
-                                                      <span className="ms-1 text-secondary">
-                                                        — {co.position}
-                                                      </span>
-                                                    )}
-                                                    {co.is_current && (
-                                                      <Badge bg="success" className="ms-1 small">
-                                                        Güncel
-                                                      </Badge>
-                                                    )}
-                                                  </li>
-                                                ))}
-                                              </ul>
-                                            ) : (
-                                              <span className="small text-muted">—</span>
-                                            )}
-                                          </Col>
-
-                                          {/* All skills */}
-                                          <Col md={3}>
-                                            <p className="fw-semibold mb-1 small">Tüm Beceriler</p>
-                                            {candidate.skills && candidate.skills.length > 0 ? (
-                                              <div className="d-flex flex-wrap gap-1">
-                                                {candidate.skills.map((sk, si) => (
-                                                  <Badge
-                                                    key={si}
-                                                    bg="light"
-                                                    text="dark"
-                                                    className="border small"
-                                                    title={
-                                                      sk.years_of_experience
-                                                        ? `${sk.years_of_experience} yıl deneyim`
-                                                        : undefined
-                                                    }
-                                                  >
-                                                    {sk.name}
-                                                    {sk.proficiency && (
-                                                      <span className="text-muted ms-1">
-                                                        · {sk.proficiency}
-                                                      </span>
-                                                    )}
-                                                  </Badge>
-                                                ))}
-                                              </div>
-                                            ) : (
-                                              <span className="small text-muted">—</span>
-                                            )}
-                                          </Col>
-                                        </Row>
-
-                                        {/* Score breakdown */}
-                                        <Row className="mt-3">
-                                          <Col>
-                                            <div className="d-flex flex-wrap gap-3">
-                                              {[
-                                                { label: 'Vektör', value: candidate.vector_score },
-                                                { label: 'BM25', value: candidate.bm25_score },
-                                                { label: 'Graf', value: candidate.graph_score },
-                                                { label: 'LLM', value: candidate.llm_score },
-                                                { label: 'Fusion', value: candidate.fusion_score },
-                                              ].map((sc) => (
-                                                <div key={sc.label} className="text-center">
-                                                  <div
-                                                    className="small fw-semibold"
-                                                    style={{ color: scoreColor(sc.value) }}
-                                                  >
-                                                    {sc.value != null ? sc.value.toFixed(3) : '—'}
-                                                  </div>
-                                                  <div className="text-muted" style={{ fontSize: '0.7rem' }}>
-                                                    {sc.label}
-                                                  </div>
-                                                </div>
-                                              ))}
-                                            </div>
-                                          </Col>
-                                        </Row>
-                                      </td>
-                                    </tr>
-                                  )}
                                 </React.Fragment>
                               );
                               })
                             ) : (
                               <tr>
-                                <td colSpan={10} className="text-center py-5 text-muted">
+                                <td colSpan={7} className="text-center py-5 text-muted">
                                   Filtreyle eşleşen aday bulunamadı
                                 </td>
                               </tr>
                             )
                           ) : (
                             <tr>
-                              <td colSpan={10} className="text-center py-5 text-muted">
+                              <td colSpan={7} className="text-center py-5 text-muted">
                                 Arama sonucu bulunamadı
                               </td>
                             </tr>
@@ -1154,8 +998,13 @@ const CvSearchPage = () => {
         dialogClassName="cv-preview-modal"
       >
         <Modal.Header closeButton className="border-bottom-0 pb-0">
-          <Modal.Title className="fw-bold text-dark">
-            {previewCandidate?.name || 'Aday Detayı'}
+          <Modal.Title className="fw-bold text-dark d-flex align-items-center gap-2">
+            <span>{previewCandidate?.name || 'Aday Detayı'}</span>
+            {previewCandidate?.rank && (
+              <Badge bg="secondary" className="fs-6 py-1 px-2">
+                Sıra #{previewCandidate.rank}
+              </Badge>
+            )}
           </Modal.Title>
         </Modal.Header>
         <Modal.Body className="pt-2">
@@ -1211,7 +1060,16 @@ const CvSearchPage = () => {
                         Fusion: {previewCandidate.fusion_score != null ? previewCandidate.fusion_score.toFixed(3) : '—'}
                       </Badge>
                       <Badge bg="info" className="px-2 py-1">
-                        LLM: {previewCandidate.llm_score != null ? previewCandidate.llm_score.toFixed(3) : '—'}
+                        LLM: {previewCandidate.llm_score != null ? `%${(previewCandidate.llm_score * 100).toFixed(0)}` : '—'}
+                      </Badge>
+                      <Badge bg="secondary" className="px-2 py-1">
+                        Vektör: {previewCandidate.vector_score != null ? previewCandidate.vector_score.toFixed(3) : '—'}
+                      </Badge>
+                      <Badge bg="secondary" className="px-2 py-1">
+                        BM25: {previewCandidate.bm25_score != null ? previewCandidate.bm25_score.toFixed(3) : '—'}
+                      </Badge>
+                      <Badge bg="secondary" className="px-2 py-1">
+                        Graf: {previewCandidate.graph_score != null ? previewCandidate.graph_score.toFixed(3) : '—'}
                       </Badge>
                     </div>
                   </div>
