@@ -88,7 +88,6 @@ const Home = () => {
         if (initialized) return;
 
         const initializeDashboard = async () => {
-            setLoading(true);
             setInitialized(true);
 
             if (canAccessAdminModules) {
@@ -96,8 +95,6 @@ const Home = () => {
             } else {
                 await fetchEmployeeDashboardData();
             }
-
-            setLoading(false);
         };
 
         // user bilgisi hazır olduğunda çalıştır
@@ -311,9 +308,7 @@ const Home = () => {
 
         return (
             <Fragment>
-                {/* Full screen overlay when loading */}
                 <Container fluid className="px-6 py-4">
-                    <LoadingOverlay show={loading} message="Yükleniyor..." />
 
                     {/* Hoş Geldiniz Mesajı */}
                     <Row className="mb-4">
@@ -646,7 +641,6 @@ const Home = () => {
         <Fragment>
 
             <Container fluid className="px-6 py-4">
-                <LoadingOverlay show={loading} message="Yükleniyor..." />
 
                 <Row>
                     <Col xl={3} lg={6} md={12} xs={12} className="mb-6">
@@ -1063,11 +1057,7 @@ const Home = () => {
                     </Col>
                 </Row>
 
-                <Row>
-                    <Col lg={12} md={12} xs={12} className="mb-6">
-                        <EventsWidget />
-                    </Col>
-                </Row>
+                {/* EventsWidget already rendered above; removed duplicate to avoid double API calls */}
 
                 <Row>
                     <Col lg={12} md={12} xs={12} className="mb-6">
