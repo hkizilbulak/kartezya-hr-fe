@@ -6,6 +6,7 @@ const DASHBOARD_ENDPOINTS = {
   EMPLOYEES_BY_GENDER: '/dashboard/employees-by-gender',
   EMPLOYEES_BY_POSITION: '/dashboard/employees-by-position',
   EMPLOYEES_BY_COMPANY_DEPARTMENT: '/dashboard/employees-by-company-department',
+  INTERNS_BY_COMPANY_DEPARTMENT: '/dashboard/interns-by-company-department',
   EMPLOYEES_BY_GRADE: '/dashboard/employees-by-grade',
   EMPLOYEE_DASHBOARD: '/dashboard/employee',
 };
@@ -79,6 +80,15 @@ class DashboardService {
   async getEmployeesByCompanyDepartment(): Promise<APIResponse<CompanyDepartmentChartData[]>> {
     try {
       const response = await axiosInstance.get(`${DASHBOARD_ENDPOINTS.EMPLOYEES_BY_COMPANY_DEPARTMENT}`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getInternsByCompanyDepartment(): Promise<APIResponse<CompanyDepartmentChartData[]>> {
+    try {
+      const response = await axiosInstance.get(`${DASHBOARD_ENDPOINTS.INTERNS_BY_COMPANY_DEPARTMENT}`);
       return response.data;
     } catch (error) {
       throw error;
