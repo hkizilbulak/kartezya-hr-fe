@@ -60,6 +60,7 @@ const Home = () => {
     const [genderData, setGenderData] = useState<GenderChartData[]>([]);
     const [positionData, setPositionData] = useState<PositionChartData[]>([]);
     const [companyDeptData, setCompanyDeptData] = useState<CompanyDepartmentChartData[]>([]);
+    const [internCompanyDeptData, setInternCompanyDeptData] = useState<CompanyDepartmentChartData[]>([]);
     const [gradeData, setGradeData] = useState<GradeChartData[]>([]);
 
     // Employee state
@@ -74,6 +75,7 @@ const Home = () => {
     const [loadingGenderData, setLoadingGenderData] = useState(false);
     const [loadingPositionData, setLoadingPositionData] = useState(false);
     const [loadingCompanyDeptData, setLoadingCompanyDeptData] = useState(false);
+    const [loadingInternCompanyDeptData, setLoadingInternCompanyDeptData] = useState(false);
     const [loadingGradeData, setLoadingGradeData] = useState(false);
     const [loadingLeaveRequests, setLoadingLeaveRequests] = useState(false);
     const [loadingLeaveBalance, setLoadingLeaveBalance] = useState(false);
@@ -110,6 +112,7 @@ const Home = () => {
             setLoadingGenderData(true);
             setLoadingPositionData(true);
             setLoadingCompanyDeptData(true);
+            setLoadingInternCompanyDeptData(true);
 
             // Fetch main dashboard data
             try {
@@ -205,6 +208,17 @@ const Home = () => {
                 console.error('Error fetching company-department data:', error);
             } finally {
                 setLoadingCompanyDeptData(false);
+            }
+
+            try {
+                const internCompanyDeptResponse = await dashboardService.getInternsByCompanyDepartment();
+                if (internCompanyDeptResponse.success && internCompanyDeptResponse.data) {
+                    setInternCompanyDeptData(internCompanyDeptResponse.data);
+                }
+            } catch (error) {
+                console.error('Error fetching intern company-department data:', error);
+            } finally {
+                setLoadingInternCompanyDeptData(false);
             }
 
             setLoadingGradeData(true);
@@ -1107,6 +1121,98 @@ const Home = () => {
                                 ) : (
                                     <div className="d-flex justify-content-center align-items-center py-5" style={{ minHeight: '300px' }}>
                                         <span className="text-muted">Veri bulunamadı</span>
+                                    </div>
+                                )}
+                            </Card.Body>
+                        </Card>
+                    </Col>
+
+                    {/* Interns by Company-Department Chart/List */}
+                    <Col lg={4} md={12} xs={12} className="mb-6">
+                        <Card className="border-0">
+                            <Card.Header>
+                                <h5 className="mb-0">Şirket-Departmana (Ekibe) Göre Stajyer Sayısı</h5>
+                            </Card.Header>
+                            <Card.Body>
+                                {loadingInternCompanyDeptData ? (
+                                    <div className="d-flex justify-content-center align-items-center py-5" style={{ minHeight: '300px' }}>
+                                        <Spinner animation="border" role="status" size="sm">
+                                            <span className="visually-hidden">Yükleniyor...</span>
+                                        </Spinner>
+                                    </div>
+                                ) : internCompanyDeptData.length > 0 ? (
+                                    <div 
+                                        className="d-flex flex-column gap-2 custom-scrollbar" 
+                                        style={{ 
+                                            maxHeight: '300px', 
+                                            overflowY: 'auto', 
+                                            paddingRight: '4px',
+                                            scrollbarWidth: 'thin'
+                                        }}
+                                    >
+                                        {internCompanyDeptData.map((item, index) => (
+                                            <div 
+                                                key={index} 
+                                                className="d-flex align-items-center justify-content-between p-2 rounded-3"
+                                                style={{
+                                                    background: 'rgba(248, 249, 250, 0.7)',
+                                                    border: '1px solid rgba(0, 0, 0, 0.05)',
+                                                    transition: 'all 0.2s ease-in-out',
+                                                    cursor: 'pointer'
+                                                }}
+                                                onMouseEnter={(e) => {
+                                                    e.currentTarget.style.transform = 'translateX(4px)';
+                                                    e.currentTarget.style.background = 'rgba(255, 255, 255, 1)';
+                                                    e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.05)';
+                                                    e.currentTarget.style.borderColor = 'rgba(253, 126, 20, 0.2)'; // Orange border
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                    e.currentTarget.style.transform = 'translateX(0)';
+                                                    e.currentTarget.style.background = 'rgba(248, 249, 250, 0.7)';
+                                                    e.currentTarget.style.boxShadow = 'none';
+                                                    e.currentTarget.style.borderColor = 'rgba(0, 0, 0, 0.05)';
+                                                }}
+                                            >
+                                                <div className="d-flex align-items-center gap-3" style={{ minWidth: 0 }}>
+                                                    <div 
+                                                        className="d-flex align-items-center justify-content-center rounded-circle text-warning"
+                                                        style={{
+                                                            width: '36px',
+                                                            height: '36px',
+                                                            background: 'rgba(253, 126, 20, 0.1)', // Orange background
+                                                            flexShrink: 0
+                                                        }}
+                                                    >
+                                                        <i className="fe fe-book-open fs-5"></i>
+                                                    </div>
+                                                    <div style={{ minWidth: 0 }}>
+                                                        <h6 className="mb-0 text-dark fw-semibold text-truncate" title={item.department_name}>
+                                                            {item.department_name}
+                                                        </h6>
+                                                        <small className="text-muted d-block text-truncate" title={item.company_name}>
+                                                            {item.company_name}
+                                                        </small>
+                                                    </div>
+                                                </div>
+                                                <div 
+                                                    className="d-flex align-items-center justify-content-center fw-bold rounded-pill text-warning"
+                                                    style={{
+                                                        minWidth: '28px',
+                                                        height: '22px',
+                                                        padding: '0 8px',
+                                                        background: 'rgba(253, 126, 20, 0.15)', // Orange badge
+                                                        fontSize: '11px',
+                                                        flexShrink: 0
+                                                    }}
+                                                >
+                                                    {item.count}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="d-flex justify-content-center align-items-center py-5" style={{ minHeight: '300px' }}>
+                                        <span className="text-muted">Stajyer bulunamadı</span>
                                     </div>
                                 )}
                             </Card.Body>
