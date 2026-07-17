@@ -92,7 +92,7 @@ const EmployeeDetailPage = () => {
   const canEditEmployee = canManageEmployees && !(isActorHR && targetHasAdmin);
   const assignableRoles = isActorAdmin
     ? Object.values(UserRole)
-    : [UserRole.EMPLOYEE, UserRole.HR, UserRole.FINANCE];
+    : [UserRole.EMPLOYEE, UserRole.HR, UserRole.FINANCIAL];
   const [deleteItemType, setDeleteItemType] = useState<'workinfo' | 'grade' | 'contract' | null>(null);
   const [activeTab, setActiveTab] = useState<string>('employee-info');
   const [showPasswordResetModal, setShowPasswordResetModal] = useState(false);

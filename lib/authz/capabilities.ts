@@ -25,7 +25,7 @@ const ALL_CAPABILITIES: Capability[] = Object.values(Capability);
 export const RoleCapabilities: Record<UserRole, readonly Capability[]> = {
   [UserRole.ADMIN]: ALL_CAPABILITIES,
   [UserRole.HR]: ALL_CAPABILITIES.filter((c) => c !== Capability.CanPayExpense),
-  [UserRole.FINANCE]: [
+  [UserRole.FINANCIAL]: [
     Capability.CanViewEmployees,
     Capability.CanViewExpenseManagement,
     Capability.CanPayExpense,
