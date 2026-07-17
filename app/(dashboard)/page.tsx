@@ -127,10 +127,20 @@ const Home = () => {
             try {
                 const genderResponse = await dashboardService.getEmployeesByGender();
                 if (genderResponse.success && genderResponse.data) {
-                    const mappedData = genderResponse.data.map(item => ({
-                        ...item,
-                        gender: item.gender === 'MALE' || item.gender === 'Male' ? 'Erkek' : item.gender === 'FEMALE' || item.gender === 'Female' ? 'Kadın' : item.gender
-                    }));
+                    const mappedData = genderResponse.data.map(item => {
+                        let displayGender = item.gender;
+                        if (!displayGender || displayGender.trim() === '') {
+                            displayGender = 'Belirsiz';
+                        } else if (displayGender === 'MALE' || displayGender === 'Male') {
+                            displayGender = 'Erkek';
+                        } else if (displayGender === 'FEMALE' || displayGender === 'Female') {
+                            displayGender = 'Kadın';
+                        }
+                        return {
+                            ...item,
+                            gender: displayGender
+                        };
+                    });
                     setGenderData(mappedData);
                 }
             } catch (error) {
@@ -983,27 +993,74 @@ const Home = () => {
                                         </Spinner>
                                     </div>
                                 ) : companyDeptData.length > 0 ? (
-                                    <div className="table-responsive" style={{ maxHeight: '300px', overflowY: 'auto' }}>
-                                        <table className="table table-sm">
-                                            <thead>
-                                                <tr>
-                                                    <th>Şirket</th>
-                                                    <th>Departman</th>
-                                                    <th>Sayı</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {companyDeptData.map((item, index) => (
-                                                    <tr key={index}>
-                                                        <td>{item.company_name}</td>
-                                                        <td>{item.department_name}</td>
-                                                        <td>
-                                                            <span className="badge bg-primary">{item.count}</span>
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
+                                    <div 
+                                        className="d-flex flex-column gap-2 custom-scrollbar" 
+                                        style={{ 
+                                            maxHeight: '300px', 
+                                            overflowY: 'auto', 
+                                            paddingRight: '4px',
+                                            scrollbarWidth: 'thin'
+                                        }}
+                                    >
+                                        {companyDeptData.map((item, index) => (
+                                            <div 
+                                                key={index} 
+                                                className="d-flex align-items-center justify-content-between p-2 rounded-3"
+                                                style={{
+                                                    background: 'rgba(248, 249, 250, 0.7)',
+                                                    border: '1px solid rgba(0, 0, 0, 0.05)',
+                                                    transition: 'all 0.2s ease-in-out',
+                                                    cursor: 'pointer'
+                                                }}
+                                                onMouseEnter={(e) => {
+                                                    e.currentTarget.style.transform = 'translateX(4px)';
+                                                    e.currentTarget.style.background = 'rgba(255, 255, 255, 1)';
+                                                    e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.05)';
+                                                    e.currentTarget.style.borderColor = 'rgba(13, 110, 253, 0.2)';
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                    e.currentTarget.style.transform = 'translateX(0)';
+                                                    e.currentTarget.style.background = 'rgba(248, 249, 250, 0.7)';
+                                                    e.currentTarget.style.boxShadow = 'none';
+                                                    e.currentTarget.style.borderColor = 'rgba(0, 0, 0, 0.05)';
+                                                }}
+                                            >
+                                                <div className="d-flex align-items-center gap-3" style={{ minWidth: 0 }}>
+                                                    <div 
+                                                        className="d-flex align-items-center justify-content-center rounded-circle text-primary"
+                                                        style={{
+                                                            width: '36px',
+                                                            height: '36px',
+                                                            background: 'rgba(13, 110, 253, 0.1)',
+                                                            flexShrink: 0
+                                                        }}
+                                                    >
+                                                        <i className="fe fe-briefcase fs-5"></i>
+                                                    </div>
+                                                    <div style={{ minWidth: 0 }}>
+                                                        <h6 className="mb-0 text-dark fw-semibold text-truncate" title={item.department_name}>
+                                                            {item.department_name}
+                                                        </h6>
+                                                        <small className="text-muted d-block text-truncate" title={item.company_name}>
+                                                            {item.company_name}
+                                                        </small>
+                                                    </div>
+                                                </div>
+                                                <div 
+                                                    className="d-flex align-items-center justify-content-center fw-bold rounded-pill text-primary"
+                                                    style={{
+                                                        minWidth: '28px',
+                                                        height: '22px',
+                                                        padding: '0 8px',
+                                                        background: 'rgba(13, 110, 253, 0.15)',
+                                                        fontSize: '11px',
+                                                        flexShrink: 0
+                                                    }}
+                                                >
+                                                    {item.count}
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
                                 ) : (
                                     <div className="d-flex justify-content-center align-items-center py-5" style={{ minHeight: '300px' }}>
@@ -1061,37 +1118,95 @@ const Home = () => {
 
                 <Row>
                     <Col lg={12} md={12} xs={12} className="mb-6">
-                        <Card className="border-0">
-                            <Card.Header className="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h4 className="mb-0">Kartezya HR Yönetim Sistemine Hoşgeldiniz</h4>
+                        <Card className="border-0 shadow-sm" style={{
+                            background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+                            borderRadius: '16px'
+                        }}>
+                            <Card.Body className="p-4 p-md-5">
+                                <div className="mb-4">
+                                    <h2 className="fw-bold text-dark mb-2" style={{ letterSpacing: '-0.5px' }}>Kartezya HR Yönetim Sistemine Hoşgeldiniz</h2>
+                                    <p className="text-muted fs-6 mb-0" style={{ maxWidth: '800px', lineHeight: '1.6' }}>
+                                        Bu sistem ile çalışanlarınızı, departmanlarınızı, izin süreçlerinizi, masraflarınızı ve etkinliklerinizi kolayca yönetebilirsiniz.
+                                    </p>
                                 </div>
-                            </Card.Header>
-                            <Card.Body>
-                                <p>
-                                    Bu sistem ile çalışanlarınızı, departmanlarınızı, izin süreçlerinizi, masraflarınızı ve etkinliklerinizi kolayca yönetebilirsiniz.
-                                </p>
-                                <div className="row">
-                                    <div className="col-md mb-3">
-                                        <h6>👥 Çalışan Yönetimi</h6>
-                                        <p className="text-muted">Çalışan bilgilerini ekleyin, düzenleyin ve yönetin.</p>
-                                    </div>
-                                    <div className="col-md mb-3">
-                                        <h6>🏢 Departman Yönetimi</h6>
-                                        <p className="text-muted">Departmanları organize edin ve pozisyonları belirleyin.</p>
-                                    </div>
-                                    <div className="col-md mb-3">
-                                        <h6>📅 İzin Yönetimi</h6>
-                                        <p className="text-muted">İzin taleplerini onaylayın ve raporlayın.</p>
-                                    </div>
-                                    <div className="col-md mb-3">
-                                        <h6>💰 Masraf Yönetimi</h6>
-                                        <p className="text-muted">Çalışan masraf taleplerini değerlendirin ve ödemeleri takip edin.</p>
-                                    </div>
-                                    <div className="col-md mb-3">
-                                        <h6>🎉 Etkinlik Yönetimi</h6>
-                                        <p className="text-muted">Etkinlikleri planlayın, duyurun ve katılım süreçlerini yönetin.</p>
-                                    </div>
+                                
+                                <div className="row g-4 mt-2 row-cols-1 row-cols-md-3 row-cols-lg-5">
+                                    {[
+                                        {
+                                            title: "Çalışan Yönetimi",
+                                            desc: "Çalışan bilgilerini ekleyin, düzenleyin ve yönetin.",
+                                            icon: "fe-users",
+                                            bg: "rgba(13, 110, 253, 0.08)",
+                                            color: "#0d6efd"
+                                        },
+                                        {
+                                            title: "Departman Yönetimi",
+                                            desc: "Departmanları organize edin ve pozisyonları belirleyin.",
+                                            icon: "fe-briefcase",
+                                            bg: "rgba(25, 135, 84, 0.08)",
+                                            color: "#198754"
+                                        },
+                                        {
+                                            title: "İzin Yönetimi",
+                                            desc: "İzin taleplerini onaylayın ve raporlayın.",
+                                            icon: "fe-calendar",
+                                            bg: "rgba(111, 66, 193, 0.08)",
+                                            color: "#6f42c1"
+                                        },
+                                        {
+                                            title: "Masraf Yönetimi",
+                                            desc: "Çalışan masraf taleplerini değerlendirin ve ödemeleri takip edin.",
+                                            icon: "fe-credit-card",
+                                            bg: "rgba(253, 126, 20, 0.08)",
+                                            color: "#fd7e14"
+                                        },
+                                        {
+                                            title: "Etkinlik Yönetimi",
+                                            desc: "Etkinlikleri planlayın, duyurun ve katılım süreçlerini yönetin.",
+                                            icon: "fe-award",
+                                            bg: "rgba(220, 53, 69, 0.08)",
+                                            color: "#dc3545"
+                                        }
+                                    ].map((feat, idx) => (
+                                        <div key={idx} className="col">
+                                            <div 
+                                                className="p-4 rounded-4 h-100 d-flex flex-column gap-3"
+                                                style={{
+                                                    background: '#ffffff',
+                                                    border: '1px solid rgba(0, 0, 0, 0.05)',
+                                                    transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                                                    cursor: 'pointer'
+                                                }}
+                                                onMouseEnter={(e) => {
+                                                    e.currentTarget.style.transform = 'translateY(-6px)';
+                                                    e.currentTarget.style.boxShadow = '0 12px 20px rgba(0, 0, 0, 0.06)';
+                                                    e.currentTarget.style.borderColor = feat.color + '44'; // 25% opacity
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                    e.currentTarget.style.transform = 'translateY(0)';
+                                                    e.currentTarget.style.boxShadow = 'none';
+                                                    e.currentTarget.style.borderColor = 'rgba(0, 0, 0, 0.05)';
+                                                }}
+                                            >
+                                                <div 
+                                                    className="d-flex align-items-center justify-content-center rounded-3"
+                                                    style={{
+                                                        width: '42px',
+                                                        height: '42px',
+                                                        background: feat.bg,
+                                                        color: feat.color,
+                                                        flexShrink: 0
+                                                    }}
+                                                >
+                                                    <i className={`fe ${feat.icon} fs-4`}></i>
+                                                </div>
+                                                <div>
+                                                    <h5 className="fw-semibold text-dark mb-2" style={{ fontSize: '15px' }}>{feat.title}</h5>
+                                                    <p className="text-muted mb-0 small" style={{ lineHeight: '1.5' }}>{feat.desc}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
                             </Card.Body>
                         </Card>
