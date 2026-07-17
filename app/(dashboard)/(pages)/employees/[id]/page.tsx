@@ -3,7 +3,6 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Container, Spinner, Row, Col, Card, Button, Nav, Tab, Form, Table } from 'react-bootstrap';
 import { employeeService, workInformationService, employeeGradeService, employeeContractService, lookupService } from '@/services';
-import { authService } from '@/services/auth.service';
 import { Employee, EmployeeWorkInformation } from '@/models/hr/hr-models';
 import { toast } from 'react-toastify';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
@@ -95,8 +94,6 @@ const EmployeeDetailPage = () => {
     : [UserRole.EMPLOYEE, UserRole.HR, UserRole.FINANCIAL];
   const [deleteItemType, setDeleteItemType] = useState<'workinfo' | 'grade' | 'contract' | null>(null);
   const [activeTab, setActiveTab] = useState<string>('employee-info');
-  const [showPasswordResetModal, setShowPasswordResetModal] = useState(false);
-  const [isSendingResetEmail, setIsSendingResetEmail] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -607,20 +604,6 @@ const EmployeeDetailPage = () => {
     }
   };
 
-  const handleSendPasswordResetEmail = async () => {
-    if (!employee?.user?.id || !canEditEmployee) return;
-    setIsSendingResetEmail(true);
-    try {
-      await authService.sendPasswordResetEmail(employee.user.id);
-      toast.success('Şifre sıfırlama maili başarıyla gönderildi');
-      setShowPasswordResetModal(false);
-    } catch (error: any) {
-      toast.error(error.message || 'Şifre sıfırlama maili gönderilemedi');
-    } finally {
-      setIsSendingResetEmail(false);
-    }
-  };
-
   if (isLoading) {
     return (
       <div className={styles.loadingContainer}>
@@ -647,6 +630,24 @@ const EmployeeDetailPage = () => {
 
   const getInitials = (firstName: string, lastName: string) => {
     return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+  };
+
+  const getContractType = (title: string | undefined | null): string => {
+    if (!title) return '-';
+    const titleLower = title.toLowerCase();
+    if (titleLower.includes('aydınlatma') || titleLower.includes('kvkk')) {
+      return 'KVKK Metni';
+    }
+    if (titleLower.includes('gizlilik')) {
+      return 'Gizlilik Sözleşmesi';
+    }
+    if (titleLower.includes('rüşvet') || titleLower.includes('yolsuzluk') || titleLower.includes('politika')) {
+      return 'Politika';
+    }
+    if (titleLower.includes('fotoğraf') || titleLower.includes('görsel') || titleLower.includes('izin')) {
+      return 'İzin Metni';
+    }
+    return 'Diğer';
   };
 
   const formatDate = (dateString: string | undefined | null): string => {
@@ -792,19 +793,6 @@ const EmployeeDetailPage = () => {
             <h3 className="mb-0">{employee.first_name} {employee.last_name}</h3>
             <p className="text-muted mb-0">{getWorkInfoField('job_title')}</p>
           </div>
-
-          {canEditEmployee && (
-            <div className="d-flex justify-content-end mb-3">
-              <Button
-                variant="outline-primary"
-                size="sm"
-                onClick={() => setShowPasswordResetModal(true)}
-                disabled={isSendingResetEmail}
-              >
-                {isSendingResetEmail ? 'Gönderiliyor...' : 'Şifre Sıfırlama Maili Gönder'}
-              </Button>
-            </div>
-          )}
 
           <Tab.Container id="employee-tabs" activeKey={activeTab} onSelect={(k) => setActiveTab(k || 'employee-info')}>
             <Row className="g-4">
@@ -1609,15 +1597,17 @@ const EmployeeDetailPage = () => {
                         <Table responsive className="table-list">
                           <thead>
                             <tr>
-                              <th style={{ verticalAlign: 'middle', width: '50%' }}>Sözleşme Başlığı</th>
-                              <th className="text-center" style={{ verticalAlign: 'middle', width: '25%' }}>Onay Tarihi</th>
-                              <th className="text-center" style={{ verticalAlign: 'middle', width: '25%' }}>Durum</th>
+                              <th style={{ verticalAlign: 'middle', width: '35%' }}>Sözleşme Başlığı</th>
+                              <th style={{ verticalAlign: 'middle', width: '25%' }}>Sözleşme Türü</th>
+                              <th className="text-center" style={{ verticalAlign: 'middle', width: '20%' }}>Onay Tarihi</th>
+                              <th className="text-center" style={{ verticalAlign: 'middle', width: '20%' }}>Durum</th>
                             </tr>
                           </thead>
                           <tbody>
                             {portalContracts.map((portalContract) => (
                               <tr key={portalContract.contract_id}>
                                 <td style={{ verticalAlign: 'middle' }}>{portalContract.title || '-'}</td>
+                                <td style={{ verticalAlign: 'middle' }}>{getContractType(portalContract.title)}</td>
                                 <td className="text-center" style={{ verticalAlign: 'middle' }}>{portalContract.approved_at ? formatDate(portalContract.approved_at) : '-'}</td>
                                 <td className="text-center" style={{ verticalAlign: 'middle' }}>
                                   <span className={`badge ${portalContract.status === 'approved' ? 'bg-success' :
@@ -1947,19 +1937,6 @@ const EmployeeDetailPage = () => {
           loading={isDeleting}
           title="Sözleşme Sil"
           message="Sözleşmeyi silmek istediğinize emin misiniz?"
-        />
-      )}
-      {showPasswordResetModal && (
-        <DeleteModal
-          onClose={() => setShowPasswordResetModal(false)}
-          onHandleDelete={handleSendPasswordResetEmail}
-          loading={isSendingResetEmail}
-          title="Şifre Sıfırlama"
-          message={`Bu kullanıcının email adresine (${employee?.user?.email || employee?.email}) şifre sıfırlama maili gönderilecektir. Onaylıyor musun?`}
-          cancelLabel="İptal"
-          confirmLabel="Gönder"
-          loadingLabel="Gönderiliyor..."
-          variant="warning"
         />
       )}
     </Container>
