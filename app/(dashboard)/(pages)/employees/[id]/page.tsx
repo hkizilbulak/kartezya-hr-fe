@@ -126,6 +126,11 @@ const EmployeeDetailPage = () => {
   const lastFetchedEmployeeId = useRef<string | null>(null);
   const fetchedTabs = useRef<Set<string>>(new Set(['employee-info']));
 
+  // Scroll to top when the detail page mounts
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, []);
+
   useEffect(() => {
     if (lastFetchedEmployeeId.current === employeeId) return;
     lastFetchedEmployeeId.current = employeeId;
