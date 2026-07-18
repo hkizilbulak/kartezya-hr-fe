@@ -1044,7 +1044,6 @@ const EmployeesPage = () => {
                       <Table hover className="mb-0">
                         <thead>
                           <tr>
-                            <th>ID</th>
                             <th
                               onClick={() => handleSort('employee_name')}
                               className="sortable-header"
@@ -1077,7 +1076,6 @@ const EmployeesPage = () => {
                           {employees.length ? (
                             employees.map((employee: Employee) => (
                               <tr key={employee.id}>
-                                <td>{employee.id}</td>
                                 <td>{employee.first_name} {employee.last_name}</td>
                                 <td>{employee.work_information?.company_name || '-'}</td>
                                 <td>{employee.work_information?.department_name || '-'}</td>
@@ -1108,7 +1106,7 @@ const EmployeesPage = () => {
                             ))
                           ) : (
                             <tr>
-                              <td colSpan={7} className="text-center py-4">
+                              <td colSpan={6} className="text-center py-4">
                                 Veri bulunamadı
                               </td>
                             </tr>
