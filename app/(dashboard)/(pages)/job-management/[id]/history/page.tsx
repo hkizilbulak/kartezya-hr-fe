@@ -1,20 +1,15 @@
 "use client";
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Row, Col, Card, Table, Button, Badge, Container } from 'react-bootstrap';
 import { jobService } from '@/services/job.service';
 import { Job, JobHistory } from '@/models/hr/job-models';
 import LoadingOverlay from '@/components/LoadingOverlay';
+import Pagination from '@/components/Pagination';
 import { Eye, ArrowLeft, ChevronUp, ChevronDown } from 'react-feather';
 import { toast } from 'react-toastify';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
 import JobHistoryModal from '@/components/modals/JobHistoryModal';
-import {
-  compareDate,
-  compareNumber,
-  compareText,
-  ClientSortDirection,
-} from '@/lib/sort/clientCompare';
 import '@/styles/table-list.scss';
 import '@/styles/components/table-common.scss';
 
@@ -30,27 +25,54 @@ const JobHistoryPage = () => {
 
   const [showModal, setShowModal] = useState(false);
   const [selectedHistory, setSelectedHistory] = useState<JobHistory | null>(null);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+
   const [sortConfig, setSortConfig] = useState<{
     key: HistorySortKey;
-    direction: ClientSortDirection;
+    direction: 'ASC' | 'DESC';
   }>({ key: 'start_time', direction: 'DESC' });
 
-  useEffect(() => {
-    if (id) {
-      fetchJobAndHistory(Number(id));
+  const fetchJob = async (jobId: number) => {
+    try {
+      const jobData = await jobService.getJobById(jobId);
+      setJob(jobData);
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.error || error.message || 'Görev yüklenirken hata oluştu';
+      toast.error(translateErrorMessage(errorMessage));
     }
-  }, [id]);
+  };
 
-  const fetchJobAndHistory = async (jobId: number) => {
+  const fetchHistory = async (
+    jobId: number,
+    page: number = currentPage,
+    sortKey: HistorySortKey = sortConfig.key,
+    sortDir: 'ASC' | 'DESC' = sortConfig.direction,
+    pageSize: number = itemsPerPage
+  ) => {
     try {
       setIsLoading(true);
-      const [jobData, historyData] = await Promise.all([
-        jobService.getJobById(jobId),
-        jobService.getJobHistory(jobId, 100) // fetch up to 100 logs
-      ]);
+      const response = await jobService.getJobHistory(jobId, {
+        page,
+        limit: pageSize,
+        sort: sortKey,
+        direction: sortDir,
+      });
 
-      setJob(jobData);
-      setHistory(historyData || []);
+      if (response.data) {
+        setHistory(response.data);
+        setTotalPages(response.page?.total_pages || 0);
+        setTotalItems(response.page?.total || 0);
+        setCurrentPage(page);
+      } else {
+        setHistory([]);
+        setTotalPages(0);
+        setTotalItems(0);
+        setCurrentPage(page);
+      }
     } catch (error: any) {
       const errorMessage = error.response?.data?.error || error.message || 'Geçmiş yüklenirken hata oluştu';
       toast.error(translateErrorMessage(errorMessage));
@@ -59,12 +81,24 @@ const JobHistoryPage = () => {
     }
   };
 
+  useEffect(() => {
+    if (!id) return;
+    const jobId = Number(id);
+    fetchJob(jobId);
+    fetchHistory(jobId, 1, sortConfig.key, sortConfig.direction, itemsPerPage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
+
   const handleSort = (key: HistorySortKey) => {
-    let direction: ClientSortDirection = 'ASC';
+    let direction: 'ASC' | 'DESC' = 'ASC';
     if (sortConfig.key === key && sortConfig.direction === 'ASC') {
       direction = 'DESC';
     }
     setSortConfig({ key, direction });
+    setCurrentPage(1);
+    if (id) {
+      fetchHistory(Number(id), 1, key, direction, itemsPerPage);
+    }
   };
 
   const getSortIcon = (columnKey: HistorySortKey) => {
@@ -74,23 +108,19 @@ const JobHistoryPage = () => {
       : <ChevronDown size={14} className="ms-1" style={{ display: 'inline' }} />;
   };
 
-  const sortedHistory = useMemo(() => {
-    const rows = [...history];
-    const { key, direction } = sortConfig;
-    rows.sort((a, b) => {
-      if (key === 'processed_count') {
-        return compareNumber(a.processed_count, b.processed_count, direction);
-      }
-      if (key === 'status') {
-        return compareText(a.status || '', b.status || '', direction);
-      }
-      if (key === 'end_time') {
-        return compareDate(a.end_time, b.end_time, direction);
-      }
-      return compareDate(a.start_time, b.start_time, direction);
-    });
-    return rows;
-  }, [history, sortConfig]);
+  const handlePageChange = (page: number) => {
+    if (id) {
+      fetchHistory(Number(id), page, sortConfig.key, sortConfig.direction, itemsPerPage);
+    }
+  };
+
+  const handlePageSizeChange = (size: number) => {
+    setItemsPerPage(size);
+    setCurrentPage(1);
+    if (id) {
+      fetchHistory(Number(id), 1, sortConfig.key, sortConfig.direction, size);
+    }
+  };
 
   const handleViewDetail = (item: JobHistory) => {
     setSelectedHistory(item);
@@ -178,8 +208,8 @@ const JobHistoryPage = () => {
                           </tr>
                         </thead>
                         <tbody>
-                          {sortedHistory.length ? (
-                            sortedHistory.map((item: JobHistory) => (
+                          {history.length ? (
+                            history.map((item: JobHistory) => (
                               <tr key={item.id}>
                                 <td>{new Date(item.start_time).toLocaleString()}</td>
                                 <td>{item.end_time ? new Date(item.end_time).toLocaleString() : '-'}</td>
@@ -213,6 +243,20 @@ const JobHistoryPage = () => {
                   </div>
                 </Card.Body>
               </Card>
+
+              {totalItems > 0 && (
+                <div className="px-3 mt-3">
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    totalItems={totalItems}
+                    itemsPerPage={itemsPerPage}
+                    onPageChange={handlePageChange}
+                    onPageSizeChange={handlePageSizeChange}
+                    pageSizeOptions={[10, 20, 50, 100]}
+                  />
+                </div>
+              )}
             </div>
           </Col>
         </Row>
