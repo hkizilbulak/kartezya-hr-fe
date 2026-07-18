@@ -1,4 +1,4 @@
-import { BaseService } from './base.service';
+import { BaseService, PaginatedResponse } from './base.service';
 import { Job, JobHistory, JobUpdateRequest } from '@/models/hr/job-models';
 import axiosInstance from '@/helpers/api/axiosInstance';
 
@@ -35,9 +35,27 @@ class JobService extends BaseService<Job> {
     return response.data;
   }
 
-  // Get job history
-  async getJobHistory(id: number, limit: number = 50): Promise<JobHistory[]> {
-    const response = await axiosInstance.get<JobHistory[]>(`${this.baseUrl}/${id}/history`, { params: { limit } });
+  // Get job history (server-side pagination + sorting)
+  async getJobHistory(
+    id: number,
+    params: {
+      page?: number;
+      limit?: number;
+      sort?: string;
+      direction?: 'ASC' | 'DESC';
+    } = {}
+  ): Promise<PaginatedResponse<JobHistory>> {
+    const query = new URLSearchParams({
+      page: String(params.page ?? 1),
+      limit: String(params.limit ?? 10),
+      sort: params.sort || 'start_time',
+      direction: params.direction || 'DESC',
+    });
+
+    const response = await axiosInstance.get<PaginatedResponse<JobHistory>>(
+      `${this.baseUrl}/${id}/history`,
+      { params: query }
+    );
     return response.data;
   }
 }
