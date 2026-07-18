@@ -34,6 +34,7 @@ export interface CompanyDepartmentChartData {
   company_name: string;
   department_name: string;
   count: number;
+  employee_names?: string;
 }
 
 export interface GradeChartData {

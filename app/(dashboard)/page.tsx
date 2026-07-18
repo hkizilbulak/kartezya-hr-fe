@@ -1,6 +1,6 @@
 'use client'
 import { Fragment, useState, useEffect, useMemo } from "react";
-import { Container, Row, Col, Card, Spinner } from "react-bootstrap";
+import { Container, Row, Col, Card, Spinner, OverlayTrigger, Popover } from "react-bootstrap";
 import { dashboardService, DashboardData, GenderChartData, PositionChartData, CompanyDepartmentChartData, GradeChartData } from "@/services/dashboard.service";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LabelList } from 'recharts';
 import { useAuth } from "@/hooks/useAuth";
@@ -82,6 +82,11 @@ const Home = () => {
     const [loadingEmployeeProfile, setLoadingEmployeeProfile] = useState(false);
 
     const COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2'];
+    const GENDER_COLORS: Record<string, string> = {
+        'Erkek': '#3b82f6',
+        'Kadın': '#ec4899',
+        'Belirsiz': '#94a3b8'
+    };
 
     const [initialized, setInitialized] = useState(false);
 
@@ -884,7 +889,7 @@ const Home = () => {
                 <Row className="mt-4">
                     {/* Position Chart (Moved to first place) */}
                     <Col lg={4} md={12} xs={12} className="mb-6">
-                        <Card className="border-0">
+                        <Card className="border-0 h-100">
                             <Card.Header>
                                 <h5 className="mb-0">Çalışanların Pozisyon Dağılımı</h5>
                             </Card.Header>
@@ -921,7 +926,7 @@ const Home = () => {
 
                     {/* Grade Chart (Moved next to Position) */}
                     <Col lg={4} md={12} xs={12} className="mb-6">
-                        <Card className="border-0">
+                        <Card className="border-0 h-100">
                             <Card.Header>
                                 <h5 className="mb-0">Çalışanların Grade Dağılımı</h5>
                             </Card.Header>
@@ -958,7 +963,7 @@ const Home = () => {
 
                     {/* Company Chart (New Widget) */}
                     <Col lg={4} md={12} xs={12} className="mb-6">
-                        <Card className="border-0">
+                        <Card className="border-0 h-100">
                             <Card.Header>
                                 <h5 className="mb-0">Şirkete Göre Çalışan Sayısı</h5>
                             </Card.Header>
@@ -995,7 +1000,7 @@ const Home = () => {
 
                     {/* Company-Department Chart */}
                     <Col lg={4} md={12} xs={12} className="mb-6">
-                        <Card className="border-0">
+                        <Card className="border-0 h-100">
                             <Card.Header>
                                 <h5 className="mb-0">Şirket-Departmana Göre Çalışan Sayısı</h5>
                             </Card.Header>
@@ -1010,7 +1015,7 @@ const Home = () => {
                                     <div 
                                         className="d-flex flex-column gap-2 custom-scrollbar" 
                                         style={{ 
-                                            maxHeight: '300px', 
+                                            height: '300px', 
                                             overflowY: 'auto', 
                                             paddingRight: '4px',
                                             scrollbarWidth: 'thin'
@@ -1060,19 +1065,59 @@ const Home = () => {
                                                         </small>
                                                     </div>
                                                 </div>
-                                                <div 
-                                                    className="d-flex align-items-center justify-content-center fw-bold rounded-pill text-primary"
-                                                    style={{
-                                                        minWidth: '28px',
-                                                        height: '22px',
-                                                        padding: '0 8px',
-                                                        background: 'rgba(13, 110, 253, 0.15)',
-                                                        fontSize: '11px',
-                                                        flexShrink: 0
-                                                    }}
+                                                <OverlayTrigger
+                                                    trigger={['hover', 'focus']}
+                                                    placement="right"
+                                                    overlay={
+                                                        <Popover id={`popover-employees-${index}`} style={{
+                                                            border: 'none',
+                                                            borderRadius: '12px',
+                                                            boxShadow: '0 10px 25px rgba(0,0,0,0.08)',
+                                                            background: '#ffffff',
+                                                            padding: '12px',
+                                                            minWidth: '220px',
+                                                            maxWidth: '280px',
+                                                            zIndex: 1060
+                                                        }}>
+                                                            <div className="d-flex align-items-center gap-2 mb-2 pb-2" style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                                                <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#0d6efd' }}></div>
+                                                                <span className="fw-semibold text-dark" style={{ fontSize: '12px' }}>{item.department_name} ({item.company_name})</span>
+                                                            </div>
+                                                            <div className="d-flex flex-column gap-1 custom-scrollbar" style={{ maxHeight: '320px', overflowY: 'auto', paddingRight: '4px', scrollbarWidth: 'thin' }}>
+                                                                {item.employee_names ? (
+                                                                    item.employee_names.split(', ').map((name, i) => (
+                                                                        <div key={i} className="d-flex align-items-center gap-2 px-2 py-1 rounded" style={{
+                                                                            background: '#f8fafc',
+                                                                            fontSize: '11.5px',
+                                                                            color: '#334155',
+                                                                            fontWeight: 500
+                                                                        }}>
+                                                                            <i className="fe fe-user text-primary" style={{ fontSize: '11px' }}></i>
+                                                                            <span>{name}</span>
+                                                                        </div>
+                                                                    ))
+                                                                ) : (
+                                                                    <div className="text-muted text-center py-2" style={{ fontSize: '11px' }}>Çalışan bilgisi bulunamadı</div>
+                                                                )}
+                                                            </div>
+                                                        </Popover>
+                                                    }
                                                 >
-                                                    {item.count}
-                                                </div>
+                                                    <div 
+                                                        className="d-flex align-items-center justify-content-center fw-bold rounded-pill text-primary"
+                                                        style={{
+                                                            minWidth: '28px',
+                                                            height: '22px',
+                                                            padding: '0 8px',
+                                                            background: 'rgba(13, 110, 253, 0.15)',
+                                                            fontSize: '11px',
+                                                            flexShrink: 0,
+                                                            cursor: 'pointer'
+                                                        }}
+                                                    >
+                                                        {item.count}
+                                                    </div>
+                                                </OverlayTrigger>
                                             </div>
                                         ))}
                                     </div>
@@ -1085,51 +1130,9 @@ const Home = () => {
                         </Card>
                     </Col>
 
-                    {/* Gender Chart (Moved to second place) */}
-                    <Col lg={4} md={12} xs={12} className="mb-6">
-                        <Card className="border-0">
-                            <Card.Header>
-                                <h5 className="mb-0">Çalışanların Cinsiyet Dağılımı</h5>
-                            </Card.Header>
-                            <Card.Body>
-                                {loadingGenderData ? (
-                                    <div className="d-flex justify-content-center align-items-center py-5" style={{ minHeight: '300px' }}>
-                                        <Spinner animation="border" role="status" size="sm">
-                                            <span className="visually-hidden">Yükleniyor...</span>
-                                        </Spinner>
-                                    </div>
-                                ) : genderData.length > 0 ? (
-                                    <ResponsiveContainer width="100%" height={300}>
-                                        <PieChart>
-                                            <Pie
-                                                data={genderData}
-                                                cx="50%"
-                                                cy="50%"
-                                                labelLine={false}
-                                                label={({ gender, count }: any) => `${gender}: ${count}`}
-                                                outerRadius={80}
-                                                fill="#8884d8"
-                                                dataKey="count"
-                                            >
-                                                {genderData.map((entry, index) => (
-                                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                                ))}
-                                            </Pie>
-                                            <Tooltip />
-                                        </PieChart>
-                                    </ResponsiveContainer>
-                                ) : (
-                                    <div className="d-flex justify-content-center align-items-center py-5" style={{ minHeight: '300px' }}>
-                                        <span className="text-muted">Veri bulunamadı</span>
-                                    </div>
-                                )}
-                            </Card.Body>
-                        </Card>
-                    </Col>
-
                     {/* Interns by Company-Department Chart/List */}
                     <Col lg={4} md={12} xs={12} className="mb-6">
-                        <Card className="border-0">
+                        <Card className="border-0 h-100">
                             <Card.Header>
                                 <h5 className="mb-0">Şirket-Departmana (Ekibe) Göre Stajyer Sayısı</h5>
                             </Card.Header>
@@ -1144,7 +1147,7 @@ const Home = () => {
                                     <div 
                                         className="d-flex flex-column gap-2 custom-scrollbar" 
                                         style={{ 
-                                            maxHeight: '300px', 
+                                            height: '300px', 
                                             overflowY: 'auto', 
                                             paddingRight: '4px',
                                             scrollbarWidth: 'thin'
@@ -1194,25 +1197,161 @@ const Home = () => {
                                                         </small>
                                                     </div>
                                                 </div>
-                                                <div 
-                                                    className="d-flex align-items-center justify-content-center fw-bold rounded-pill text-warning"
-                                                    style={{
-                                                        minWidth: '28px',
-                                                        height: '22px',
-                                                        padding: '0 8px',
-                                                        background: 'rgba(253, 126, 20, 0.15)', // Orange badge
-                                                        fontSize: '11px',
-                                                        flexShrink: 0
-                                                    }}
+                                                <OverlayTrigger
+                                                    trigger={['hover', 'focus']}
+                                                    placement="right"
+                                                    overlay={
+                                                        <Popover id={`popover-interns-${index}`} style={{
+                                                            border: 'none',
+                                                            borderRadius: '12px',
+                                                            boxShadow: '0 10px 25px rgba(0,0,0,0.08)',
+                                                            background: '#ffffff',
+                                                            padding: '12px',
+                                                            minWidth: '220px',
+                                                            maxWidth: '280px',
+                                                            zIndex: 1060
+                                                        }}>
+                                                            <div className="d-flex align-items-center gap-2 mb-2 pb-2" style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                                                <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#fd7e14' }}></div>
+                                                                <span className="fw-semibold text-dark" style={{ fontSize: '12px' }}>{item.department_name} ({item.company_name})</span>
+                                                            </div>
+                                                            <div className="d-flex flex-column gap-1 custom-scrollbar" style={{ maxHeight: '320px', overflowY: 'auto', paddingRight: '4px', scrollbarWidth: 'thin' }}>
+                                                                {item.employee_names ? (
+                                                                    item.employee_names.split(', ').map((name, i) => (
+                                                                        <div key={i} className="d-flex align-items-center gap-2 px-2 py-1 rounded" style={{
+                                                                            background: '#f8fafc',
+                                                                            fontSize: '11.5px',
+                                                                            color: '#334155',
+                                                                            fontWeight: 500
+                                                                        }}>
+                                                                            <i className="fe fe-user text-warning" style={{ fontSize: '11px' }}></i>
+                                                                            <span>{name}</span>
+                                                                        </div>
+                                                                    ))
+                                                                ) : (
+                                                                    <div className="text-muted text-center py-2" style={{ fontSize: '11px' }}>Stajyer bilgisi bulunamadı</div>
+                                                                )}
+                                                            </div>
+                                                        </Popover>
+                                                    }
                                                 >
-                                                    {item.count}
-                                                </div>
+                                                    <div 
+                                                        className="d-flex align-items-center justify-content-center fw-bold rounded-pill text-warning"
+                                                        style={{
+                                                            minWidth: '28px',
+                                                            height: '22px',
+                                                            padding: '0 8px',
+                                                            background: 'rgba(253, 126, 20, 0.15)', // Orange badge
+                                                            fontSize: '11px',
+                                                            flexShrink: 0,
+                                                            cursor: 'pointer'
+                                                        }}
+                                                    >
+                                                        {item.count}
+                                                    </div>
+                                                </OverlayTrigger>
                                             </div>
                                         ))}
                                     </div>
                                 ) : (
                                     <div className="d-flex justify-content-center align-items-center py-5" style={{ minHeight: '300px' }}>
                                         <span className="text-muted">Stajyer bulunamadı</span>
+                                    </div>
+                                )}
+                            </Card.Body>
+                        </Card>
+                    </Col>
+
+                    {/* Gender Chart (Moved to third place) */}
+                    <Col lg={4} md={12} xs={12} className="mb-6">
+                        <Card className="border-0 h-100">
+                            <Card.Header>
+                                <h5 className="mb-0">Çalışanların Cinsiyet Dağılımı</h5>
+                            </Card.Header>
+                            <Card.Body>
+                                {loadingGenderData ? (
+                                    <div className="d-flex justify-content-center align-items-center py-5" style={{ minHeight: '300px' }}>
+                                        <Spinner animation="border" role="status" size="sm">
+                                            <span className="visually-hidden">Yükleniyor...</span>
+                                        </Spinner>
+                                    </div>
+                                ) : genderData.length > 0 ? (
+                                    (() => {
+                                        const totalGenderCount = genderData.reduce((acc, curr) => acc + curr.count, 0);
+                                        
+                                        // Largest Remainder Method (Hare-Niemeyer) to ensure percentages sum to exactly 100%
+                                        const raw = genderData.map(item => totalGenderCount > 0 ? (item.count / totalGenderCount) * 100 : 0);
+                                        const floors = raw.map(val => Math.floor(val));
+                                        const remainders = raw.map((val, idx) => ({ remainder: val - floors[idx], idx }));
+                                        
+                                        const sumFloors = floors.reduce((a, b) => a + b, 0);
+                                        const diff = totalGenderCount > 0 ? 100 - sumFloors : 0;
+                                        
+                                        // Sort remainders descending to distribute the difference
+                                        const sortedRemainders = [...remainders].sort((a, b) => b.remainder - a.remainder);
+                                        for (let i = 0; i < diff; i++) {
+                                            if (sortedRemainders[i]) {
+                                                floors[sortedRemainders[i].idx] += 1;
+                                            }
+                                        }
+
+                                        return (
+                                            <div className="d-flex flex-column justify-content-between align-items-center h-100" style={{ minHeight: '300px' }}>
+                                                <div className="position-relative" style={{ width: '100%', height: '220px' }}>
+                                                    <ResponsiveContainer width="100%" height="100%">
+                                                        <PieChart>
+                                                            <Pie
+                                                                data={genderData}
+                                                                cx="50%"
+                                                                cy="50%"
+                                                                innerRadius={65}
+                                                                outerRadius={85}
+                                                                paddingAngle={3}
+                                                                cornerRadius={6}
+                                                                dataKey="count"
+                                                            >
+                                                                {genderData.map((entry, index) => {
+                                                                    const color = GENDER_COLORS[entry.gender] || COLORS[index % COLORS.length];
+                                                                    return <Cell key={`cell-${index}`} fill={color} />;
+                                                                })}
+                                                            </Pie>
+                                                            <Tooltip 
+                                                                contentStyle={{ 
+                                                                    background: '#ffffff', 
+                                                                    border: 'none', 
+                                                                    borderRadius: '8px', 
+                                                                    boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                                                                    fontSize: '12px'
+                                                                }}
+                                                            />
+                                                        </PieChart>
+                                                    </ResponsiveContainer>
+                                                    <div className="position-absolute start-50 top-50 translate-middle text-center" style={{ pointerEvents: 'none' }}>
+                                                        <h2 className="mb-0 fw-bold text-dark" style={{ fontSize: '28px', letterSpacing: '-0.5px' }}>{totalGenderCount}</h2>
+                                                        <span className="text-muted fw-semibold" style={{ fontSize: '12.5px' }}>Çalışan</span>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div className="d-flex flex-column align-items-start gap-2 mt-2" style={{ width: 'fit-content' }}>
+                                                    {genderData.map((entry, index) => {
+                                                        const color = GENDER_COLORS[entry.gender] || COLORS[index % COLORS.length];
+                                                        const pct = floors[index];
+                                                        return (
+                                                            <div key={index} className="d-flex align-items-center gap-2">
+                                                                <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: color, flexShrink: 0 }}></div>
+                                                                <span className="text-muted fw-semibold" style={{ fontSize: '13.5px' }}>
+                                                                    {entry.gender}: <strong className="text-dark">{entry.count} ({pct}%)</strong>
+                                                                </span>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        );
+                                    })()
+                                ) : (
+                                    <div className="d-flex justify-content-center align-items-center py-5" style={{ minHeight: '300px' }}>
+                                        <span className="text-muted">Veri bulunamadı</span>
                                     </div>
                                 )}
                             </Card.Body>
@@ -1236,7 +1375,7 @@ const Home = () => {
                                     </p>
                                 </div>
                                 
-                                <div className="row g-4 mt-2 row-cols-1 row-cols-md-3 row-cols-lg-5">
+                                <div className="row g-4 mt-2 row-cols-1 row-cols-md-3 row-cols-lg-6">
                                     {[
                                         {
                                             title: "Çalışan Yönetimi",
@@ -1244,13 +1383,6 @@ const Home = () => {
                                             icon: "fe-users",
                                             bg: "rgba(13, 110, 253, 0.08)",
                                             color: "#0d6efd"
-                                        },
-                                        {
-                                            title: "Departman Yönetimi",
-                                            desc: "Departmanları organize edin ve pozisyonları belirleyin.",
-                                            icon: "fe-briefcase",
-                                            bg: "rgba(25, 135, 84, 0.08)",
-                                            color: "#198754"
                                         },
                                         {
                                             title: "İzin Yönetimi",
@@ -1272,6 +1404,20 @@ const Home = () => {
                                             icon: "fe-award",
                                             bg: "rgba(220, 53, 69, 0.08)",
                                             color: "#dc3545"
+                                        },
+                                        {
+                                            title: "Döküman Yönetimi",
+                                            desc: "Önemli evrakları ve belgeleri güvenli bir şekilde depolayın ve paylaşın.",
+                                            icon: "fe-file-text",
+                                            bg: "rgba(25, 135, 84, 0.08)",
+                                            color: "#198754"
+                                        },
+                                        {
+                                            title: "Bildirim Yönetimi",
+                                            desc: "Tüm sisteme veya gruplara duyuru ve anlık bildirimler gönderin.",
+                                            icon: "fe-bell",
+                                            bg: "rgba(13, 202, 240, 0.08)",
+                                            color: "#0dcaf0"
                                         }
                                     ].map((feat, idx) => (
                                         <div key={idx} className="col">
