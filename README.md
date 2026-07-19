@@ -1,34 +1,46 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Kartezya HR Frontend (Go Web Server)
 
-## Getting Started
+Bu proje Next.js (App Router) ile geliştirilmiş ve Go (Golang) web sunucusu ile tek bir executable binary veya Docker container olarak sunulabilen frontend uygulamasıdır.
 
-First, run the development server:
+---
+
+## 1. Lokalde Geliştirme (Local Development)
+
+### A. Next.js Dev Server (Frontend Dev Modu)
+Hot-Module Reloading (HMR) avantajı ile geliştirmek için standart Next.js dev sunucusunu kullanabilirsiniz:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
 ```
+Uygulama `http://localhost:3000` adresinde çalışacaktır.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### B. Go Server ile Lokal Test
+Go sunucusunun yerel çıktıları nasıl servis ettiğini test etmek için:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+# 1. Statik export çıktısını ve Go sunucusunu derle:
+npm run build:go
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+# 2. Go sunucusunu 3000 portunda çalıştır:
+npm run start:go
+# veya doğrudan:
+./server -port 3000
+```
+Uygulama `http://localhost:3000` adresinde çalışacaktır.
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## 2. Docker ile Çalıştırma (Production / Server)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### A. Docker Container (Port 3000 Mapping)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+```bash
+# 1. Docker imajını derle:
+npm run docker:build
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+# 2. Container'ı 3000 portunda başlat:
+npm run docker:run
+# veya doğrudan:
+docker run -p 3000:8080 --name kartezya-fe --rm kartezya-hr-fe:latest
+```
+Uygulama `http://localhost:3000` adresinde çalışacaktır.
