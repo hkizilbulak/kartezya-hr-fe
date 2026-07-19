@@ -44,10 +44,10 @@ const formatDate = (date?: string | number[]): string => {
 const CustomXAxisTick = (props: any) => {
     const { x, y, payload } = props;
     if (!payload || !payload.value) return null;
-    
+
     const value = String(payload.value);
     const parts = value.split(' ');
-    
+
     return (
         <g transform={`translate(${x},${y})`}>
             {parts.map((part, index) => (
@@ -322,12 +322,18 @@ const Home = () => {
             acc[curr.company_name] = (acc[curr.company_name] || 0) + curr.count;
             return acc;
         }, {} as Record<string, number>);
-        
+
+        const internCounts = internCompanyDeptData.reduce((acc, curr) => {
+            acc[curr.company_name] = (acc[curr.company_name] || 0) + curr.count;
+            return acc;
+        }, {} as Record<string, number>);
+
         return Object.entries(counts).map(([name, count]) => ({
             company_name: name,
-            count
+            count,
+            internCount: internCounts[name] || 0
         })).sort((a, b) => b.count - a.count);
-    }, [companyDeptData]);
+    }, [companyDeptData, internCompanyDeptData]);
 
     // EMPLOYEE Dashboard
     if (!canAccessAdminModules) {
@@ -939,19 +945,19 @@ const Home = () => {
                                             </defs>
                                             <CartesianGrid stroke="#f1f5f9" horizontal={false} />
                                             <XAxis type="number" hide />
-                                            <YAxis 
+                                            <YAxis
                                                 type="category"
-                                                dataKey="position_title" 
-                                                axisLine={false} 
-                                                tickLine={false} 
-                                                tick={{ fill: '#475569', fontSize: 10.5, fontWeight: 600 }} 
+                                                dataKey="position_title"
+                                                axisLine={false}
+                                                tickLine={false}
+                                                tick={{ fill: '#475569', fontSize: 10.5, fontWeight: 600 }}
                                                 width={90}
                                             />
 
-                                            <Bar 
-                                                dataKey="count" 
-                                                fill="url(#positionGrad)" 
-                                                radius={[0, 6, 6, 0]} 
+                                            <Bar
+                                                dataKey="count"
+                                                fill="url(#positionGrad)"
+                                                radius={[0, 6, 6, 0]}
                                                 maxBarSize={16}
                                                 background={{ fill: '#f8fafc', radius: [0, 6, 6, 0] }}
                                             >
@@ -992,19 +998,19 @@ const Home = () => {
                                             </defs>
                                             <CartesianGrid stroke="#f1f5f9" horizontal={false} />
                                             <XAxis type="number" hide />
-                                            <YAxis 
+                                            <YAxis
                                                 type="category"
-                                                dataKey="grade_name" 
-                                                axisLine={false} 
-                                                tickLine={false} 
-                                                tick={{ fill: '#475569', fontSize: 10.5, fontWeight: 600 }} 
+                                                dataKey="grade_name"
+                                                axisLine={false}
+                                                tickLine={false}
+                                                tick={{ fill: '#475569', fontSize: 10.5, fontWeight: 600 }}
                                                 width={90}
                                             />
 
-                                            <Bar 
-                                                dataKey="count" 
-                                                fill="url(#gradeGrad)" 
-                                                radius={[0, 6, 6, 0]} 
+                                            <Bar
+                                                dataKey="count"
+                                                fill="url(#gradeGrad)"
+                                                radius={[0, 6, 6, 0]}
                                                 maxBarSize={16}
                                                 background={{ fill: '#f8fafc', radius: [0, 6, 6, 0] }}
                                             >
@@ -1036,32 +1042,56 @@ const Home = () => {
                                     </div>
                                 ) : companyData.length > 0 ? (
                                     <ResponsiveContainer width="100%" height={300}>
-                                        <BarChart layout="vertical" data={companyData} margin={{ top: 10, right: 30, left: 10, bottom: 5 }}>
+                                        <BarChart layout="vertical" data={companyData} margin={{ top: 10, right: 30, left: 10, bottom: 5 }} barCategoryGap="30%" barGap={2}>
                                             <defs>
                                                 <linearGradient id="companyGrad" x1="0" y1="0" x2="1" y2="0">
                                                     <stop offset="0%" stopColor="#14b8a6" stopOpacity={0.4} />
                                                     <stop offset="100%" stopColor="#0d9488" stopOpacity={0.85} />
                                                 </linearGradient>
+                                                <linearGradient id="internCompanyGrad" x1="0" y1="0" x2="1" y2="0">
+                                                    <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.3} />
+                                                    <stop offset="100%" stopColor="#d97706" stopOpacity={0.7} />
+                                                </linearGradient>
                                             </defs>
                                             <CartesianGrid stroke="#f1f5f9" horizontal={false} />
                                             <XAxis type="number" hide />
-                                            <YAxis 
+                                            <YAxis
                                                 type="category"
-                                                dataKey="company_name" 
-                                                axisLine={false} 
-                                                tickLine={false} 
-                                                tick={{ fill: '#475569', fontSize: 10.5, fontWeight: 600 }} 
+                                                dataKey="company_name"
+                                                axisLine={false}
+                                                tickLine={false}
+                                                tick={{ fill: '#475569', fontSize: 10.5, fontWeight: 600 }}
                                                 width={90}
                                             />
 
-                                            <Bar 
-                                                dataKey="count" 
-                                                fill="url(#companyGrad)" 
-                                                radius={[0, 6, 6, 0]} 
-                                                maxBarSize={16}
+                                            <Bar
+                                                dataKey="count"
+                                                name="Çalışan"
+                                                fill="url(#companyGrad)"
+                                                radius={[0, 6, 6, 0]}
+                                                maxBarSize={26}
                                                 background={{ fill: '#f8fafc', radius: [0, 6, 6, 0] }}
                                             >
                                                 <LabelList dataKey="count" position="right" fill="#0d9488" fontSize={10} fontWeight={700} offset={8} />
+                                            </Bar>
+                                            <Bar
+                                                dataKey="internCount"
+                                                name="Stajyer"
+                                                fill="url(#internCompanyGrad)"
+                                                radius={[0, 6, 6, 0]}
+                                                maxBarSize={14}
+                                                minPointSize={2}
+                                                background={{ fill: '#fefce8', radius: [0, 6, 6, 0] }}
+                                            >
+                                                <LabelList
+                                                    dataKey="internCount"
+                                                    position="right"
+                                                    fill="#d97706"
+                                                    fontSize={9}
+                                                    fontWeight={700}
+                                                    offset={8}
+                                                    formatter={(value: number) => value}
+                                                />
                                             </Bar>
                                         </BarChart>
                                     </ResponsiveContainer>
@@ -1088,11 +1118,11 @@ const Home = () => {
                                         </Spinner>
                                     </div>
                                 ) : companyDeptData.length > 0 ? (
-                                    <div 
-                                        className="d-flex flex-column gap-2 custom-scrollbar" 
-                                        style={{ 
-                                            height: '300px', 
-                                            overflowY: 'auto', 
+                                    <div
+                                        className="d-flex flex-column gap-2 custom-scrollbar"
+                                        style={{
+                                            height: '300px',
+                                            overflowY: 'auto',
                                             paddingRight: '4px',
                                             scrollbarWidth: 'thin'
                                         }}
@@ -1137,7 +1167,7 @@ const Home = () => {
                                                     </Popover>
                                                 }
                                             >
-                                                <div 
+                                                <div
                                                     className="d-flex align-items-center justify-content-between p-2 rounded-3"
                                                     style={{
                                                         background: 'rgba(248, 249, 250, 0.7)',
@@ -1159,7 +1189,7 @@ const Home = () => {
                                                     }}
                                                 >
                                                     <div className="d-flex align-items-center gap-3" style={{ minWidth: 0 }}>
-                                                        <div 
+                                                        <div
                                                             className="d-flex align-items-center justify-content-center rounded-circle text-primary"
                                                             style={{
                                                                 width: '36px',
@@ -1179,7 +1209,7 @@ const Home = () => {
                                                             </small>
                                                         </div>
                                                     </div>
-                                                    <div 
+                                                    <div
                                                         className="d-flex align-items-center justify-content-center fw-bold rounded-pill text-primary"
                                                         style={{
                                                             minWidth: '28px',
@@ -1220,11 +1250,11 @@ const Home = () => {
                                         </Spinner>
                                     </div>
                                 ) : internCompanyDeptData.length > 0 ? (
-                                    <div 
-                                        className="d-flex flex-column gap-2 custom-scrollbar" 
-                                        style={{ 
-                                            height: '300px', 
-                                            overflowY: 'auto', 
+                                    <div
+                                        className="d-flex flex-column gap-2 custom-scrollbar"
+                                        style={{
+                                            height: '300px',
+                                            overflowY: 'auto',
                                             paddingRight: '4px',
                                             scrollbarWidth: 'thin'
                                         }}
@@ -1269,7 +1299,7 @@ const Home = () => {
                                                     </Popover>
                                                 }
                                             >
-                                                <div 
+                                                <div
                                                     className="d-flex align-items-center justify-content-between p-2 rounded-3"
                                                     style={{
                                                         background: 'rgba(248, 249, 250, 0.7)',
@@ -1291,7 +1321,7 @@ const Home = () => {
                                                     }}
                                                 >
                                                     <div className="d-flex align-items-center gap-3" style={{ minWidth: 0 }}>
-                                                        <div 
+                                                        <div
                                                             className="d-flex align-items-center justify-content-center rounded-circle text-warning"
                                                             style={{
                                                                 width: '36px',
@@ -1311,7 +1341,7 @@ const Home = () => {
                                                             </small>
                                                         </div>
                                                     </div>
-                                                    <div 
+                                                    <div
                                                         className="d-flex align-items-center justify-content-center fw-bold rounded-pill text-warning"
                                                         style={{
                                                             minWidth: '28px',
@@ -1354,15 +1384,15 @@ const Home = () => {
                                 ) : genderData.length > 0 ? (
                                     (() => {
                                         const totalGenderCount = genderData.reduce((acc, curr) => acc + curr.count, 0);
-                                        
+
                                         // Largest Remainder Method (Hare-Niemeyer) to ensure percentages sum to exactly 100%
                                         const raw = genderData.map(item => totalGenderCount > 0 ? (item.count / totalGenderCount) * 100 : 0);
                                         const floors = raw.map(val => Math.floor(val));
                                         const remainders = raw.map((val, idx) => ({ remainder: val - floors[idx], idx }));
-                                        
+
                                         const sumFloors = floors.reduce((a, b) => a + b, 0);
                                         const diff = totalGenderCount > 0 ? 100 - sumFloors : 0;
-                                        
+
                                         // Sort remainders descending to distribute the difference
                                         const sortedRemainders = [...remainders].sort((a, b) => b.remainder - a.remainder);
                                         for (let i = 0; i < diff; i++) {
@@ -1398,7 +1428,7 @@ const Home = () => {
                                                         <span className="text-muted fw-semibold" style={{ fontSize: '12.5px' }}>Çalışan</span>
                                                     </div>
                                                 </div>
-                                                
+
                                                 <div className="d-flex flex-column align-items-start gap-2 mt-2" style={{ width: 'fit-content' }}>
                                                     {genderData.map((entry, index) => {
                                                         const color = GENDER_COLORS[entry.gender] || COLORS[index % COLORS.length];
@@ -1441,7 +1471,7 @@ const Home = () => {
                                         Bu sistem ile çalışanlarınızı, departmanlarınızı, izin süreçlerinizi, masraflarınızı ve etkinliklerinizi kolayca yönetebilirsiniz.
                                     </p>
                                 </div>
-                                
+
                                 <div className="row g-4 mt-2 row-cols-1 row-cols-md-3 row-cols-lg-6">
                                     {[
                                         {
@@ -1488,7 +1518,7 @@ const Home = () => {
                                         }
                                     ].map((feat, idx) => (
                                         <div key={idx} className="col">
-                                            <div 
+                                            <div
                                                 className="p-4 rounded-4 h-100 d-flex flex-column gap-3"
                                                 style={{
                                                     background: '#ffffff',
@@ -1507,7 +1537,7 @@ const Home = () => {
                                                     e.currentTarget.style.borderColor = 'rgba(0, 0, 0, 0.05)';
                                                 }}
                                             >
-                                                <div 
+                                                <div
                                                     className="d-flex align-items-center justify-content-center rounded-3"
                                                     style={{
                                                         width: '42px',
