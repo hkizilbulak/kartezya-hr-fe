@@ -947,16 +947,7 @@ const Home = () => {
                                                 tick={{ fill: '#475569', fontSize: 10.5, fontWeight: 600 }} 
                                                 width={90}
                                             />
-                                            <Tooltip 
-                                                contentStyle={{ 
-                                                    backgroundColor: '#ffffff', 
-                                                    borderRadius: '8px', 
-                                                    border: '1px solid #e2e8f0', 
-                                                    boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03)' 
-                                                }}
-                                                labelStyle={{ fontWeight: 600, color: '#1e293b' }}
-                                                itemStyle={{ color: '#4f46e5', fontSize: '12px' }}
-                                            />
+
                                             <Bar 
                                                 dataKey="count" 
                                                 fill="url(#positionGrad)" 
@@ -1009,16 +1000,7 @@ const Home = () => {
                                                 tick={{ fill: '#475569', fontSize: 10.5, fontWeight: 600 }} 
                                                 width={90}
                                             />
-                                            <Tooltip 
-                                                contentStyle={{ 
-                                                    backgroundColor: '#ffffff', 
-                                                    borderRadius: '8px', 
-                                                    border: '1px solid #e2e8f0', 
-                                                    boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03)' 
-                                                }}
-                                                labelStyle={{ fontWeight: 600, color: '#1e293b' }}
-                                                itemStyle={{ color: '#db2777', fontSize: '12px' }}
-                                            />
+
                                             <Bar 
                                                 dataKey="count" 
                                                 fill="url(#gradeGrad)" 
@@ -1071,16 +1053,7 @@ const Home = () => {
                                                 tick={{ fill: '#475569', fontSize: 10.5, fontWeight: 600 }} 
                                                 width={90}
                                             />
-                                            <Tooltip 
-                                                contentStyle={{ 
-                                                    backgroundColor: '#ffffff', 
-                                                    borderRadius: '8px', 
-                                                    border: '1px solid #e2e8f0', 
-                                                    boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03)' 
-                                                }}
-                                                labelStyle={{ fontWeight: 600, color: '#1e293b' }}
-                                                itemStyle={{ color: '#0d9488', fontSize: '12px' }}
-                                            />
+
                                             <Bar 
                                                 dataKey="count" 
                                                 fill="url(#companyGrad)" 
@@ -1418,15 +1391,6 @@ const Home = () => {
                                                                     return <Cell key={`cell-${index}`} fill={color} />;
                                                                 })}
                                                             </Pie>
-                                                            <Tooltip 
-                                                                contentStyle={{ 
-                                                                    background: '#ffffff', 
-                                                                    border: 'none', 
-                                                                    borderRadius: '8px', 
-                                                                    boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                                                                    fontSize: '12px'
-                                                                }}
-                                                            />
                                                         </PieChart>
                                                     </ResponsiveContainer>
                                                     <div className="position-absolute start-50 top-50 translate-middle text-center" style={{ pointerEvents: 'none' }}>
