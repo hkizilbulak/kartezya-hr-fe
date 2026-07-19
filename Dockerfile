@@ -3,8 +3,8 @@ FROM node:20-alpine AS frontend-builder
 WORKDIR /app
 
 # Copy package files and install dependencies
-COPY package.json package-lock.json ./
-RUN npm ci
+COPY package*.json ./
+RUN npm install
 
 # Copy source code and build Next.js static export
 COPY . .
