@@ -1,5 +1,6 @@
-export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
-export const HR_API_BASE_URL = `${API_URL}/api/v1`
+const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://kartezya-hr.up.railway.app';
+export const API_URL = rawApiUrl.trim().replace(/^["']|["']$/g, '');
+export const HR_API_BASE_URL = `${API_URL}/api/v1`;
 
 // HR API Endpoints
 export const HR_ENDPOINTS = {
