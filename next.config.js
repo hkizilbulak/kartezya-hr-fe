@@ -2,6 +2,10 @@ const path = require('path');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+    ...(process.env.NODE_ENV === 'production' ? { output: 'export' } : {}),
+    images: {
+        unoptimized: true,
+    },
     reactStrictMode: false,
     typescript: {
         ignoreBuildErrors: true,

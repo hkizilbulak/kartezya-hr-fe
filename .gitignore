@@ -44,4 +44,3 @@ coverage/
 
 # next export
 dist/
-package-lock.json

@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import '@/styles/theme.scss';
 import { useAuth } from "@/hooks/useAuth";
 import { useRouter, usePathname } from "next/navigation";
@@ -53,12 +54,14 @@ export default function DashboardLayout({
   const router = useRouter();
   const pathname = usePathname();
 
-  if (isLoading) {
-    return <Loading />;
-  }
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.replace('/login');
+    }
+  }, [isLoading, user, router]);
 
-  if (!user) {
-    return null;
+  if (isLoading || !user) {
+    return <Loading />;
   }
 
   if (!isRouteAllowed(pathname, user.roles ?? [])) {

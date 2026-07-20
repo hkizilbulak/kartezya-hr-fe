@@ -41,6 +41,33 @@ const formatDate = (date?: string | number[]): string => {
     return "";
 };
 
+const CustomXAxisTick = (props: any) => {
+    const { x, y, payload } = props;
+    if (!payload || !payload.value) return null;
+
+    const value = String(payload.value);
+    const parts = value.split(' ');
+
+    return (
+        <g transform={`translate(${x},${y})`}>
+            {parts.map((part, index) => (
+                <text
+                    key={index}
+                    x={0}
+                    y={index * 10}
+                    dy={10}
+                    textAnchor="middle"
+                    fill="#475569"
+                    fontSize={8.5}
+                    fontWeight={600}
+                >
+                    {part}
+                </text>
+            ))}
+        </g>
+    );
+};
+
 const Home = () => {
     const { user } = useAuth();
     const router = useRouter();
@@ -230,7 +257,8 @@ const Home = () => {
             try {
                 const gradeResponse = await dashboardService.getEmployeesByGrade();
                 if (gradeResponse.success && gradeResponse.data) {
-                    setGradeData(gradeResponse.data);
+                    const sortedGradeData = [...gradeResponse.data].sort((a, b) => b.count - a.count);
+                    setGradeData(sortedGradeData);
                 }
             } catch (error) {
                 console.error('Error fetching grade data:', error);
@@ -294,12 +322,18 @@ const Home = () => {
             acc[curr.company_name] = (acc[curr.company_name] || 0) + curr.count;
             return acc;
         }, {} as Record<string, number>);
-        
+
+        const internCounts = internCompanyDeptData.reduce((acc, curr) => {
+            acc[curr.company_name] = (acc[curr.company_name] || 0) + curr.count;
+            return acc;
+        }, {} as Record<string, number>);
+
         return Object.entries(counts).map(([name, count]) => ({
             company_name: name,
-            count
-        }));
-    }, [companyDeptData]);
+            count,
+            internCount: internCounts[name] || 0
+        })).sort((a, b) => b.count - a.count);
+    }, [companyDeptData, internCompanyDeptData]);
 
     // EMPLOYEE Dashboard
     if (!canAccessAdminModules) {
@@ -902,16 +936,32 @@ const Home = () => {
                                     </div>
                                 ) : positionData.length > 0 ? (
                                     <ResponsiveContainer width="100%" height={300}>
-                                        <BarChart data={positionData}>
-                                            <CartesianGrid strokeDasharray="3 3" />
-                                            <XAxis dataKey="position_title" angle={-45} textAnchor="end" height={80} />
-                                            <YAxis />
-                                            <Tooltip />
-                                            <Bar dataKey="count">
-                                                <LabelList dataKey="count" position="top" fill="#666" fontSize={12} fontWeight={600} />
-                                                {positionData.map((entry, index) => (
-                                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                                ))}
+                                        <BarChart layout="vertical" data={positionData} margin={{ top: 10, right: 30, left: 10, bottom: 5 }}>
+                                            <defs>
+                                                <linearGradient id="positionGrad" x1="0" y1="0" x2="1" y2="0">
+                                                    <stop offset="0%" stopColor="#6366f1" stopOpacity={0.4} />
+                                                    <stop offset="100%" stopColor="#4f46e5" stopOpacity={0.85} />
+                                                </linearGradient>
+                                            </defs>
+                                            <CartesianGrid stroke="#f1f5f9" horizontal={false} />
+                                            <XAxis type="number" hide />
+                                            <YAxis
+                                                type="category"
+                                                dataKey="position_title"
+                                                axisLine={false}
+                                                tickLine={false}
+                                                tick={{ fill: '#475569', fontSize: 10.5, fontWeight: 600 }}
+                                                width={90}
+                                            />
+
+                                            <Bar
+                                                dataKey="count"
+                                                fill="url(#positionGrad)"
+                                                radius={[0, 6, 6, 0]}
+                                                maxBarSize={16}
+                                                background={{ fill: '#f8fafc', radius: [0, 6, 6, 0] }}
+                                            >
+                                                <LabelList dataKey="count" position="right" fill="#4f46e5" fontSize={10} fontWeight={700} offset={8} />
                                             </Bar>
                                         </BarChart>
                                     </ResponsiveContainer>
@@ -939,16 +989,32 @@ const Home = () => {
                                     </div>
                                 ) : gradeData.length > 0 ? (
                                     <ResponsiveContainer width="100%" height={300}>
-                                        <BarChart data={gradeData}>
-                                            <CartesianGrid strokeDasharray="3 3" />
-                                            <XAxis dataKey="grade_name" angle={-45} textAnchor="end" height={80} />
-                                            <YAxis />
-                                            <Tooltip />
-                                            <Bar dataKey="count">
-                                                <LabelList dataKey="count" position="top" fill="#666" fontSize={12} fontWeight={600} />
-                                                {gradeData.map((entry, index) => (
-                                                    <Cell key={`cell-${index}`} fill={COLORS[(index + 3) % COLORS.length]} />
-                                                ))}
+                                        <BarChart layout="vertical" data={gradeData} margin={{ top: 10, right: 30, left: 10, bottom: 5 }}>
+                                            <defs>
+                                                <linearGradient id="gradeGrad" x1="0" y1="0" x2="1" y2="0">
+                                                    <stop offset="0%" stopColor="#ec4899" stopOpacity={0.4} />
+                                                    <stop offset="100%" stopColor="#db2777" stopOpacity={0.85} />
+                                                </linearGradient>
+                                            </defs>
+                                            <CartesianGrid stroke="#f1f5f9" horizontal={false} />
+                                            <XAxis type="number" hide />
+                                            <YAxis
+                                                type="category"
+                                                dataKey="grade_name"
+                                                axisLine={false}
+                                                tickLine={false}
+                                                tick={{ fill: '#475569', fontSize: 10.5, fontWeight: 600 }}
+                                                width={90}
+                                            />
+
+                                            <Bar
+                                                dataKey="count"
+                                                fill="url(#gradeGrad)"
+                                                radius={[0, 6, 6, 0]}
+                                                maxBarSize={16}
+                                                background={{ fill: '#f8fafc', radius: [0, 6, 6, 0] }}
+                                            >
+                                                <LabelList dataKey="count" position="right" fill="#db2777" fontSize={10} fontWeight={700} offset={8} />
                                             </Bar>
                                         </BarChart>
                                     </ResponsiveContainer>
@@ -976,16 +1042,56 @@ const Home = () => {
                                     </div>
                                 ) : companyData.length > 0 ? (
                                     <ResponsiveContainer width="100%" height={300}>
-                                        <BarChart data={companyData}>
-                                            <CartesianGrid strokeDasharray="3 3" />
-                                            <XAxis dataKey="company_name" angle={-45} textAnchor="end" height={80} />
-                                            <YAxis />
-                                            <Tooltip />
-                                            <Bar dataKey="count">
-                                                <LabelList dataKey="count" position="top" fill="#666" fontSize={12} fontWeight={600} />
-                                                {companyData.map((entry, index) => (
-                                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                                ))}
+                                        <BarChart layout="vertical" data={companyData} margin={{ top: 10, right: 30, left: 10, bottom: 5 }} barCategoryGap="30%" barGap={2}>
+                                            <defs>
+                                                <linearGradient id="companyGrad" x1="0" y1="0" x2="1" y2="0">
+                                                    <stop offset="0%" stopColor="#14b8a6" stopOpacity={0.4} />
+                                                    <stop offset="100%" stopColor="#0d9488" stopOpacity={0.85} />
+                                                </linearGradient>
+                                                <linearGradient id="internCompanyGrad" x1="0" y1="0" x2="1" y2="0">
+                                                    <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.3} />
+                                                    <stop offset="100%" stopColor="#d97706" stopOpacity={0.7} />
+                                                </linearGradient>
+                                            </defs>
+                                            <CartesianGrid stroke="#f1f5f9" horizontal={false} />
+                                            <XAxis type="number" hide />
+                                            <YAxis
+                                                type="category"
+                                                dataKey="company_name"
+                                                axisLine={false}
+                                                tickLine={false}
+                                                tick={{ fill: '#475569', fontSize: 10.5, fontWeight: 600 }}
+                                                width={90}
+                                            />
+
+                                            <Bar
+                                                dataKey="count"
+                                                name="Çalışan"
+                                                fill="url(#companyGrad)"
+                                                radius={[0, 6, 6, 0]}
+                                                maxBarSize={26}
+                                                background={{ fill: '#f8fafc', radius: [0, 6, 6, 0] }}
+                                            >
+                                                <LabelList dataKey="count" position="right" fill="#0d9488" fontSize={10} fontWeight={700} offset={8} />
+                                            </Bar>
+                                            <Bar
+                                                dataKey="internCount"
+                                                name="Stajyer"
+                                                fill="url(#internCompanyGrad)"
+                                                radius={[0, 6, 6, 0]}
+                                                maxBarSize={14}
+                                                minPointSize={2}
+                                                background={{ fill: '#fefce8', radius: [0, 6, 6, 0] }}
+                                            >
+                                                <LabelList
+                                                    dataKey="internCount"
+                                                    position="right"
+                                                    fill="#d97706"
+                                                    fontSize={9}
+                                                    fontWeight={700}
+                                                    offset={8}
+                                                    formatter={(value: number) => value}
+                                                />
                                             </Bar>
                                         </BarChart>
                                     </ResponsiveContainer>
@@ -1012,98 +1118,98 @@ const Home = () => {
                                         </Spinner>
                                     </div>
                                 ) : companyDeptData.length > 0 ? (
-                                    <div 
-                                        className="d-flex flex-column gap-2 custom-scrollbar" 
-                                        style={{ 
-                                            height: '300px', 
-                                            overflowY: 'auto', 
+                                    <div
+                                        className="d-flex flex-column gap-2 custom-scrollbar"
+                                        style={{
+                                            height: '300px',
+                                            overflowY: 'auto',
                                             paddingRight: '4px',
                                             scrollbarWidth: 'thin'
                                         }}
                                     >
                                         {companyDeptData.map((item, index) => (
-                                            <div 
-                                                key={index} 
-                                                className="d-flex align-items-center justify-content-between p-2 rounded-3"
-                                                style={{
-                                                    background: 'rgba(248, 249, 250, 0.7)',
-                                                    border: '1px solid rgba(0, 0, 0, 0.05)',
-                                                    transition: 'all 0.2s ease-in-out',
-                                                    cursor: 'pointer'
-                                                }}
-                                                onMouseEnter={(e) => {
-                                                    e.currentTarget.style.transform = 'translateX(4px)';
-                                                    e.currentTarget.style.background = 'rgba(255, 255, 255, 1)';
-                                                    e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.05)';
-                                                    e.currentTarget.style.borderColor = 'rgba(13, 110, 253, 0.2)';
-                                                }}
-                                                onMouseLeave={(e) => {
-                                                    e.currentTarget.style.transform = 'translateX(0)';
-                                                    e.currentTarget.style.background = 'rgba(248, 249, 250, 0.7)';
-                                                    e.currentTarget.style.boxShadow = 'none';
-                                                    e.currentTarget.style.borderColor = 'rgba(0, 0, 0, 0.05)';
-                                                }}
+                                            <OverlayTrigger
+                                                key={index}
+                                                trigger={['hover', 'focus']}
+                                                placement="right"
+                                                overlay={
+                                                    <Popover id={`popover-employees-${index}`} style={{
+                                                        border: 'none',
+                                                        borderRadius: '12px',
+                                                        boxShadow: '0 10px 25px rgba(0,0,0,0.08)',
+                                                        background: '#ffffff',
+                                                        padding: '12px',
+                                                        minWidth: '220px',
+                                                        maxWidth: '280px',
+                                                        zIndex: 1060
+                                                    }}>
+                                                        <div className="d-flex align-items-center gap-2 mb-2 pb-2" style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#0d6efd' }}></div>
+                                                            <span className="fw-semibold text-dark" style={{ fontSize: '12px' }}>{item.department_name} ({item.company_name})</span>
+                                                        </div>
+                                                        <div className="d-flex flex-column gap-1 custom-scrollbar" style={{ maxHeight: '320px', overflowY: 'auto', paddingRight: '4px', scrollbarWidth: 'thin' }}>
+                                                            {item.employee_names ? (
+                                                                item.employee_names.split(', ').map((name, i) => (
+                                                                    <div key={i} className="d-flex align-items-center gap-2 px-2 py-1 rounded" style={{
+                                                                        background: '#f8fafc',
+                                                                        fontSize: '11.5px',
+                                                                        color: '#334155',
+                                                                        fontWeight: 500
+                                                                    }}>
+                                                                        <i className="fe fe-user text-primary" style={{ fontSize: '11px' }}></i>
+                                                                        <span>{name}</span>
+                                                                    </div>
+                                                                ))
+                                                            ) : (
+                                                                <div className="text-muted text-center py-2" style={{ fontSize: '11px' }}>Çalışan bilgisi bulunamadı</div>
+                                                            )}
+                                                        </div>
+                                                    </Popover>
+                                                }
                                             >
-                                                <div className="d-flex align-items-center gap-3" style={{ minWidth: 0 }}>
-                                                    <div 
-                                                        className="d-flex align-items-center justify-content-center rounded-circle text-primary"
-                                                        style={{
-                                                            width: '36px',
-                                                            height: '36px',
-                                                            background: 'rgba(13, 110, 253, 0.1)',
-                                                            flexShrink: 0
-                                                        }}
-                                                    >
-                                                        <i className="fe fe-briefcase fs-5"></i>
-                                                    </div>
-                                                    <div style={{ minWidth: 0 }}>
-                                                        <h6 className="mb-0 text-dark fw-semibold text-truncate" title={item.department_name}>
-                                                            {item.department_name}
-                                                        </h6>
-                                                        <small className="text-muted d-block text-truncate" title={item.company_name}>
-                                                            {item.company_name}
-                                                        </small>
-                                                    </div>
-                                                </div>
-                                                <OverlayTrigger
-                                                    trigger={['hover', 'focus']}
-                                                    placement="right"
-                                                    overlay={
-                                                        <Popover id={`popover-employees-${index}`} style={{
-                                                            border: 'none',
-                                                            borderRadius: '12px',
-                                                            boxShadow: '0 10px 25px rgba(0,0,0,0.08)',
-                                                            background: '#ffffff',
-                                                            padding: '12px',
-                                                            minWidth: '220px',
-                                                            maxWidth: '280px',
-                                                            zIndex: 1060
-                                                        }}>
-                                                            <div className="d-flex align-items-center gap-2 mb-2 pb-2" style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                                                <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#0d6efd' }}></div>
-                                                                <span className="fw-semibold text-dark" style={{ fontSize: '12px' }}>{item.department_name} ({item.company_name})</span>
-                                                            </div>
-                                                            <div className="d-flex flex-column gap-1 custom-scrollbar" style={{ maxHeight: '320px', overflowY: 'auto', paddingRight: '4px', scrollbarWidth: 'thin' }}>
-                                                                {item.employee_names ? (
-                                                                    item.employee_names.split(', ').map((name, i) => (
-                                                                        <div key={i} className="d-flex align-items-center gap-2 px-2 py-1 rounded" style={{
-                                                                            background: '#f8fafc',
-                                                                            fontSize: '11.5px',
-                                                                            color: '#334155',
-                                                                            fontWeight: 500
-                                                                        }}>
-                                                                            <i className="fe fe-user text-primary" style={{ fontSize: '11px' }}></i>
-                                                                            <span>{name}</span>
-                                                                        </div>
-                                                                    ))
-                                                                ) : (
-                                                                    <div className="text-muted text-center py-2" style={{ fontSize: '11px' }}>Çalışan bilgisi bulunamadı</div>
-                                                                )}
-                                                            </div>
-                                                        </Popover>
-                                                    }
+                                                <div
+                                                    className="d-flex align-items-center justify-content-between p-2 rounded-3"
+                                                    style={{
+                                                        background: 'rgba(248, 249, 250, 0.7)',
+                                                        border: '1px solid rgba(0, 0, 0, 0.05)',
+                                                        transition: 'all 0.2s ease-in-out',
+                                                        cursor: 'pointer'
+                                                    }}
+                                                    onMouseEnter={(e) => {
+                                                        e.currentTarget.style.transform = 'translateX(4px)';
+                                                        e.currentTarget.style.background = 'rgba(255, 255, 255, 1)';
+                                                        e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.05)';
+                                                        e.currentTarget.style.borderColor = 'rgba(13, 110, 253, 0.2)';
+                                                    }}
+                                                    onMouseLeave={(e) => {
+                                                        e.currentTarget.style.transform = 'translateX(0)';
+                                                        e.currentTarget.style.background = 'rgba(248, 249, 250, 0.7)';
+                                                        e.currentTarget.style.boxShadow = 'none';
+                                                        e.currentTarget.style.borderColor = 'rgba(0, 0, 0, 0.05)';
+                                                    }}
                                                 >
-                                                    <div 
+                                                    <div className="d-flex align-items-center gap-3" style={{ minWidth: 0 }}>
+                                                        <div
+                                                            className="d-flex align-items-center justify-content-center rounded-circle text-primary"
+                                                            style={{
+                                                                width: '36px',
+                                                                height: '36px',
+                                                                background: 'rgba(13, 110, 253, 0.1)',
+                                                                flexShrink: 0
+                                                            }}
+                                                        >
+                                                            <i className="fe fe-briefcase fs-5"></i>
+                                                        </div>
+                                                        <div style={{ minWidth: 0 }}>
+                                                            <h6 className="mb-0 text-dark fw-semibold text-truncate" title={item.department_name}>
+                                                                {item.department_name}
+                                                            </h6>
+                                                            <small className="text-muted d-block text-truncate" title={item.company_name}>
+                                                                {item.company_name}
+                                                            </small>
+                                                        </div>
+                                                    </div>
+                                                    <div
                                                         className="d-flex align-items-center justify-content-center fw-bold rounded-pill text-primary"
                                                         style={{
                                                             minWidth: '28px',
@@ -1117,8 +1223,8 @@ const Home = () => {
                                                     >
                                                         {item.count}
                                                     </div>
-                                                </OverlayTrigger>
-                                            </div>
+                                                </div>
+                                            </OverlayTrigger>
                                         ))}
                                     </div>
                                 ) : (
@@ -1144,98 +1250,98 @@ const Home = () => {
                                         </Spinner>
                                     </div>
                                 ) : internCompanyDeptData.length > 0 ? (
-                                    <div 
-                                        className="d-flex flex-column gap-2 custom-scrollbar" 
-                                        style={{ 
-                                            height: '300px', 
-                                            overflowY: 'auto', 
+                                    <div
+                                        className="d-flex flex-column gap-2 custom-scrollbar"
+                                        style={{
+                                            height: '300px',
+                                            overflowY: 'auto',
                                             paddingRight: '4px',
                                             scrollbarWidth: 'thin'
                                         }}
                                     >
                                         {internCompanyDeptData.map((item, index) => (
-                                            <div 
-                                                key={index} 
-                                                className="d-flex align-items-center justify-content-between p-2 rounded-3"
-                                                style={{
-                                                    background: 'rgba(248, 249, 250, 0.7)',
-                                                    border: '1px solid rgba(0, 0, 0, 0.05)',
-                                                    transition: 'all 0.2s ease-in-out',
-                                                    cursor: 'pointer'
-                                                }}
-                                                onMouseEnter={(e) => {
-                                                    e.currentTarget.style.transform = 'translateX(4px)';
-                                                    e.currentTarget.style.background = 'rgba(255, 255, 255, 1)';
-                                                    e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.05)';
-                                                    e.currentTarget.style.borderColor = 'rgba(253, 126, 20, 0.2)'; // Orange border
-                                                }}
-                                                onMouseLeave={(e) => {
-                                                    e.currentTarget.style.transform = 'translateX(0)';
-                                                    e.currentTarget.style.background = 'rgba(248, 249, 250, 0.7)';
-                                                    e.currentTarget.style.boxShadow = 'none';
-                                                    e.currentTarget.style.borderColor = 'rgba(0, 0, 0, 0.05)';
-                                                }}
+                                            <OverlayTrigger
+                                                key={index}
+                                                trigger={['hover', 'focus']}
+                                                placement="right"
+                                                overlay={
+                                                    <Popover id={`popover-interns-${index}`} style={{
+                                                        border: 'none',
+                                                        borderRadius: '12px',
+                                                        boxShadow: '0 10px 25px rgba(0,0,0,0.08)',
+                                                        background: '#ffffff',
+                                                        padding: '12px',
+                                                        minWidth: '220px',
+                                                        maxWidth: '280px',
+                                                        zIndex: 1060
+                                                    }}>
+                                                        <div className="d-flex align-items-center gap-2 mb-2 pb-2" style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#fd7e14' }}></div>
+                                                            <span className="fw-semibold text-dark" style={{ fontSize: '12px' }}>{item.department_name} ({item.company_name})</span>
+                                                        </div>
+                                                        <div className="d-flex flex-column gap-1 custom-scrollbar" style={{ maxHeight: '320px', overflowY: 'auto', paddingRight: '4px', scrollbarWidth: 'thin' }}>
+                                                            {item.employee_names ? (
+                                                                item.employee_names.split(', ').map((name, i) => (
+                                                                    <div key={i} className="d-flex align-items-center gap-2 px-2 py-1 rounded" style={{
+                                                                        background: '#f8fafc',
+                                                                        fontSize: '11.5px',
+                                                                        color: '#334155',
+                                                                        fontWeight: 500
+                                                                    }}>
+                                                                        <i className="fe fe-user text-warning" style={{ fontSize: '11px' }}></i>
+                                                                        <span>{name}</span>
+                                                                    </div>
+                                                                ))
+                                                            ) : (
+                                                                <div className="text-muted text-center py-2" style={{ fontSize: '11px' }}>Stajyer bilgisi bulunamadı</div>
+                                                            )}
+                                                        </div>
+                                                    </Popover>
+                                                }
                                             >
-                                                <div className="d-flex align-items-center gap-3" style={{ minWidth: 0 }}>
-                                                    <div 
-                                                        className="d-flex align-items-center justify-content-center rounded-circle text-warning"
-                                                        style={{
-                                                            width: '36px',
-                                                            height: '36px',
-                                                            background: 'rgba(253, 126, 20, 0.1)', // Orange background
-                                                            flexShrink: 0
-                                                        }}
-                                                    >
-                                                        <i className="fe fe-book-open fs-5"></i>
-                                                    </div>
-                                                    <div style={{ minWidth: 0 }}>
-                                                        <h6 className="mb-0 text-dark fw-semibold text-truncate" title={item.department_name}>
-                                                            {item.department_name}
-                                                        </h6>
-                                                        <small className="text-muted d-block text-truncate" title={item.company_name}>
-                                                            {item.company_name}
-                                                        </small>
-                                                    </div>
-                                                </div>
-                                                <OverlayTrigger
-                                                    trigger={['hover', 'focus']}
-                                                    placement="right"
-                                                    overlay={
-                                                        <Popover id={`popover-interns-${index}`} style={{
-                                                            border: 'none',
-                                                            borderRadius: '12px',
-                                                            boxShadow: '0 10px 25px rgba(0,0,0,0.08)',
-                                                            background: '#ffffff',
-                                                            padding: '12px',
-                                                            minWidth: '220px',
-                                                            maxWidth: '280px',
-                                                            zIndex: 1060
-                                                        }}>
-                                                            <div className="d-flex align-items-center gap-2 mb-2 pb-2" style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                                                <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#fd7e14' }}></div>
-                                                                <span className="fw-semibold text-dark" style={{ fontSize: '12px' }}>{item.department_name} ({item.company_name})</span>
-                                                            </div>
-                                                            <div className="d-flex flex-column gap-1 custom-scrollbar" style={{ maxHeight: '320px', overflowY: 'auto', paddingRight: '4px', scrollbarWidth: 'thin' }}>
-                                                                {item.employee_names ? (
-                                                                    item.employee_names.split(', ').map((name, i) => (
-                                                                        <div key={i} className="d-flex align-items-center gap-2 px-2 py-1 rounded" style={{
-                                                                            background: '#f8fafc',
-                                                                            fontSize: '11.5px',
-                                                                            color: '#334155',
-                                                                            fontWeight: 500
-                                                                        }}>
-                                                                            <i className="fe fe-user text-warning" style={{ fontSize: '11px' }}></i>
-                                                                            <span>{name}</span>
-                                                                        </div>
-                                                                    ))
-                                                                ) : (
-                                                                    <div className="text-muted text-center py-2" style={{ fontSize: '11px' }}>Stajyer bilgisi bulunamadı</div>
-                                                                )}
-                                                            </div>
-                                                        </Popover>
-                                                    }
+                                                <div
+                                                    className="d-flex align-items-center justify-content-between p-2 rounded-3"
+                                                    style={{
+                                                        background: 'rgba(248, 249, 250, 0.7)',
+                                                        border: '1px solid rgba(0, 0, 0, 0.05)',
+                                                        transition: 'all 0.2s ease-in-out',
+                                                        cursor: 'pointer'
+                                                    }}
+                                                    onMouseEnter={(e) => {
+                                                        e.currentTarget.style.transform = 'translateX(4px)';
+                                                        e.currentTarget.style.background = 'rgba(255, 255, 255, 1)';
+                                                        e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.05)';
+                                                        e.currentTarget.style.borderColor = 'rgba(253, 126, 20, 0.2)'; // Orange border
+                                                    }}
+                                                    onMouseLeave={(e) => {
+                                                        e.currentTarget.style.transform = 'translateX(0)';
+                                                        e.currentTarget.style.background = 'rgba(248, 249, 250, 0.7)';
+                                                        e.currentTarget.style.boxShadow = 'none';
+                                                        e.currentTarget.style.borderColor = 'rgba(0, 0, 0, 0.05)';
+                                                    }}
                                                 >
-                                                    <div 
+                                                    <div className="d-flex align-items-center gap-3" style={{ minWidth: 0 }}>
+                                                        <div
+                                                            className="d-flex align-items-center justify-content-center rounded-circle text-warning"
+                                                            style={{
+                                                                width: '36px',
+                                                                height: '36px',
+                                                                background: 'rgba(253, 126, 20, 0.1)', // Orange background
+                                                                flexShrink: 0
+                                                            }}
+                                                        >
+                                                            <i className="fe fe-book-open fs-5"></i>
+                                                        </div>
+                                                        <div style={{ minWidth: 0 }}>
+                                                            <h6 className="mb-0 text-dark fw-semibold text-truncate" title={item.department_name}>
+                                                                {item.department_name}
+                                                            </h6>
+                                                            <small className="text-muted d-block text-truncate" title={item.company_name}>
+                                                                {item.company_name}
+                                                            </small>
+                                                        </div>
+                                                    </div>
+                                                    <div
                                                         className="d-flex align-items-center justify-content-center fw-bold rounded-pill text-warning"
                                                         style={{
                                                             minWidth: '28px',
@@ -1249,8 +1355,8 @@ const Home = () => {
                                                     >
                                                         {item.count}
                                                     </div>
-                                                </OverlayTrigger>
-                                            </div>
+                                                </div>
+                                            </OverlayTrigger>
                                         ))}
                                     </div>
                                 ) : (
@@ -1278,15 +1384,15 @@ const Home = () => {
                                 ) : genderData.length > 0 ? (
                                     (() => {
                                         const totalGenderCount = genderData.reduce((acc, curr) => acc + curr.count, 0);
-                                        
+
                                         // Largest Remainder Method (Hare-Niemeyer) to ensure percentages sum to exactly 100%
                                         const raw = genderData.map(item => totalGenderCount > 0 ? (item.count / totalGenderCount) * 100 : 0);
                                         const floors = raw.map(val => Math.floor(val));
                                         const remainders = raw.map((val, idx) => ({ remainder: val - floors[idx], idx }));
-                                        
+
                                         const sumFloors = floors.reduce((a, b) => a + b, 0);
                                         const diff = totalGenderCount > 0 ? 100 - sumFloors : 0;
-                                        
+
                                         // Sort remainders descending to distribute the difference
                                         const sortedRemainders = [...remainders].sort((a, b) => b.remainder - a.remainder);
                                         for (let i = 0; i < diff; i++) {
@@ -1315,15 +1421,6 @@ const Home = () => {
                                                                     return <Cell key={`cell-${index}`} fill={color} />;
                                                                 })}
                                                             </Pie>
-                                                            <Tooltip 
-                                                                contentStyle={{ 
-                                                                    background: '#ffffff', 
-                                                                    border: 'none', 
-                                                                    borderRadius: '8px', 
-                                                                    boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                                                                    fontSize: '12px'
-                                                                }}
-                                                            />
                                                         </PieChart>
                                                     </ResponsiveContainer>
                                                     <div className="position-absolute start-50 top-50 translate-middle text-center" style={{ pointerEvents: 'none' }}>
@@ -1331,7 +1428,7 @@ const Home = () => {
                                                         <span className="text-muted fw-semibold" style={{ fontSize: '12.5px' }}>Çalışan</span>
                                                     </div>
                                                 </div>
-                                                
+
                                                 <div className="d-flex flex-column align-items-start gap-2 mt-2" style={{ width: 'fit-content' }}>
                                                     {genderData.map((entry, index) => {
                                                         const color = GENDER_COLORS[entry.gender] || COLORS[index % COLORS.length];
@@ -1374,7 +1471,7 @@ const Home = () => {
                                         Bu sistem ile çalışanlarınızı, departmanlarınızı, izin süreçlerinizi, masraflarınızı ve etkinliklerinizi kolayca yönetebilirsiniz.
                                     </p>
                                 </div>
-                                
+
                                 <div className="row g-4 mt-2 row-cols-1 row-cols-md-3 row-cols-lg-6">
                                     {[
                                         {
@@ -1421,7 +1518,7 @@ const Home = () => {
                                         }
                                     ].map((feat, idx) => (
                                         <div key={idx} className="col">
-                                            <div 
+                                            <div
                                                 className="p-4 rounded-4 h-100 d-flex flex-column gap-3"
                                                 style={{
                                                     background: '#ffffff',
@@ -1440,7 +1537,7 @@ const Home = () => {
                                                     e.currentTarget.style.borderColor = 'rgba(0, 0, 0, 0.05)';
                                                 }}
                                             >
-                                                <div 
+                                                <div
                                                     className="d-flex align-items-center justify-content-center rounded-3"
                                                     style={{
                                                         width: '42px',

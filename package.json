@@ -6,6 +6,10 @@
     "dev": "next dev",
     "local": "yarn install && yarn dev",
     "build": "next build",
+    "build:go": "next build && go build -o server main.go",
+    "start:go": "./server -port 3000",
+    "docker:build": "docker build -t kartezya-hr-fe:latest .",
+    "docker:run": "docker run -p 3000:8080 --name kartezya-fe --rm kartezya-hr-fe:latest",
     "start": "next start",
     "lint": "next lint"
   },

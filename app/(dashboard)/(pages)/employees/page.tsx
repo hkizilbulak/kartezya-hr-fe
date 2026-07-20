@@ -23,6 +23,44 @@ import { Capability, hasCapability } from '@/lib/authz/capabilities';
 import '@/styles/table-list.scss';
 import '@/styles/components/table-common.scss';
 
+// ─── Module-level cache (survives client-side navigation, cleared on full reload) ───────
+interface EmployeeListCache {
+  employees: Employee[];
+  currentPage: number;
+  totalPages: number;
+  totalItems: number;
+  itemsPerPage: number;
+  sortKey: string | null;
+  sortDirection: 'ASC' | 'DESC';
+  filterParams: any;
+  quickSearchParams: any;
+  statusFilter: string;
+  timestamp: number; // ms – for TTL check
+}
+
+let _employeeListCache: EmployeeListCache | null = null;
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+const SCROLL_KEY = 'employees_scroll_y';
+
+function saveScroll() {
+  try {
+    sessionStorage.setItem(SCROLL_KEY, String(window.scrollY));
+  } catch (_) {}
+}
+
+function consumeScroll(): number {
+  try {
+    const v = sessionStorage.getItem(SCROLL_KEY);
+    if (v !== null) {
+      sessionStorage.removeItem(SCROLL_KEY);
+      return parseInt(v, 10) || 0;
+    }
+  } catch (_) {}
+  return -1;
+}
+// ─────────────────────────────────────────────────────────────────────────────────────────
+
 const EmployeeStatusBadge = ({ status }: { status: string }) => {
   const badgeClass = status === "ACTIVE" ? "bg-success" : "bg-danger";
   const statusText = status === "ACTIVE" ? "Çalışıyor" : "Ayrıldı";
@@ -32,25 +70,41 @@ const EmployeeStatusBadge = ({ status }: { status: string }) => {
 const EmployeesPage = () => {
   const { user } = useAuth();
   const canManageEmployees = hasCapability(user?.roles, Capability.CanManageEmployees);
-  const [employees, setEmployees] = useState<Employee[]>([]);
+
+  // ── Initialise state from cache when available ──────────────────────────
+  const hasFreshCache = () =>
+    _employeeListCache !== null &&
+    Date.now() - _employeeListCache.timestamp < CACHE_TTL_MS;
+
+  const [employees, setEmployees] = useState<Employee[]>(
+    hasFreshCache() ? _employeeListCache!.employees : []
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalItems, setTotalItems] = useState(0);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [currentPage, setCurrentPage] = useState(
+    hasFreshCache() ? _employeeListCache!.currentPage : 1
+  );
+  const [totalPages, setTotalPages] = useState(
+    hasFreshCache() ? _employeeListCache!.totalPages : 1
+  );
+  const [totalItems, setTotalItems] = useState(
+    hasFreshCache() ? _employeeListCache!.totalItems : 0
+  );
+  const [itemsPerPage, setItemsPerPage] = useState(
+    hasFreshCache() ? _employeeListCache!.itemsPerPage : 10
+  );
 
   const [sortConfig, setSortConfig] = useState<{
     key: string | null;
     direction: 'ASC' | 'DESC';
-  }>({
-    key: null,
-    direction: 'ASC'
-  });
+  }>(hasFreshCache()
+    ? { key: _employeeListCache!.sortKey, direction: _employeeListCache!.sortDirection }
+    : { key: null, direction: 'ASC' }
+  );
 
   // Filter states
   const [showFilters, setShowFilters] = useState(false);
@@ -63,35 +117,75 @@ const EmployeesPage = () => {
   const [departmentsLoading, setDepartmentsLoading] = useState(false);
 
   // Filter parameters
-  const [filterParams, setFilterParams] = useState({
-    first_name: '',
-    email: '',
-    city: '',
-    department_ids: [] as string[], // Changed to array for multiple selection
-    manager: '',
-    identity_no: '',
-    gender: '',
-    marital_status: '',
-    grade_id: ''
-  });
+  const [filterParams, setFilterParams] = useState(
+    hasFreshCache()
+      ? _employeeListCache!.filterParams
+      : {
+          first_name: '',
+          email: '',
+          city: '',
+          department_ids: [] as string[],
+          manager: '',
+          identity_no: '',
+          gender: '',
+          marital_status: '',
+          grade_id: ''
+        }
+  );
 
-  // Add STATUS filter state - default to ACTIVE
-  const [statusFilter, setStatusFilter] = useState('ACTIVE');
+  // Status filter - default to ACTIVE
+  const [statusFilter, setStatusFilter] = useState(
+    hasFreshCache() ? _employeeListCache!.statusFilter : 'ACTIVE'
+  );
 
-  const [quickSearchParams, setQuickSearchParams] = useState({
-    company_id: '',
-    department_ids: '',
-    jobTitle: ''
-  });
+  const [quickSearchParams, setQuickSearchParams] = useState(
+    hasFreshCache()
+      ? _employeeListCache!.quickSearchParams
+      : { company_id: '', department_ids: '', jobTitle: '' }
+  );
+
   const isQuickSearchInitialized = useRef(false);
   const skipNextAutoFilter = useRef(false);
   const isInitialLoad = useRef(true);
   const isLookupsFetched = useRef(false);
-
   const isReady = useRef(false);
+
+  // Whether this mount is a "back-navigation" restore
+  const restoredFromCache = useRef(hasFreshCache());
 
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  // ── Scroll restore after render ──────────────────────────────────────────
+  useEffect(() => {
+    if (!restoredFromCache.current) return;
+    const savedY = consumeScroll();
+    if (savedY >= 0) {
+      // Wait one frame so the DOM is painted, then restore
+      requestAnimationFrame(() => {
+        window.scrollTo({ top: savedY, behavior: 'instant' });
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // run only once on mount
+
+  // ── Persist cache whenever data changes ──────────────────────────────────
+  useEffect(() => {
+    if (employees.length === 0) return;
+    _employeeListCache = {
+      employees,
+      currentPage,
+      totalPages,
+      totalItems,
+      itemsPerPage,
+      sortKey: sortConfig.key,
+      sortDirection: sortConfig.direction,
+      filterParams,
+      quickSearchParams,
+      statusFilter,
+      timestamp: Date.now(),
+    };
+  }, [employees, currentPage, totalPages, totalItems, itemsPerPage, sortConfig, filterParams, quickSearchParams, statusFilter]);
 
   // Fetch lookups on mount
   useEffect(() => {
@@ -142,12 +236,12 @@ const EmployeesPage = () => {
           if (response.success && response.data) {
             setDepartments(response.data);
           } else {
-            setDepartments(allDepartments.filter((dept: any) => 
+            setDepartments(allDepartments.filter((dept: any) =>
               dept.company_id && String(dept.company_id) === companyId
             ));
           }
         } catch (error: any) {
-          setDepartments(allDepartments.filter((dept: any) => 
+          setDepartments(allDepartments.filter((dept: any) =>
             dept.company_id && String(dept.company_id) === companyId
           ));
         } finally {
@@ -163,7 +257,7 @@ const EmployeesPage = () => {
   // Helper function to update URL with current filters
   const updateURL = (filters: any, page: number, sortKey?: string, sortDir?: string, perPage?: number) => {
     const params = new URLSearchParams();
-    
+
     // Add all filter parameters
     Object.entries(filters).forEach(([key, value]) => {
       if (value !== null && value !== undefined && value !== '') {
@@ -193,15 +287,15 @@ const EmployeesPage = () => {
     const rawSort = searchParams.get('sort') || null;
     const urlSort =
       rawSort === 'first_name' ? 'employee_name' :
-      rawSort === 'manager' ? 'manager_name' :
-      rawSort;
+        rawSort === 'manager' ? 'manager_name' :
+          rawSort;
     const urlDirection = searchParams.get('direction') as 'ASC' | 'DESC' || 'ASC';
     const urlLimit = parseInt(searchParams.get('limit') || '10');
 
     // Load all filter parameters
     const firstName = searchParams.get('first_name');
     const email = searchParams.get('email');
-  const city = searchParams.get('city');
+    const city = searchParams.get('city');
     const departmentIds = searchParams.get('department_ids');
     const manager = searchParams.get('manager');
     const identityNo = searchParams.get('identity_no');
@@ -216,7 +310,7 @@ const EmployeesPage = () => {
     // Set filter states
     if (firstName) urlFilters.first_name = firstName;
     if (email) urlFilters.email = email;
-  if (city) urlFilters.city = city;
+    if (city) urlFilters.city = city;
     if (departmentIds) urlFilters.department_ids = departmentIds.split(',');
     if (manager) urlFilters.manager = manager;
     if (identityNo) urlFilters.identity_no = identityNo;
@@ -293,9 +387,19 @@ const EmployeesPage = () => {
     // Load filters from URL on initial mount
     if (isInitialLoad.current) {
       isInitialLoad.current = false;
-      
+
+      // ── If we have a fresh cache (back-navigation), skip the API call ──
+      if (restoredFromCache.current) {
+        // State is already pre-populated from cache above.
+        // Just allow autoFilter to watch for future changes.
+        setTimeout(() => {
+          isReady.current = true;
+        }, 300);
+        return;
+      }
+
       const urlData = loadFiltersFromURL();
-      
+
       // Set all states from URL
       setFilterParams({
         first_name: urlData.filters.first_name || '',
@@ -308,16 +412,16 @@ const EmployeesPage = () => {
         marital_status: urlData.filters.marital_status || '',
         grade_id: urlData.filters.grade_id || ''
       });
-      
+
       setQuickSearchParams({
         company_id: urlData.company_id || '',
         department_ids: urlData.department_ids || '',
         jobTitle: urlData.jobTitle
       });
-      
+
       setStatusFilter(urlData.status);
       setItemsPerPage(urlData.limit);
-      
+
       if (urlData.sort) {
         setSortConfig({
           key: urlData.sort as string,
@@ -330,7 +434,7 @@ const EmployeesPage = () => {
         ...urlData.filters,
         status: urlData.status
       };
-      
+
       if (urlData.company_id) allFilters.company_id = urlData.company_id;
       if (urlData.department_ids) allFilters.department_ids = urlData.department_ids;
       if (urlData.jobTitle) allFilters.jobTitle = urlData.jobTitle;
@@ -351,16 +455,16 @@ const EmployeesPage = () => {
   }, []);
 
   const handleQuickSearchChange = (name: 'company_id' | 'department_ids' | 'jobTitle', value: string) => {
-    setQuickSearchParams(prev => {
+    setQuickSearchParams((prev: { company_id: string; department_ids: string; jobTitle: string }) => {
       const nextState = {
         ...prev,
         [name]: value
       };
-      
+
       if (name === 'company_id' && prev.company_id !== value) {
         nextState.department_ids = '';
       }
-      
+
       return nextState;
     });
   };
@@ -394,14 +498,14 @@ const EmployeesPage = () => {
           acc['department_ids'] = value.join(',');
         }
       } else if (value && value.toString().trim() !== '') {
-          const strValue = value.toString().trim();
-          // Minimum 3 characters rule for text-based real-time filters
-          if ((key === 'first_name' || key === 'manager' || key === 'city') && strValue.length > 0 && strValue.length < 3) {
-            // Ignore filter if less than 3 characters
-          } else {
-            acc[key] = strValue;
-          }
+        const strValue = value.toString().trim();
+        // Minimum 3 characters rule for text-based real-time filters
+        if ((key === 'first_name' || key === 'manager' || key === 'city') && strValue.length > 0 && strValue.length < 3) {
+          // Ignore filter if less than 3 characters
+        } else {
+          acc[key] = strValue;
         }
+      }
       return acc;
     }, {} as Record<string, any>);
 
@@ -446,6 +550,9 @@ const EmployeesPage = () => {
         ...quickFilters
       };
 
+      // Invalidate cache on new filter/search
+      _employeeListCache = null;
+
       // Update URL with current filters
       updateURL(allFilters, 1, sortConfig.key || undefined, sortConfig.direction, itemsPerPage);
 
@@ -457,9 +564,9 @@ const EmployeesPage = () => {
     quickSearchParams.company_id,
     quickSearchParams.department_ids,
     quickSearchParams.jobTitle,
-  filterParams.first_name,
-  filterParams.city,
-  filterParams.email,
+    filterParams.first_name,
+    filterParams.city,
+    filterParams.email,
     departmentIdsStr,
     filterParams.manager,
     filterParams.identity_no,
@@ -470,7 +577,7 @@ const EmployeesPage = () => {
   ]);
 
   const handleFilterChange = (name: string, value: string | string[]) => {
-    setFilterParams(prev => ({
+    setFilterParams((prev: typeof filterParams) => ({
       ...prev,
       [name]: value
     }));
@@ -486,6 +593,9 @@ const EmployeesPage = () => {
       ...quickFilters
     };
 
+    // Invalidate cache on manual filter apply
+    _employeeListCache = null;
+
     // Update URL with current filters
     updateURL(allFilters, 1, sortConfig.key || undefined, sortConfig.direction, itemsPerPage);
 
@@ -494,6 +604,7 @@ const EmployeesPage = () => {
 
   const clearFilters = () => {
     skipNextAutoFilter.current = true;
+    _employeeListCache = null;
     setFilterParams({
       first_name: '',
       email: '',
@@ -513,10 +624,10 @@ const EmployeesPage = () => {
     setStatusFilter('ACTIVE'); // Reset to ACTIVE
     setSortConfig({ key: null, direction: 'ASC' });
     setItemsPerPage(10);
-    
+
     // Update URL to only have status=ACTIVE
     updateURL({ status: 'ACTIVE' }, 1, undefined, 'ASC', 10);
-    
+
     fetchEmployees(1, undefined, 'ASC', { status: 'ACTIVE' }, 10);
   };
 
@@ -568,6 +679,9 @@ const EmployeesPage = () => {
       ...quickFilters
     };
 
+    // Invalidate cache on sort
+    _employeeListCache = null;
+
     // Update URL with current filters and sorting
     updateURL(allFilters, 1, key, direction, itemsPerPage);
 
@@ -584,6 +698,8 @@ const EmployeesPage = () => {
   };
 
   const handleView = (employee: Employee) => {
+    // Save scroll position before navigating to detail
+    saveScroll();
     router.push(`/employees/${employee.id}`);
   };
 
@@ -603,6 +719,7 @@ const EmployeesPage = () => {
       try {
         await employeeService.delete(selectedEmployee.id);
         toast.success('Çalışan başarıyla silindi');
+        _employeeListCache = null;
         const activeFilters = getActiveFilters();
 
         const quickFilters = getQuickSearchFilters();
@@ -638,6 +755,7 @@ const EmployeesPage = () => {
 
   const handleModalSave = () => {
     // Apply current filters when refreshing after modal save
+    _employeeListCache = null;
     const activeFilters = getActiveFilters();
 
     const quickFilters = getQuickSearchFilters();
@@ -669,6 +787,9 @@ const EmployeesPage = () => {
       ...quickFilters
     };
 
+    // Invalidate cache on page change
+    _employeeListCache = null;
+
     // Update URL with current page
     updateURL(allFilters, newPage, sortConfig.key || undefined, sortConfig.direction, itemsPerPage);
 
@@ -688,6 +809,9 @@ const EmployeesPage = () => {
       ...activeFilters,
       ...quickFilters
     };
+
+    // Invalidate cache on page size change
+    _employeeListCache = null;
 
     // Update URL with new page size
     updateURL(allFilters, 1, sortConfig.key || undefined, sortConfig.direction, newPageSize);
@@ -920,7 +1044,6 @@ const EmployeesPage = () => {
                       <Table hover className="mb-0">
                         <thead>
                           <tr>
-                            <th>ID</th>
                             <th
                               onClick={() => handleSort('employee_name')}
                               className="sortable-header"
@@ -953,7 +1076,6 @@ const EmployeesPage = () => {
                           {employees.length ? (
                             employees.map((employee: Employee) => (
                               <tr key={employee.id}>
-                                <td>{employee.id}</td>
                                 <td>{employee.first_name} {employee.last_name}</td>
                                 <td>{employee.work_information?.company_name || '-'}</td>
                                 <td>{employee.work_information?.department_name || '-'}</td>
@@ -984,7 +1106,7 @@ const EmployeesPage = () => {
                             ))
                           ) : (
                             <tr>
-                              <td colSpan={7} className="text-center py-4">
+                              <td colSpan={6} className="text-center py-4">
                                 Veri bulunamadı
                               </td>
                             </tr>

@@ -28,11 +28,22 @@ export default function MissingInfoModal() {
         const checkProfile = async () => {
             if (!user) return;
             
+            // ADMIN rolüne sahip kullanıcılar veya çalışanı olmayan kullanıcılar için eksik bilgi kontrolü yapılmaz
+            if (user.roles?.includes('ADMIN')) {
+                setLoading(false);
+                return;
+            }
+            
             try {
                 const response = await employeeService.getMyProfile();
                 if (response.success && response.data) {
                     const profile = response.data;
                     setFullProfile(profile);
+
+                    if (!profile.id || profile.id === 0) {
+                        setLoading(false);
+                        return;
+                    }
                     
                     const isMissing = !profile.phone || 
                                      !profile.email || 
@@ -78,7 +89,7 @@ export default function MissingInfoModal() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         if (!formData.phone || !formData.email || !formData.address || !formData.emergency_contact_name || !formData.emergency_contact) {
             toast.error('Lütfen tüm zorunlu alanları doldurun.');
             return;
@@ -86,7 +97,7 @@ export default function MissingInfoModal() {
 
         try {
             setSaving(true);
-            
+
             // Merge with existing profile data to prevent nullifying existing fields
             const updateData = {
                 email: formData.email,
@@ -128,8 +139,8 @@ export default function MissingInfoModal() {
     }
 
     return (
-        <Modal 
-            show={show} 
+        <Modal
+            show={show}
             backdrop="static"
             keyboard={false}
             centered
@@ -158,35 +169,35 @@ export default function MissingInfoModal() {
                                         placeholder="(5XX) XXX XXXX"
                                         onAccept={(value) => handleMaskedInputChange('phone', String(value ?? ''))}
                                         overwrite
-                                        required 
+                                        required
                                     />
                                 </Form.Group>
                             </Col>
                             <Col md={6}>
                                 <Form.Group className="mb-3">
                                     <Form.Label>E-posta <span className="text-danger">*</span></Form.Label>
-                                    <Form.Control 
-                                        type="email" 
-                                        name="email" 
-                                        value={formData.email} 
-                                        onChange={handleInputChange} 
-                                        required 
+                                    <Form.Control
+                                        type="email"
+                                        name="email"
+                                        value={formData.email}
+                                        onChange={handleInputChange}
+                                        required
                                     />
                                 </Form.Group>
                             </Col>
                         </Row>
-                        
+
                         <Row>
                             <Col md={6}>
                                 <Form.Group className="mb-3">
                                     <Form.Label>Acil Durumda Erişilecek Kişi <span className="text-danger">*</span></Form.Label>
-                                    <Form.Control 
-                                        type="text" 
-                                        name="emergency_contact_name" 
-                                        value={formData.emergency_contact_name} 
-                                        onChange={handleInputChange} 
+                                    <Form.Control
+                                        type="text"
+                                        name="emergency_contact_name"
+                                        value={formData.emergency_contact_name}
+                                        onChange={handleInputChange}
                                         placeholder="Ad Soyad"
-                                        required 
+                                        required
                                     />
                                 </Form.Group>
                             </Col>
@@ -202,7 +213,7 @@ export default function MissingInfoModal() {
                                         placeholder="(5XX) XXX XXXX"
                                         onAccept={(value) => handleMaskedInputChange('emergency_contact', String(value ?? ''))}
                                         overwrite
-                                        required 
+                                        required
                                     />
                                 </Form.Group>
                             </Col>
@@ -210,14 +221,14 @@ export default function MissingInfoModal() {
 
                         <Form.Group className="mb-3">
                             <Form.Label>Adres <span className="text-danger">*</span></Form.Label>
-                            <Form.Control 
-                                as="textarea" 
+                            <Form.Control
+                                as="textarea"
                                 rows={3}
-                                name="address" 
-                                value={formData.address} 
-                                onChange={handleInputChange} 
+                                name="address"
+                                value={formData.address}
+                                onChange={handleInputChange}
                                 placeholder="Açık adresiniz"
-                                required 
+                                required
                             />
                         </Form.Group>
 
