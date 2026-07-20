@@ -181,9 +181,16 @@ const EmployeeDetailPage = () => {
   };
 
   const fetchEmployeeDetails = async () => {
+    if (!employeeId) return;
+    const idNum = parseInt(employeeId, 10);
+    if (isNaN(idNum)) {
+      toast.error("Geçersiz çalışan ID'si");
+      router.push('/employees');
+      return;
+    }
     try {
       setIsLoading(true);
-      const response = await employeeService.getById(parseInt(employeeId));
+      const response = await employeeService.getById(idNum);
 
       if (response?.data) {
         setEmployee(response.data);
