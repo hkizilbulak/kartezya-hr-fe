@@ -68,6 +68,38 @@ const CustomXAxisTick = (props: any) => {
     );
 };
 
+const CustomCompanyYAxisTick = (props: any) => {
+    const { x, y, payload } = props;
+    if (!payload || !payload.value) return null;
+
+    const companyName = String(payload.value);
+
+    return (
+        <g transform={`translate(${x},${y})`}>
+            <text
+                x={-10}
+                y={-4}
+                textAnchor="end"
+                fill="#475569"
+                fontSize={10.5}
+                fontWeight={600}
+            >
+                {companyName}
+            </text>
+            <text
+                x={-10}
+                y={10}
+                textAnchor="end"
+                fill="#db2777"
+                fontSize={9}
+                fontWeight={600}
+            >
+                Stajyer
+            </text>
+        </g>
+    );
+};
+
 const Home = () => {
     const { user } = useAuth();
     const router = useRouter();
@@ -1045,12 +1077,12 @@ const Home = () => {
                                         <BarChart layout="vertical" data={companyData} margin={{ top: 10, right: 30, left: 10, bottom: 5 }} barCategoryGap="30%" barGap={2}>
                                             <defs>
                                                 <linearGradient id="companyGrad" x1="0" y1="0" x2="1" y2="0">
-                                                    <stop offset="0%" stopColor="#14b8a6" stopOpacity={0.4} />
-                                                    <stop offset="100%" stopColor="#0d9488" stopOpacity={0.85} />
+                                                    <stop offset="0%" stopColor="#6366f1" stopOpacity={0.4} />
+                                                    <stop offset="100%" stopColor="#4f46e5" stopOpacity={0.85} />
                                                 </linearGradient>
                                                 <linearGradient id="internCompanyGrad" x1="0" y1="0" x2="1" y2="0">
-                                                    <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.3} />
-                                                    <stop offset="100%" stopColor="#d97706" stopOpacity={0.7} />
+                                                    <stop offset="0%" stopColor="#f472b6" stopOpacity={0.3} />
+                                                    <stop offset="100%" stopColor="#db2777" stopOpacity={0.7} />
                                                 </linearGradient>
                                             </defs>
                                             <CartesianGrid stroke="#f1f5f9" horizontal={false} />
@@ -1060,38 +1092,35 @@ const Home = () => {
                                                 dataKey="company_name"
                                                 axisLine={false}
                                                 tickLine={false}
-                                                tick={{ fill: '#475569', fontSize: 10.5, fontWeight: 600 }}
-                                                width={90}
+                                                tick={(tickProps: any) => (
+                                                    <CustomCompanyYAxisTick
+                                                        {...tickProps}
+                                                        companyData={companyData}
+                                                    />
+                                                )}
+                                                width={100}
                                             />
 
-                                            <Bar
+                                             <Bar
                                                 dataKey="count"
                                                 name="Çalışan"
                                                 fill="url(#companyGrad)"
                                                 radius={[0, 6, 6, 0]}
-                                                maxBarSize={26}
+                                                barSize={16}
                                                 background={{ fill: '#f8fafc', radius: [0, 6, 6, 0] }}
                                             >
-                                                <LabelList dataKey="count" position="right" fill="#0d9488" fontSize={10} fontWeight={700} offset={8} />
+                                                <LabelList dataKey="count" position="right" fill="#4f46e5" fontSize={10} fontWeight={700} offset={8} />
                                             </Bar>
                                             <Bar
                                                 dataKey="internCount"
                                                 name="Stajyer"
                                                 fill="url(#internCompanyGrad)"
                                                 radius={[0, 6, 6, 0]}
-                                                maxBarSize={14}
+                                                barSize={16}
                                                 minPointSize={2}
-                                                background={{ fill: '#fefce8', radius: [0, 6, 6, 0] }}
+                                                background={{ fill: '#fdf2f8', radius: [0, 6, 6, 0] }}
                                             >
-                                                <LabelList
-                                                    dataKey="internCount"
-                                                    position="right"
-                                                    fill="#d97706"
-                                                    fontSize={9}
-                                                    fontWeight={700}
-                                                    offset={8}
-                                                    formatter={(value: number) => value}
-                                                />
+                                                <LabelList dataKey="internCount" position="right" fill="#db2777" fontSize={9} fontWeight={700} offset={8} />
                                             </Bar>
                                         </BarChart>
                                     </ResponsiveContainer>
@@ -1276,7 +1305,7 @@ const Home = () => {
                                                         zIndex: 1060
                                                     }}>
                                                         <div className="d-flex align-items-center gap-2 mb-2 pb-2" style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#fd7e14' }}></div>
+                                                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#db2777' }}></div>
                                                             <span className="fw-semibold text-dark" style={{ fontSize: '12px' }}>{item.department_name} ({item.company_name})</span>
                                                         </div>
                                                         <div className="d-flex flex-column gap-1 custom-scrollbar" style={{ maxHeight: '320px', overflowY: 'auto', paddingRight: '4px', scrollbarWidth: 'thin' }}>
@@ -1288,7 +1317,7 @@ const Home = () => {
                                                                         color: '#334155',
                                                                         fontWeight: 500
                                                                     }}>
-                                                                        <i className="fe fe-user text-warning" style={{ fontSize: '11px' }}></i>
+                                                                        <i className="fe fe-user" style={{ fontSize: '11px', color: '#db2777' }}></i>
                                                                         <span>{name}</span>
                                                                     </div>
                                                                 ))
@@ -1311,7 +1340,7 @@ const Home = () => {
                                                         e.currentTarget.style.transform = 'translateX(4px)';
                                                         e.currentTarget.style.background = 'rgba(255, 255, 255, 1)';
                                                         e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.05)';
-                                                        e.currentTarget.style.borderColor = 'rgba(253, 126, 20, 0.2)'; // Orange border
+                                                        e.currentTarget.style.borderColor = 'rgba(219, 39, 119, 0.2)';
                                                     }}
                                                     onMouseLeave={(e) => {
                                                         e.currentTarget.style.transform = 'translateX(0)';
@@ -1322,11 +1351,12 @@ const Home = () => {
                                                 >
                                                     <div className="d-flex align-items-center gap-3" style={{ minWidth: 0 }}>
                                                         <div
-                                                            className="d-flex align-items-center justify-content-center rounded-circle text-warning"
+                                                            className="d-flex align-items-center justify-content-center rounded-circle"
                                                             style={{
                                                                 width: '36px',
                                                                 height: '36px',
-                                                                background: 'rgba(253, 126, 20, 0.1)', // Orange background
+                                                                background: 'rgba(219, 39, 119, 0.1)',
+                                                                color: '#db2777',
                                                                 flexShrink: 0
                                                             }}
                                                         >
@@ -1342,12 +1372,13 @@ const Home = () => {
                                                         </div>
                                                     </div>
                                                     <div
-                                                        className="d-flex align-items-center justify-content-center fw-bold rounded-pill text-warning"
+                                                        className="d-flex align-items-center justify-content-center fw-bold rounded-pill"
                                                         style={{
                                                             minWidth: '28px',
                                                             height: '22px',
                                                             padding: '0 8px',
-                                                            background: 'rgba(253, 126, 20, 0.15)', // Orange badge
+                                                            background: 'rgba(219, 39, 119, 0.15)',
+                                                            color: '#db2777',
                                                             fontSize: '11px',
                                                             flexShrink: 0,
                                                             cursor: 'pointer'
