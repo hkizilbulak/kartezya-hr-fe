@@ -1,5 +1,5 @@
 import { BaseService, PaginatedResponse } from './base.service';
-import { Job, JobHistory, JobUpdateRequest } from '@/models/hr/job-models';
+import { Job, JobHistory, JobUpdateRequest, RunJobRequest } from '@/models/hr/job-models';
 import axiosInstance from '@/helpers/api/axiosInstance';
 
 class JobService extends BaseService<Job> {
@@ -30,8 +30,9 @@ class JobService extends BaseService<Job> {
   }
 
   // Trigger job manually
-  async runJob(id: number): Promise<{ message: string }> {
-    const response = await axiosInstance.post<{ message: string }>(`${this.baseUrl}/${id}/run`);
+  async runJob(id: number, payload?: RunJobRequest): Promise<{ message: string }> {
+    const body = payload?.reference_date ? { reference_date: payload.reference_date } : undefined;
+    const response = await axiosInstance.post<{ message: string }>(`${this.baseUrl}/${id}/run`, body);
     return response.data;
   }
 

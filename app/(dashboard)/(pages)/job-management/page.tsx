@@ -7,8 +7,8 @@ import { jobService } from '@/services/job.service';
 import { Job } from '@/models/hr/job-models';
 import { PageHeading } from '@/widgets';
 import LoadingOverlay from '@/components/LoadingOverlay';
-import DeleteModal from '@/components/DeleteModal';
 import JobModal from '@/components/modals/JobModal';
+import RunJobModal from '@/components/modals/RunJobModal';
 import { Edit, Clock, PlayCircle, ChevronUp, ChevronDown } from 'react-feather';
 import { toast } from 'react-toastify';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
@@ -89,14 +89,18 @@ const JobsPage = () => {
     setJobToRun(null);
   };
 
-  const handleRunConfirm = async () => {
+  const handleRunConfirm = async (referenceDate?: string) => {
     if (!jobToRun) return;
     if (runLoading) return;
 
     try {
       setRunLoading(true);
-      await jobService.runJob(jobToRun.id);
-      toast.success(`${jobToRun.name} başarıyla tetiklendi. Arka planda çalışıyor.`);
+      const payload = referenceDate ? { reference_date: referenceDate } : undefined;
+      await jobService.runJob(jobToRun.id, payload);
+      const suffix = referenceDate
+        ? ` (${referenceDate.split('-').reverse().join('.')} tarihi için)`
+        : '';
+      toast.success(`${jobToRun.name} başarıyla tetiklendi${suffix}. Arka planda çalışıyor.`);
       setShowRunConfirmModal(false);
       setJobToRun(null);
     } catch (error: any) {
@@ -246,16 +250,12 @@ const JobsPage = () => {
         )}
 
         {showRunConfirmModal && jobToRun && (
-          <DeleteModal
-            title="Görevi Çalıştır"
-            message={`"${jobToRun.name}" görevi çalıştırılacak. Devam etmek istediğinizden emin misiniz?`}
-            cancelLabel="Vazgeç"
-            confirmLabel="Çalıştır"
-            loadingLabel="Çalıştırılıyor..."
-            variant="success"
+          <RunJobModal
+            show={showRunConfirmModal}
+            job={jobToRun}
             loading={runLoading}
             onClose={handleCloseRunModal}
-            onHandleDelete={handleRunConfirm}
+            onConfirm={handleRunConfirm}
           />
         )}
       </Container>

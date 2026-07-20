@@ -59,7 +59,14 @@ export const translateErrorMessage = (error: string): string => {
     'Phone already exists': 'Bu telefon numarası zaten kullanılıyor',
     
     // URL hataları
-    'Invalid URL format': 'Geçersiz URL formatı'
+    'Invalid URL format': 'Geçersiz URL formatı',
+
+    // Job run hataları
+    'Bu görev seçilen tarih için daha önce başarıyla çalıştırılmış.': 'Bu görev seçilen tarih için daha önce başarıyla çalıştırılmış.',
+    'Bu görev seçilen tarih için halen çalışıyor.': 'Bu görev seçilen tarih için halen çalışıyor.',
+    'Bu görev seçilen tarih için daha önce başarıyla çalıştırılmış veya halen çalışıyor.': 'Bu görev seçilen tarih için daha önce başarıyla çalıştırılmış veya halen çalışıyor.',
+    'Bu görev geçmiş tarih için çalıştırılamaz.': 'Bu görev geçmiş tarih için çalıştırılamaz.',
+    'reference_date cannot be in the future': 'Referans tarihi gelecekte olamaz',
   };
 
   // Önce tam eşleşme ara (büyük/küçük harf duyarlı olmadan)

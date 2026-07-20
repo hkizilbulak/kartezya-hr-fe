@@ -158,6 +158,14 @@ const JobHistoryPage = () => {
     return `${mins} dk ${secs} sn`;
   };
 
+  const formatReferenceDate = (value?: string) => {
+    if (!value) return '-';
+    const datePart = value.split('T')[0];
+    const [year, month, day] = datePart.split('-');
+    if (!year || !month || !day) return '-';
+    return `${day}.${month}.${year}`;
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'SUCCESS':
@@ -206,6 +214,7 @@ const JobHistoryPage = () => {
                             <th className="sortable-header" style={{ cursor: 'pointer' }} onClick={() => handleSort('start_time')}>
                               Başlangıç {getSortIcon('start_time')}
                             </th>
+                            <th>Referans Tarihi</th>
                             <th className="sortable-header" style={{ cursor: 'pointer' }} onClick={() => handleSort('end_time')}>
                               Bitiş {getSortIcon('end_time')}
                             </th>
@@ -224,6 +233,7 @@ const JobHistoryPage = () => {
                             history.map((item: JobHistory) => (
                               <tr key={item.id}>
                                 <td>{new Date(item.start_time).toLocaleString()}</td>
+                                <td>{formatReferenceDate(item.reference_date)}</td>
                                 <td>{item.end_time ? new Date(item.end_time).toLocaleString() : '-'}</td>
                                 <td>{calculateDuration(item.start_time, item.end_time)}</td>
                                 <td>{item.processed_count}</td>
@@ -242,7 +252,7 @@ const JobHistoryPage = () => {
                             ))
                           ) : (
                             <tr>
-                              <td colSpan={6} className="text-center py-4">
+                              <td colSpan={7} className="text-center py-4">
                                 <div className="text-muted">
                                   <p className="mb-0">Bu görev için çalışma geçmişi bulunamadı.</p>
                                 </div>

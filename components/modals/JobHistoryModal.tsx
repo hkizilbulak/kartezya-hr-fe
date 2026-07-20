@@ -8,6 +8,25 @@ interface JobHistoryModalProps {
   onHide: () => void;
 }
 
+const EXECUTION_TYPE_LABELS: Record<string, string> = {
+  scheduled: 'Zamanlanmış',
+  manual: 'Manuel',
+  manual_backfill: 'Geriye Dönük Manuel',
+};
+
+function formatReferenceDate(value?: string): string {
+  if (!value) return '-';
+  const datePart = value.split('T')[0];
+  const [year, month, day] = datePart.split('-');
+  if (!year || !month || !day) return '-';
+  return `${day}.${month}.${year}`;
+}
+
+function getExecutionTypeLabel(value?: string): string {
+  if (!value) return '-';
+  return EXECUTION_TYPE_LABELS[value] || value;
+}
+
 const JobHistoryModal = ({ show, history, onHide }: JobHistoryModalProps) => {
   return (
     <Modal show={show} onHide={onHide} size="lg" centered>
@@ -29,6 +48,15 @@ const JobHistoryModal = ({ show, history, onHide }: JobHistoryModalProps) => {
         </div>
         <div className="mb-3">
           <strong>İşlenen Kayıt Sayısı:</strong> {history?.processed_count}
+        </div>
+        <div className="mb-3">
+          <strong>Referans Tarihi:</strong> {formatReferenceDate(history?.reference_date)}
+        </div>
+        <div className="mb-3">
+          <strong>Çalıştırma Türü:</strong> {getExecutionTypeLabel(history?.execution_type)}
+        </div>
+        <div className="mb-3">
+          <strong>Çalıştıran Kullanıcı:</strong> {history?.triggered_by_user_id ?? '-'}
         </div>
         {history?.execution_node && (
           <div className="mb-3">
