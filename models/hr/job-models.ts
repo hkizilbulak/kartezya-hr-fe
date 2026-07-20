@@ -18,7 +18,14 @@ export interface JobHistory {
   status: string;
   error_summary?: string;
   execution_node?: string;
+  reference_date?: string;
+  execution_type?: string;
+  triggered_by_user_id?: number;
   job?: Job;
+}
+
+export interface RunJobRequest {
+  reference_date?: string;
 }
 
 export interface JobUpdateRequest {
