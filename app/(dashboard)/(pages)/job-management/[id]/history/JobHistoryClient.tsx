@@ -1,6 +1,6 @@
 "use client";
-import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useState, useEffect, useMemo } from 'react';
+import { useParams, useRouter, usePathname } from 'next/navigation';
 import { Row, Col, Card, Table, Button, Badge, Container } from 'react-bootstrap';
 import { jobService } from '@/services/job.service';
 import { Job, JobHistory } from '@/models/hr/job-models';
@@ -16,8 +16,20 @@ import '@/styles/components/table-common.scss';
 type HistorySortKey = 'start_time' | 'end_time' | 'processed_count' | 'status';
 
 const JobHistoryPage = () => {
-  const { id } = useParams();
+  const params = useParams();
+  const pathname = usePathname();
   const router = useRouter();
+
+  const id = useMemo(() => {
+    if (typeof window !== 'undefined') {
+      const parts = window.location.pathname.split('/').filter(Boolean);
+      const idx = parts.indexOf('job-management');
+      if (idx !== -1 && parts[idx + 1]) {
+        return parts[idx + 1];
+      }
+    }
+    return (params?.id as string) || '';
+  }, [params?.id, pathname]);
 
   const [job, setJob] = useState<Job | null>(null);
   const [history, setHistory] = useState<JobHistory[]>([]);

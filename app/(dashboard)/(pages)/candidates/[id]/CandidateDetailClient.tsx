@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Row,
   Col,
@@ -9,7 +9,7 @@ import {
   Badge,
   Container,
 } from 'react-bootstrap';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, usePathname } from 'next/navigation';
 import { cvSearchService } from '@/services/cv-search.service';
 import type { CandidateDetail, Interview } from '@/models/cv-search/cv-search.models';
 import { PageHeading } from '@/widgets';
@@ -67,8 +67,21 @@ const interviewTypeLabel = (type: string): string => {
 
 const CandidateDetailPage = () => {
   const params = useParams();
+  const pathname = usePathname();
   const router = useRouter();
-  const candidateId = Number(params?.id);
+
+  const candidateIdStr = useMemo(() => {
+    if (typeof window !== 'undefined') {
+      const parts = window.location.pathname.split('/').filter(Boolean);
+      const idx = parts.indexOf('candidates');
+      if (idx !== -1 && parts[idx + 1]) {
+        return parts[idx + 1];
+      }
+    }
+    return (params?.id as string) || '';
+  }, [params?.id, pathname]);
+
+  const candidateId = Number(candidateIdStr);
 
   const [candidate, setCandidate] = useState<CandidateDetail | null>(null);
   const [loading, setLoading] = useState(false);

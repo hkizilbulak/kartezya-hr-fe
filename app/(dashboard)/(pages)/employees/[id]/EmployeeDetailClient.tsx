@@ -1,6 +1,6 @@
 "use client";
-import { useState, useEffect, useRef } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { useRouter, useParams, usePathname } from 'next/navigation';
 import { Container, Spinner, Row, Col, Card, Button, Nav, Tab, Form, Table } from 'react-bootstrap';
 import { employeeService, workInformationService, employeeGradeService, employeeContractService, lookupService } from '@/services';
 import { Employee, EmployeeWorkInformation } from '@/models/hr/hr-models';
@@ -34,7 +34,18 @@ import { Capability, hasCapability } from '@/lib/authz/capabilities';
 const EmployeeDetailPage = () => {
   const router = useRouter();
   const params = useParams();
-  const employeeId = params.id as string;
+  const pathname = usePathname();
+
+  const employeeId = useMemo(() => {
+    if (typeof window !== 'undefined') {
+      const parts = window.location.pathname.split('/').filter(Boolean);
+      const idx = parts.indexOf('employees');
+      if (idx !== -1 && parts[idx + 1]) {
+        return parts[idx + 1];
+      }
+    }
+    return (params?.id as string) || '';
+  }, [params?.id, pathname]);
   const { user } = useAuth();
   const canManageEmployees = hasCapability(user?.roles, Capability.CanManageEmployees);
   const isActorAdmin = !!user?.roles?.includes(UserRole.ADMIN);
