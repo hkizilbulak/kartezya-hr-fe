@@ -142,9 +142,15 @@ const Home = () => {
 
     const COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2'];
     const GENDER_COLORS: Record<string, string> = {
-        'Erkek': '#3b82f6',
-        'Kadın': '#ec4899',
-        'Belirsiz': '#94a3b8'
+        'Erkek': 'url(#genderMaleGrad)',
+        'Kadın': 'url(#genderFemaleGrad)',
+        'Belirsiz': 'url(#genderOtherGrad)'
+    };
+
+    const GENDER_LEGEND_COLORS: Record<string, string> = {
+        'Erkek': '#4f46e5',
+        'Kadın': '#db2777',
+        'Belirsiz': '#64748b'
     };
 
     const [initialized, setInitialized] = useState(false);
@@ -1437,6 +1443,20 @@ const Home = () => {
                                                 <div className="position-relative" style={{ width: '100%', height: '220px' }}>
                                                     <ResponsiveContainer width="100%" height="100%">
                                                         <PieChart>
+                                                            <defs>
+                                                                <linearGradient id="genderMaleGrad" x1="0" y1="0" x2="1" y2="1">
+                                                                    <stop offset="0%" stopColor="#6366f1" stopOpacity={0.7} />
+                                                                    <stop offset="100%" stopColor="#4f46e5" stopOpacity={0.95} />
+                                                                </linearGradient>
+                                                                <linearGradient id="genderFemaleGrad" x1="0" y1="0" x2="1" y2="1">
+                                                                    <stop offset="0%" stopColor="#ec4899" stopOpacity={0.7} />
+                                                                    <stop offset="100%" stopColor="#db2777" stopOpacity={0.95} />
+                                                                </linearGradient>
+                                                                <linearGradient id="genderOtherGrad" x1="0" y1="0" x2="1" y2="1">
+                                                                    <stop offset="0%" stopColor="#94a3b8" stopOpacity={0.7} />
+                                                                    <stop offset="100%" stopColor="#64748b" stopOpacity={0.95} />
+                                                                </linearGradient>
+                                                            </defs>
                                                             <Pie
                                                                 data={genderData}
                                                                 cx="50%"
@@ -1462,11 +1482,11 @@ const Home = () => {
 
                                                 <div className="d-flex flex-column align-items-start gap-2 mt-2" style={{ width: 'fit-content' }}>
                                                     {genderData.map((entry, index) => {
-                                                        const color = GENDER_COLORS[entry.gender] || COLORS[index % COLORS.length];
+                                                        const legendColor = GENDER_LEGEND_COLORS[entry.gender] || COLORS[index % COLORS.length];
                                                         const pct = floors[index];
                                                         return (
                                                             <div key={index} className="d-flex align-items-center gap-2">
-                                                                <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: color, flexShrink: 0 }}></div>
+                                                                <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: legendColor, flexShrink: 0 }}></div>
                                                                 <span className="text-muted fw-semibold" style={{ fontSize: '13.5px' }}>
                                                                     {entry.gender}: <strong className="text-dark">{entry.count} ({pct}%)</strong>
                                                                 </span>
