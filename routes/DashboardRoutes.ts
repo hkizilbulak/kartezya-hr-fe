@@ -46,7 +46,7 @@ export const DashboardMenu: IMenuProps[] = [
             },
             {
                 id: 'other-requests',
-                link: '/other-requests',
+                link: '/my-requests/other',
                 name: 'Diğer Taleplerim'
             }
         ]
