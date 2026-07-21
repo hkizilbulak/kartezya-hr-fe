@@ -98,8 +98,8 @@ const NavbarVertical = (props: IProps) => {
 		
 		return (
 			<li className="nav-item">
-				<Link
-					href="#"
+				<button
+					type="button"
 					className="nav-link "
 					onClick={decoratedOnClick}
 					data-bs-toggle="collapse"
@@ -108,7 +108,7 @@ const NavbarVertical = (props: IProps) => {
 					aria-controls="navDashboard">
 					{icon ? <i className={`nav-icon fe fe-${icon} me-2`}></i> : ''}{' '}
 					{children}
-				</Link>
+				</button>
 			</li>
 		);
 	};
@@ -119,8 +119,8 @@ const NavbarVertical = (props: IProps) => {
 		);
 		const isCurrentEventKey = activeEventKey === eventKey;
 		return (
-			(<Link
-				href="#"
+			(<button
+				type="button"
 				className="nav-link "
 				onClick={decoratedOnClick}
 				data-bs-toggle="collapse"
@@ -128,19 +128,18 @@ const NavbarVertical = (props: IProps) => {
 				aria-expanded={isCurrentEventKey ? true : false}
 				aria-controls="navDashboard">
 				{children}
-			</Link>)
+			</button>)
 		);
 	};
 
 	const generateLink = (item: IMenuProps) => {
+		if (!item.link) return null;
 		return (
-			(<a
+			(<Link
 				href={item.link}
 				className={`nav-link ${location === item.link ? 'active' : ''
 					}`}
-				onClick={(e) =>
-					isMobile ? props.onClick(!props.showMenu) : props.showMenu
-				}>
+				onClick={() => (isMobile ? props.onClick(!props.showMenu) : props.showMenu)}>
 
 				{item.name}
 				{''}
@@ -155,7 +154,7 @@ const NavbarVertical = (props: IProps) => {
 					''
 				)}
 
-			</a>)
+			</Link>)
 		);
 	};
 
@@ -304,7 +303,7 @@ const NavbarVertical = (props: IProps) => {
 								return (
 									<Card bsPrefix="nav-item" key={index}>
 										{/* menu item without any childern items like Documentation and Changelog items*/}
-										<a href={menu.link} className={`nav-link ${location === menu.link ? 'active' : ''}`}>
+										<Link href={menu.link!} className={`nav-link ${location === menu.link ? 'active' : ''}`}>
 											{typeof menu.icon === 'string' ? (
 												<i className={`nav-icon fe fe-${menu.icon} me-2`}></i>
 											) : (menu.icon)}
@@ -314,7 +313,7 @@ const NavbarVertical = (props: IProps) => {
 													{menu.badge}
 												</Badge>
 											) : ('')}
-										</a>
+										</Link>
 										{/* end of menu item without any childern items */}
 									</Card>
 								);

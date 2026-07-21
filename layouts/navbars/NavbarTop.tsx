@@ -1,6 +1,5 @@
 // import node module libraries
 import { Menu } from 'react-feather';
-import Link from 'next/link';
 import {
 	Nav,
 	Navbar,
@@ -20,13 +19,13 @@ const NavbarTop = (props: IProps) => {
 		<Navbar expand="lg" className="navbar-classic navbar navbar-expand-lg">
 			<div className='d-flex justify-content-between w-100'>
 				<div className="d-flex align-items-center">
-					<Link
-						href="#"
+					<button
+						type="button"
 						id="nav-toggle"
-						className="nav-icon me-2 icon-xs"
+						className="nav-icon me-2 icon-xs border-0 bg-transparent p-0"
 						onClick={() => props.onToggleSidebarMenu(!props.showMenu)}>
 						<Menu size="18px" />
-					</Link>
+					</button>
 				</div>
 				{/* Quick Menu */}
 				<Nav className="navbar-right-wrap ms-2 d-flex nav-top-wrap">

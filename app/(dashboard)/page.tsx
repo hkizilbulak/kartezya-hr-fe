@@ -8,6 +8,7 @@ import { leaveRequestService } from "@/services/leave-request.service";
 import { leaveBalanceService } from "@/services/leave-balance.service";
 import { employeeService } from "@/services/employee.service";
 import { LeaveRequest, LeaveBalance } from "@/models/hr/hr-models";
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import LoadingOverlay from "@/components/LoadingOverlay";
 import EventsWidget from '@/components/widgets/EventsWidget';
@@ -619,9 +620,9 @@ const Home = () => {
                         <Col lg={6} md={12} xs={12} className="mb-6">
                             <div className="d-flex justify-content-between align-items-center mb-3">
                                 <h6 style={{ fontWeight: 700, fontSize: '16px', margin: 0 }}>Bekleyen İzin Taleplerim</h6>
-                                <a href="/my-requests/leave" className="text-decoration-none" style={{ fontSize: '14px', fontWeight: 500 }}>
+                                <Link href="/my-requests/leave" className="text-decoration-none" style={{ fontSize: '14px', fontWeight: 500 }}>
                                     Tümü →
-                                </a>
+                                </Link>
                             </div>
                             <Card className="border-0 shadow-sm">
                                 <Card.Body className="p-0">

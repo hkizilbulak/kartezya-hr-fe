@@ -33,9 +33,10 @@ const QuickMenu = () => {
             <ListGroup as="ul" bsPrefix='navbar-nav' className="navbar-right-wrap ms-auto d-flex nav-top-wrap">
                 <Dropdown as="li" className="ms-2">
                     <Dropdown.Toggle
-                        as="a"
+                        as="button"
+                        type="button"
                         bsPrefix=' '
-                        className="rounded-circle"
+                        className="rounded-circle border-0 bg-transparent p-0"
                         id="dropdownUser">
                         <div className="avatar avatar-md avatar-indicators">
                             {user?.avatar ? (
@@ -93,9 +94,10 @@ const QuickMenu = () => {
             <ListGroup as="ul" bsPrefix='navbar-nav' className="navbar-right-wrap ms-auto d-flex nav-top-wrap">
                 <Dropdown as="li" className="ms-2">
                     <Dropdown.Toggle
-                        as="a"
+                        as="button"
+                        type="button"
                         bsPrefix=' '
-                        className="rounded-circle"
+                        className="rounded-circle border-0 bg-transparent p-0"
                         id="dropdownUser">
                         <div className="avatar avatar-md avatar-indicators">
                             {user?.avatar ? (

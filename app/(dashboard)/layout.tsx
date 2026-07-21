@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import '@/styles/theme.scss';
 import { useAuth } from "@/hooks/useAuth";
 import { useRouter, usePathname } from "next/navigation";
@@ -54,18 +54,40 @@ export default function DashboardLayout({
   const router = useRouter();
   const pathname = usePathname();
 
-  useEffect(() => {
-    if (!isLoading && !user) {
-      router.replace('/login');
-    }
-  }, [isLoading, user, router]);
+  const redirectKeyRef = useRef<string | null>(null);
 
-  if (isLoading || !user) {
+  useEffect(() => {
+    if (isLoading) return;
+
+    // Auth hydration tamamlanmadan redirect etme.
+    if (!user) {
+      const key = `login:${pathname}`;
+      if (redirectKeyRef.current !== key && pathname !== '/login') {
+        redirectKeyRef.current = key;
+        router.replace('/login');
+      }
+      return;
+    }
+
+    // Yetki reddi: render içinde değil, effect içinde redirect.
+    if (!isRouteAllowed(pathname, user.roles ?? [])) {
+      const key = `denied:${pathname}`;
+      if (redirectKeyRef.current !== key && pathname !== '/') {
+        redirectKeyRef.current = key;
+        router.replace('/');
+      }
+    }
+  }, [isLoading, user, pathname, router]);
+
+  if (isLoading) {
+    return <Loading />;
+  }
+
+  if (!user) {
     return <Loading />;
   }
 
   if (!isRouteAllowed(pathname, user.roles ?? [])) {
-    router.replace('/');
     return null;
   }
 

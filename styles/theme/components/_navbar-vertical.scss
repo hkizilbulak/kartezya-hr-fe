@@ -43,6 +43,12 @@
   }
   .navbar-nav {
     .nav-item {
+      width: 100%;
+
+      > .accordion.navbar-nav {
+        width: 100%;
+      }
+
       .nav-link {
         padding: 0.5rem 1.5rem;
         display: flex;
@@ -74,20 +80,34 @@
       }
       .nav-link[data-bs-toggle="collapse"]{
         position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+        text-align: left;
+        border: none;
+        background: transparent;
+        padding-right: 3rem;
         &:after {
           display: block;
           content: "";
           background: url(../../../public/fonts/feather-icons/icons/chevron-down.svg);          
           font-family: Feather;
-          margin-left: auto;
           transition: 0.5s ease;
           position: absolute;
+          top: 50%;
           right: 1.5rem;
           height: 24px;
           width: 24px;
           -webkit-filter: brightness(0) invert(1);
           filter: brightness(0) invert(1);
-          transform: scale(0.7);
+          transform: translateY(-50%) scale(0.7);
+        }
+
+        &[aria-expanded="true"]:after {
+          transform: translateY(-50%) scale(0.7) rotate(180deg);
         }
 
       }
