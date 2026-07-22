@@ -1,0 +1,36 @@
+# AI context ignore — Kartezya HR Frontend
+# Cursor formatı; benzer exclude kuralları diğer AI araçlarına uyarlanabilir.
+# Source kod (app/, components/, lib/, services/, routes/, styles/) dışlanmadı.
+
+# Secrets — .env.example referans için açık bırakıldı
+.env
+.env.*
+!.env.example
+
+# Bağımlılıklar ve build çıktıları
+node_modules/
+.next/
+out/
+dist/
+build/
+coverage/
+.turbo/
+*.tsbuildinfo
+
+# Tracked binary ve build log (root)
+/server
+/.build-log.txt
+
+# Büyük binary assetler — SVG bilinçli olarak ignore edilmedi (ikon/path taskları)
+public/**/*.png
+public/**/*.jpg
+public/**/*.jpeg
+public/**/*.webp
+public/**/*.gif
+public/**/*.ico
+public/**/*.woff
+public/**/*.woff2
+public/**/*.ttf
+public/**/*.otf
+
+# package-lock.json bilinçli olarak ignore edilmedi (dependency taskları için gerekebilir)
