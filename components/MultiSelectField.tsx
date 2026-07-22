@@ -57,9 +57,16 @@ const MultiSelectField: React.FC<MultiSelectFieldProps> = ({
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
+      const selectElement = selectRef.current;
+      const dropdownElement = dropdownRef.current;
+      
+      if (selectElement && selectElement.contains(event.target as Node)) {
+        return;
       }
+      if (dropdownElement && dropdownElement.contains(event.target as Node)) {
+        return;
+      }
+      setIsOpen(false);
     };
 
     if (isOpen) {
@@ -192,7 +199,7 @@ const MultiSelectField: React.FC<MultiSelectFieldProps> = ({
     <div className="position-relative">
       <div
         ref={selectRef}
-        className={`form-control d-flex align-items-center justify-content-between ${
+        className={`form-control position-relative d-flex align-items-center justify-content-between ${
           disabled || loading ? 'disabled' : ''
         } ${!disabled && !loading ? 'cursor-pointer' : ''}`}
         onClick={handleToggle}
