@@ -840,7 +840,7 @@ const EmployeesPage = () => {
             <Card className="border-0 shadow-sm">
               <Card.Body>
                 {/* Hızlı Filtreler */}
-                <Row className="g-3 align-items-end mb-3">
+                <Row className="g-3 align-items-start mb-3">
                   <Col lg={3} md={6} sm={12}>
                     <FormTextField
                       controlId="filter-first-name"
@@ -881,7 +881,7 @@ const EmployeesPage = () => {
                         }))}
                         disabled={departmentsLoading || !quickSearchParams.company_id}
                         loading={departmentsLoading}
-                        placeholder={!quickSearchParams.company_id ? "Doldurmak için Önce Şirket Seçiniz" : "Departman seçiniz"}
+                        placeholder={!quickSearchParams.company_id ? "Önce şirket seçiniz" : "Departman seçiniz"}
                       />
                     </Form.Group>
                   </Col>
@@ -906,7 +906,7 @@ const EmployeesPage = () => {
                 {showFilters && (
                   <>
                     <hr className="my-3 text-muted opacity-25" />
-                    <Row className="g-3 align-items-end mb-3">
+                    <Row className="g-3 align-items-start mb-3">
                       <Col lg={3} md={6} sm={12}>
                         <FormTextField
                           controlId="filter-email"
