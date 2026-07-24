@@ -2,6 +2,7 @@ import { PagedResponse } from '../common';
 
 export enum ContractStatus {
   PendingProposal = 'PENDING_PROPOSAL',
+  ProposalSent = 'PROPOSAL_SENT',
   AwaitingResponse = 'AWAITING_RESPONSE',
   Approved = 'APPROVED',
   Rejected = 'REJECTED',

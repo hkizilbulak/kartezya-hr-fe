@@ -210,6 +210,7 @@ export default function ContractsPage() {
                   >
                     <option value="">Tümü</option>
                     <option value={ContractStatus.PendingProposal}>Teklif Aşamasında</option>
+                    <option value={ContractStatus.ProposalSent}>Teklif İletildi</option>
                     <option value={ContractStatus.AwaitingResponse}>Yanıt Bekleniyor</option>
                     <option value={ContractStatus.Approved}>Onaylandı</option>
                     <option value={ContractStatus.Rejected}>Reddedildi</option>
@@ -286,6 +287,7 @@ export default function ContractsPage() {
                                 contract.status === ContractStatus.Approved ? 'bg-info' :
                                 contract.status === ContractStatus.Rejected ? 'bg-warning text-dark' :
                                 contract.status === ContractStatus.AwaitingResponse ? 'bg-light-warning text-dark' :
+                                contract.status === ContractStatus.ProposalSent ? 'bg-secondary' :
                                 'bg-secondary'
                               }`}>
                                 {contract.status === ContractStatus.Active ? 'Aktif' :
@@ -294,6 +296,7 @@ export default function ContractsPage() {
                                  contract.status === ContractStatus.Approved ? 'Onaylandı' :
                                  contract.status === ContractStatus.Rejected ? 'Reddedildi' :
                                  contract.status === ContractStatus.PendingProposal ? 'Teklif Aşamasında' :
+                                 contract.status === ContractStatus.ProposalSent ? 'Teklif İletildi' :
                                  contract.status === ContractStatus.AwaitingResponse ? 'Yanıt Bekleniyor' :
                                  contract.status || '-'}
                               </span>
