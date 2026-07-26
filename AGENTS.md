@@ -1,91 +1,91 @@
 # AGENTS.md — Kartezya HR Frontend
 
-Araçtan bağımsız AI coding kuralları. Bu dosya frontend repo için tek başına yeterlidir; backend dosyalarının varlığını varsayma.
-Otomatik yükleme araçlara bağlıdır; tüm AI araçlarında kesin çalıştığı iddia edilmez.
+Tool-agnostic AI coding rules. This file is self-sufficient for the frontend repo; do not assume backend files exist.
+Automatic loading depends on the tool; this is not guaranteed to work in every AI tool.
 
 ## A. Instruction hierarchy
 
-- Root `AGENTS.md` project-wide normative source'tur; scoped `AGENTS.md` yalnız kendi klasörüne özgü kurallar ekler.
-- Adapter files bağımsız kural tanımlamaz ve ana kuralları kopyalamaz.
-- Kullanıcı talebi güvenlik/repo politikasını ihlal etmediği sürece uygulanır; kod gerçeği stale dokümandan üstündür.
+- Root `AGENTS.md` is the project-wide normative source; a nearer scoped `AGENTS.md`, if present, only adds rules specific to its own folder.
+- Adapter files must not define independent project rules and must not copy the main rules.
+- User requests apply unless they violate security or repository policy; code and repository reality take precedence over stale documentation.
 
-## B. Proje özeti
+## B. Project overview
 
 - **Framework:** Next.js 16 (App Router) · **UI:** React 19, TypeScript
-- **HTTP:** Axios (`services/`, `helpers/api/`) · **Stil:** Bootstrap, react-bootstrap, SCSS
-- **Authz UI:** `lib/authz/` · **Prod sunum:** static export (`out/`) + Go server (`main.go`, `build:go`)
+- **HTTP:** Axios (`services/`, `helpers/api/`) · **Styling:** Bootstrap, react-bootstrap, SCSS
+- **Authz UI:** `lib/authz/` · **Prod serving:** static export (`out/`) + Go server (`main.go`, `build:go`)
 
-## C. Navigasyon
+## C. Navigation
 
-- Uygulama içi geçişte `next/link` veya Next.js router; gereksiz native `<a href>` full reload yok.
-- Toggle/menü için `button type="button"`. Dış link ve bilinçli hard redirect istisna.
+- Use `next/link` or the Next.js router for in-app navigation; avoid unnecessary native `<a href>` full reloads.
+- Use `button type="button"` for toggles/menus. Real external links and intentional hard redirects are exceptions.
 
-## D. Task başlangıcı ve kök neden
+## D. Task start and root cause
 
-- İlgili UI/API akışını uçtan uca incele; semptomu bastırma, kök nedeni bul.
-- Yalnız gerekli dosyaları aç; bilinmeyeni tahmin etme; varsayımları belirt.
-- Loading, error ve empty state'i değerlendir; filter/sort/pagination'ı API contract ile uyumlu tut.
-- Risk sınıfını belirle (bkz. J). Net düşük/orta bugfixte gereksiz onay bekleme.
+- Inspect the relevant UI/API flow end to end before editing; do not mask symptoms, find the root cause.
+- Open only the files needed for the task; do not guess unknown behavior; state assumptions.
+- Evaluate loading, error and empty states; keep filter/sort/pagination consistent with the API contract.
+- Classify task risk (see J). For clearly low/medium bug fixes, do not wait for unnecessary approval.
 
-## E. Yetkilendirme
+## E. Authorization
 
-- Frontend guard ve UI gizleme **güvenlik sınırı değildir**; backend capability enforcement esastır.
-- Güncel kaynak: `lib/authz/capabilities.ts`. Roller: `ADMIN`, `HR`, `FINANCIAL`, `EMPLOYEE` — sabit listeyi nihai sayma; yaşayan koddan doğrula.
-- Capability sync için BE `internal/authz/capabilities.go` yalnız multi-root veya kullanıcı BE diff verdiyse; FE-only'da BE path varsayma.
+- Frontend guards and UI hiding are **not a security boundary**; backend capability enforcement is essential.
+- Current source: `lib/authz/capabilities.ts`. Roles: `ADMIN`, `HR`, `FINANCIAL`, `EMPLOYEE` — do not treat the fixed list as final; verify from living code.
+- For capability sync, use BE `internal/authz/capabilities.go` only in multi-root or when the user provides a BE file/diff; in FE-only do not assume a BE path.
 
-## F. Kod kapsamı
+## F. Code scope
 
-- Task dışı component refactor veya geniş yeniden yapılandırma yapma; App Router (`app/`) yapısını koru.
-- Browser/server boundary'yi ilgili tasklarda değerlendir. Generated dosyaları manuel “düzeltme” bahanesiyle değiştirme.
+- Do not do out-of-scope component refactors or broad restructuring; preserve the App Router (`app/`) structure.
+- Evaluate the browser/server boundary in relevant tasks. Do not modify generated files under the pretext of a "fix".
 
-## G. Locale, tarih ve timezone
+## G. Locale, date and timezone
 
-- System/browser locale'a güvenme; tarih/saat/sayı/para/sıralamada örtük locale kullanma.
-- Display string'i storage/API formatı gibi parse etme; API/storage locale-independent; UI formatını API'ye geri yazma.
-- Browser, backend, DB ve scheduler timezone eşitliğini varsayma.
-- `tr-TR` / `en-US` vb. locale'ı hata bastırmak için hardcode etme; locale yalnız ürün standardı varsa.
-- Sıralama (ör. Türkçe karakter) ve FE/BE filtre-tarih semantiğini ürün gereksinimine göre uyumlu tut.
+- Do not rely on system/browser locale; do not use implicit locale for date/time/number/currency/sorting.
+- Do not parse display strings as if they were the storage/API format; keep API/storage locale-independent; do not write the UI format back to the API.
+- Do not assume browser, backend, DB and scheduler share the same timezone.
+- Do not hardcode `tr-TR` / `en-US` or another locale as a bug workaround; use a locale only if it is a product standard.
+- Keep sorting/collation (e.g. Turkish characters) and FE/BE filter-date semantics consistent with product requirements.
 
 ## H. Production-first
 
-- Local-only development çözümüne göre tasarlama; production'da static export + Go server gerçeğini esas al.
-- `middleware.ts`, SSR rewrite veya Next runtime davranışlarının production'da çalıştığını varsayma; local navigasyon/auth'un `out/` + Go server ile uyumunu değerlendir.
-- API base URL, OAuth callback, asset path hardcode etme. `NEXT_PUBLIC_*` build-time gömülür; runtime'da değişmez.
-- Local `.env`, localhost, Railway fallback veya tek-ortam URL'sini production gerçeği sanma.
-- Timeout/sleep/delay/restart/manual refresh/cache temizlemeyi kalıcı çözüm sayma; silent fallback ile prod hatasını gizleme.
+- Do not design for local-only development; base it on the production reality of static export + Go server.
+- Do not assume `middleware.ts`, SSR rewrites or Next runtime behaviors work in production; evaluate whether local navigation/auth is compatible with `out/` + Go server.
+- Do not hardcode API base URL, OAuth callback or asset path. `NEXT_PUBLIC_*` is baked at build time; it does not change at runtime.
+- Do not treat local `.env`, localhost, a Railway fallback or a single-environment URL as production truth.
+- Do not treat timeout/sleep/delay/restart/manual refresh/cache clearing as a permanent fix; do not hide production errors with silent fallback.
 
-## I. Git, WIP ve güvenlik
+## I. Git, WIP and security
 
-- `main`/`master` üzerinde değişiklik yapma; açık istek olmadan commit/push/PR/pull/fetch/merge/rebase yapma.
-- Destructive Git (amend, force push, reset --hard, clean, branch silme, stash pop/drop, restore/checkout ile kayıp, cherry-pick/revert) izinsiz yok.
-- Kullanıcı WIP'sini revert/overwrite/format bahanesiyle değiştirme; task dışı dosyaya dokunma.
-- `.env`/secret okuma-değiştirme yok; token/credential loglama yok; görülen secret'ı tekrar etme, redakte et. Gerçek API/DB çağrısı yapma.
-- `.cursorignore` / `.geminiignore` discovery filtresidir; hard security deny değildir.
+- Do not modify `main`/`master`; do not commit/push/PR/pull/fetch/merge/rebase without explicit request.
+- Destructive Git (amend, force push, reset --hard, clean, branch deletion, stash pop/drop, loss via restore/checkout, cherry-pick/revert) is not allowed without explicit user approval.
+- Do not alter user WIP under the pretext of revert/overwrite/format; do not touch out-of-scope files.
+- Do not read or modify `.env` or secrets; do not log tokens/credentials; do not repeat secrets seen, redact them. Do not make real API/DB calls.
+- `.cursorignore` / `.geminiignore` are discovery filters, not a hard security deny.
 
-## J. Task risk seviyeleri
+## J. Task risk levels
 
-| Seviye | Örnek | Yaklaşım |
+| Level | Example | Approach |
 |---|---|---|
-| **Düşük** | CSS, label | Tek tur; 1–3 dosya |
-| **Orta** | Form, API, pagination | Sayfa + service; lint; build yalnız route/config/integration veya geniş kapsamda |
-| **Yüksek** | Auth, session, token, capability sync | Plan; BE authz erişilebilirse birlikte |
+| **Low** | CSS, label | Single pass; 1–3 files |
+| **Medium** | Form, API, pagination | Page + service; lint; build only for route/config/integration or broad scope |
+| **High** | Auth, session, token, capability sync | Plan; evaluate with BE authz if accessible |
 
-## K. Doğrulama
+## K. Validation
 
-Komutlar `package.json` scriptlerine göre:
+Commands per `package.json` scripts:
 
-- En yakın validation'dan başla; risk yükseldikçe artır. `npm run lint`; `git diff --check`.
-- `npm run build`: `next.config.js` içinde `ignoreBuildErrors: true` — build TypeScript hatalarını yakalamaz; type-safety / başarı garantisi vermez. Full build her düşük/orta taskta zorunlu değil; route/config/integration, yüksek risk, PR öncesi veya kullanıcı isterse çalıştır.
-- Task dışı generated (`next-env.d.ts` vb.) değişirse restore et. TS hatalarında `introduced` vs `pre-existing` ayrımı yap; kanıtsız pre-existing sayma.
-- Test/build yoksa “çalışıyor / tamamen çözüldü” deme; eksik kontrol ve kalan riski raporla.
+- Start from the validation closest to scope; widen as risk increases. `npm run lint`; `git diff --check`.
+- `npm run build`: `next.config.js` has `ignoreBuildErrors: true` — the build does not catch TypeScript errors and is not proof of type safety or success. A full build is not mandatory for every low/medium task; run it for route/config/integration, high risk, before a PR, or when the user asks.
+- If out-of-scope generated files (`next-env.d.ts` etc.) change, restore them. Distinguish `introduced` vs `pre-existing` TS errors; do not assume pre-existing without evidence.
+- Without an executed test/build, do not claim "works / fully resolved"; report skipped checks and remaining risk.
 
 ## L. Conditional references
 
-Bu repo tek başına yeterlidir. Listelenmek her contextte okumak demek değildir. Adapter ayrıntılı rehber değildir. Normal UI/styling/isolated bug fix/component refactor'da backend docs arama.
+This repo is self-sufficient. Being listed does not mean reading it in every context. Adapters are not detailed guides. For normal UI/styling/isolated bug fix/component refactor, do not look for backend docs.
 
-- FE ihtiyaç halinde: `lib/authz/capabilities.ts`, `contants/urls.ts`, `next.config.js`, `main.go`, `components/SEARCHABLE_SELECT_GUIDE.md`.
-- Backend `docs/AI_CODING_GUIDE.md` yalnız multi-root'ta dosya gerçekten varsa ve task (1) auth/capability contract, (2) BE/FE ortak filtre/sort/date semantics, (3) production API/config/deployment, (4) kullanıcının açıkça plan/workflow istemesi, (5) validation stratejisinin bu dosyayla belirlenememesi — o zaman opsiyonel; yalnız ilgili bölüm. “Cross-layer” tek başına yeterli değil.
-- Backend `docs/AI_TOKEN_OPTIMIZATION.md` yalnız AI instruction/token/tool/management reporting'de; normal FE işinde açma.
-- Capability sync/matrix: multi-root veya kullanıcı BE diff verdiyse `internal/authz/capabilities.go`, `BACKEND_API_ROLE_MATRIX.md`.
+- FE when needed: `lib/authz/capabilities.ts`, `contants/urls.ts`, `next.config.js`, `main.go`, `components/SEARCHABLE_SELECT_GUIDE.md`.
+- Backend `docs/AI_CODING_GUIDE.md` only if the file actually exists in multi-root and the task is (1) auth/capability contract, (2) shared BE/FE filter/sort/date semantics, (3) production API/config/deployment, (4) the user explicitly asks for a plan/workflow, (5) validation strategy cannot be decided from this file — then optional; read only the relevant section. "Cross-layer" alone is not sufficient.
+- Backend `docs/AI_TOKEN_OPTIMIZATION.md` only for AI instruction/token/tool/management reporting; do not open it during normal FE work.
+- Capability sync/matrix: only in multi-root or when the user provides a BE diff, use `internal/authz/capabilities.go`, `BACKEND_API_ROLE_MATRIX.md`.
 
-> **Stale:** Backend README / `docs/project_analysis.md` eski role anlatabilir; auth'ta yaşayan kod ve capability kaynaklarını esas al.
+> **Stale:** Backend README / `docs/project_analysis.md` may describe old roles; for auth, rely on living code and capability sources.
