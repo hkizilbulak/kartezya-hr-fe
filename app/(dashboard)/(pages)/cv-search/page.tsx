@@ -20,9 +20,17 @@ import '@/styles/components/table-common.scss';
 import styles from './cv-search.module.scss';
 
 const scoreColor = (score: number): string => {
-  if (score >= 0.7) return '#198754';
-  if (score >= 0.4) return '#fd7e14';
+  if (score == null) return '#6c757d';
+  const norm = score > 1 ? score / 100 : score;
+  if (norm >= 0.7) return '#198754';
+  if (norm >= 0.4) return '#fd7e14';
   return '#6c757d';
+};
+
+const formatLlmScore = (score: number | null | undefined): string => {
+  if (score == null) return '—';
+  const val = score > 1 ? score : score * 100;
+  return `%${val.toFixed(0)}`;
 };
 
 const suggestionTypeLabel = (type: string) => {
@@ -937,9 +945,7 @@ const CvSearchPage = () => {
                                           color: scoreColor(candidate.llm_score),
                                         }}
                                       >
-                                        {candidate.llm_score != null
-                                          ? `%${(candidate.llm_score * 100).toFixed(0)}`
-                                          : '—'}
+                                        {formatLlmScore(candidate.llm_score)}
                                       </span>
                                     </td>
                                     <td>
@@ -1060,7 +1066,7 @@ const CvSearchPage = () => {
                         Fusion: {previewCandidate.fusion_score != null ? previewCandidate.fusion_score.toFixed(3) : '—'}
                       </Badge>
                       <Badge bg="info" className="px-2 py-1">
-                        LLM: {previewCandidate.llm_score != null ? `%${(previewCandidate.llm_score * 100).toFixed(0)}` : '—'}
+                        LLM: {formatLlmScore(previewCandidate.llm_score)}
                       </Badge>
                       <Badge bg="secondary" className="px-2 py-1">
                         Vektör: {previewCandidate.vector_score != null ? previewCandidate.vector_score.toFixed(3) : '—'}
