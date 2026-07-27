@@ -136,6 +136,16 @@ const CvSearchPage = () => {
   // Popular queries
   const [popularQueries, setPopularQueries] = useState<string[]>([]);
 
+  // Calculate career start year based on earliest company experience
+  const careerStartYear = useMemo(() => {
+    if (!previewCandidate?.companies || previewCandidate.companies.length === 0) return null;
+    const years = previewCandidate.companies
+      .map(co => typeof co.start_year === 'number' ? co.start_year : parseInt(String(co.start_year), 10))
+      .filter(yr => !isNaN(yr) && yr > 1900);
+    if (years.length === 0) return null;
+    return Math.min(...years);
+  }, [previewCandidate]);
+
   // Suggestions
   const [suggestions, setSuggestions] = useState<SuggestionResult[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -1022,12 +1032,22 @@ const CvSearchPage = () => {
                   {/* Current Position & Seniority */}
                   <div>
                     <h6 className="text-secondary small fw-semibold uppercase mb-1">Mevcut Ünvan</h6>
-                    <div className="fw-semibold text-dark fs-5">
+                    <div className="fw-semibold text-dark fs-5 mb-1">
                       {previewCandidate.current_position || '—'}
                     </div>
-                    <Badge bg="light" text="dark" className="border mt-1">
-                      {previewCandidate.seniority || '—'}
-                    </Badge>
+                    <div className="d-flex flex-wrap align-items-center gap-1 mt-1">
+                      <Badge bg="light" text="dark" className="border">
+                        {previewCandidate.seniority || '—'}
+                      </Badge>
+                      <Badge bg="secondary" text="white" className="border">
+                        {previewCandidate.total_experience_years || 0} Yıl Tecrübe
+                      </Badge>
+                      {careerStartYear && (
+                        <Badge bg="info" className="text-white border">
+                          Başlangıç: {careerStartYear}
+                        </Badge>
+                      )}
+                    </div>
                   </div>
 
                   {/* Contact Info (Loaded from Detail API) */}
@@ -1077,6 +1097,16 @@ const CvSearchPage = () => {
                       <Badge bg="secondary" className="px-2 py-1">
                         Graf: {previewCandidate.graph_score != null ? previewCandidate.graph_score.toFixed(3) : '—'}
                       </Badge>
+                    </div>
+                    <div className="mt-3 p-2 bg-light rounded text-muted" style={{ fontSize: '0.72rem', border: '1px dashed #dee2e6' }}>
+                      <div className="fw-semibold mb-1 text-dark">Skor Açıklamaları:</div>
+                      <ul className="list-unstyled mb-0 d-flex flex-column gap-1" style={{ paddingLeft: 0 }}>
+                        <li>• <strong className="text-dark">Fusion Score:</strong> Tüm skorların (Vektör + Graf + LLM) ağırlıklandırılmış nihai kombinasyonu.</li>
+                        <li>• <strong className="text-dark">LLM Eşleşmesi:</strong> Büyük Dil Modelinin adayın uygunluğunu kıdem ve pozisyon bazlı inceleme puanı.</li>
+                        <li>• <strong className="text-dark">Vektör (Semantik):</strong> Özgeçmiş metni ile arama sorgusu arasındaki anlamsal yakınlık düzeyi.</li>
+                        <li>• <strong className="text-dark">BM25 (Kelime):</strong> Arama terimlerinin metinsel geçiş sıklığına dayalı istatistiksel skor.</li>
+                        <li>• <strong className="text-dark">Graf (İlişkisel):</strong> Adayın bilgi grafiğindeki (şirketler, beceriler vb.) ilişkisel eşleşme puanı.</li>
+                      </ul>
                     </div>
                   </div>
 
@@ -1140,9 +1170,15 @@ const CvSearchPage = () => {
                               <div className="fw-semibold text-dark">
                                 {co.position || 'Pozisyon Belirtilmemiş'}
                               </div>
-                              <div className="text-muted d-flex align-items-center gap-1">
+                              <div className="text-muted d-flex align-items-center gap-1 flex-wrap">
                                 <Briefcase size={12} />
-                                <span>{co.name}</span>
+                                <span className="fw-medium">{co.name}</span>
+                                {(co.start_year || co.end_year) && (
+                                  <span className="text-secondary small ms-1">
+                                    ({co.start_year || '—'} - {co.is_current ? 'Günümüz' : (co.end_year || '—')})
+                                    {co.duration_years ? ` · ${co.duration_years} Yıl` : ''}
+                                  </span>
+                                )}
                                 {co.is_current && <Badge bg="success" className="ms-1">Güncel</Badge>}
                               </div>
                             </div>
@@ -1164,10 +1200,18 @@ const CvSearchPage = () => {
                             key={index}
                             bg="light"
                             text="dark"
-                            className="border px-2 py-1 small"
-                            title={sk.years_of_experience ? `${sk.years_of_experience} yıl deneyim` : undefined}
+                            className="border px-2 py-1 small d-inline-flex align-items-center gap-1"
+                            title={sk.years_of_experience ? `${sk.years_of_experience} Yıl deneyim` : undefined}
                           >
-                            {sk.name} {sk.proficiency ? `(${sk.proficiency})` : ''}
+                            <span className="fw-medium">{sk.name}</span>
+                            {(sk.proficiency || sk.years_of_experience != null) && (
+                              <span className="text-muted text-lowercase" style={{ fontSize: '0.72rem', opacity: 0.75 }}>
+                                ({[
+                                  sk.proficiency,
+                                  sk.years_of_experience ? `${sk.years_of_experience} Yıl` : ''
+                                ].filter(Boolean).join(', ')})
+                              </span>
+                            )}
                           </Badge>
                         ))}
                       </div>

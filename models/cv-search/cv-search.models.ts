@@ -8,6 +8,9 @@ export interface CompanyNode {
   name: string
   position: string
   is_current: boolean
+  start_year?: number | string
+  end_year?: number | string
+  duration_years?: number
 }
 
 export interface FusedCandidateResponse {
