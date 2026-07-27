@@ -1108,7 +1108,7 @@ const Home = () => {
                                                 width={100}
                                             />
 
-                                             <Bar
+                                            <Bar
                                                 dataKey="count"
                                                 name="Çalışan"
                                                 fill="url(#companyGrad)"
@@ -1618,3 +1618,4 @@ const Home = () => {
     )
 }
 export default Home;
+
