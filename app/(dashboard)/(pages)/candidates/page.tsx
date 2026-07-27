@@ -15,7 +15,8 @@ import type { CandidateListItem } from '@/models/cv-search/cv-search.models';
 import { PageHeading } from '@/widgets';
 import CustomPagination from '@/components/Pagination';
 import StatusBadge from '@/components/StatusBadge';
-import { Eye } from 'react-feather';
+import { Eye, ChevronUp, ChevronDown } from 'react-feather';
+import FormTextField from '@/components/FormTextField';
 import { toast } from 'react-toastify';
 import '@/styles/table-list.scss';
 import '@/styles/components/table-common.scss';
@@ -57,11 +58,29 @@ const CandidatesPage = () => {
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [search, setSearch] = useState('');
+  const [appliedSearch, setAppliedSearch] = useState('');
+  const [sortConfig, setSortConfig] = useState<{
+    key: string | null;
+    direction: 'ASC' | 'DESC';
+  }>({ key: null, direction: 'DESC' });
 
-  const fetchCandidates = useCallback(async (page: number, size: number) => {
+  const fetchCandidates = useCallback(async (
+    page: number,
+    size: number,
+    searchQuery: string,
+    sortKey: string | null,
+    direction: 'ASC' | 'DESC'
+  ) => {
     setLoading(true);
     try {
-      const data = await cvSearchService.listCandidates({ page, pageSize: size });
+      const data = await cvSearchService.listCandidates({
+        page,
+        pageSize: size,
+        search: searchQuery || undefined,
+        sort: sortKey || undefined,
+        direction: direction || undefined,
+      });
       setCandidates(data.candidates ?? []);
       setTotalCount(data.total ?? 0);
     } catch (err: any) {
@@ -72,8 +91,8 @@ const CandidatesPage = () => {
   }, []);
 
   useEffect(() => {
-    fetchCandidates(currentPage, pageSize);
-  }, [currentPage, pageSize, fetchCandidates]);
+    fetchCandidates(currentPage, pageSize, appliedSearch, sortConfig.key, sortConfig.direction);
+  }, [currentPage, pageSize, appliedSearch, sortConfig, fetchCandidates]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -82,6 +101,34 @@ const CandidatesPage = () => {
   const handlePageSizeChange = (newPageSize: number) => {
     setPageSize(newPageSize);
     setCurrentPage(1);
+  };
+
+  const handleSearch = () => {
+    setAppliedSearch(search);
+    setCurrentPage(1);
+  };
+
+  const handleClearFilters = () => {
+    setSearch('');
+    setAppliedSearch('');
+    setSortConfig({ key: null, direction: 'DESC' });
+    setCurrentPage(1);
+  };
+
+  const handleSort = (key: string) => {
+    let direction: 'ASC' | 'DESC' = 'ASC';
+    if (sortConfig.key === key && sortConfig.direction === 'ASC') {
+      direction = 'DESC';
+    }
+    setSortConfig({ key, direction });
+    setCurrentPage(1);
+  };
+
+  const getSortIcon = (columnKey: string) => {
+    if (sortConfig.key !== columnKey) return null;
+    return sortConfig.direction === 'ASC' ?
+      <ChevronUp size={16} className="ms-1" style={{ display: 'inline' }} /> :
+      <ChevronDown size={16} className="ms-1" style={{ display: 'inline' }} />;
   };
 
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
@@ -97,6 +144,49 @@ const CandidatesPage = () => {
           showFilterButton={false}
         />
       </div>
+
+      {/* Arama Kartı */}
+      <Row className="mb-3">
+        <Col lg={12}>
+          <Card className="border-0 shadow-sm">
+            <Card.Body>
+              <form onSubmit={(e) => { e.preventDefault(); handleSearch(); }}>
+                <Row className="g-3 align-items-end">
+                  <Col lg={4} md={6} sm={12}>
+                    <FormTextField
+                      as="div"
+                      controlId="candidate-search"
+                      label="Arama"
+                      name="search"
+                      type="text"
+                      value={search}
+                      onChange={(_name, value) => setSearch(value)}
+                      placeholder="Ad soyad, pozisyon veya kıdem ara..."
+                    />
+                  </Col>
+                  <Col lg={8} md={6} sm={12} className="text-end mb-3">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="me-2"
+                      onClick={handleClearFilters}
+                    >
+                      Temizle
+                    </Button>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      type="submit"
+                    >
+                      Ara
+                    </Button>
+                  </Col>
+                </Row>
+              </form>
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
 
       <Row>
         <Col lg={12}>
@@ -126,12 +216,48 @@ const CandidatesPage = () => {
                     <Table hover className="mb-0" style={{ opacity: isRefetching ? 0.6 : 1, transition: 'opacity 0.2s ease-in-out' }}>
                       <thead>
                         <tr>
-                          <th>Ad Soyad</th>
-                          <th>Mevcut Pozisyon</th>
-                          <th style={{ width: 120 }}>Kıdem</th>
-                          <th style={{ width: 130 }}>Görüşme Sayısı</th>
-                          <th style={{ width: 140 }}>Son Sonuç</th>
-                          <th style={{ width: 160 }}>Eklenme Tarihi</th>
+                          <th
+                            onClick={() => handleSort('name')}
+                            className="sortable-header"
+                            style={{ cursor: 'pointer' }}
+                          >
+                            Ad Soyad {getSortIcon('name')}
+                          </th>
+                          <th
+                            onClick={() => handleSort('current_position')}
+                            className="sortable-header"
+                            style={{ cursor: 'pointer' }}
+                          >
+                            Mevcut Pozisyon {getSortIcon('current_position')}
+                          </th>
+                          <th
+                            onClick={() => handleSort('seniority')}
+                            className="sortable-header"
+                            style={{ cursor: 'pointer', width: 120 }}
+                          >
+                            Kıdem {getSortIcon('seniority')}
+                          </th>
+                          <th
+                            onClick={() => handleSort('interview_count')}
+                            className="sortable-header"
+                            style={{ cursor: 'pointer', width: 130 }}
+                          >
+                            Görüşme Sayısı {getSortIcon('interview_count')}
+                          </th>
+                          <th
+                            onClick={() => handleSort('latest_outcome')}
+                            className="sortable-header"
+                            style={{ cursor: 'pointer', width: 140 }}
+                          >
+                            Son Sonuç {getSortIcon('latest_outcome')}
+                          </th>
+                          <th
+                            onClick={() => handleSort('created_at')}
+                            className="sortable-header"
+                            style={{ cursor: 'pointer', width: 160 }}
+                          >
+                            Eklenme Tarihi {getSortIcon('created_at')}
+                          </th>
                           <th style={{ width: 80 }}></th>
                         </tr>
                       </thead>
