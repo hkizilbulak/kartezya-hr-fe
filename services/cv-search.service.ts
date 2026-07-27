@@ -56,17 +56,20 @@ class CvSearchService {
           offset?: number
           sort?: string
           direction?: string
+          search?: string
         }
       | number,
     offsetArg = 0,
     sortArg?: string,
-    directionArg?: string
+    directionArg?: string,
+    searchArg?: string
   ): Promise<ListCandidatesResponse> {
     let page = 1
     let limit = 20
     let offset = 0
     let sort = sortArg
     let direction = directionArg
+    let search = searchArg
 
     if (typeof params === 'object' && params !== null) {
       page = params.page ?? 1
@@ -74,6 +77,7 @@ class CvSearchService {
       offset = params.offset ?? (page - 1) * limit
       sort = params.sort
       direction = params.direction
+      search = params.search
     } else if (typeof params === 'number') {
       limit = params
       offset = offsetArg
@@ -82,7 +86,7 @@ class CvSearchService {
 
     const response = await cvSearchAxiosInstance.get<ListCandidatesResponse>(
       CV_SEARCH_ENDPOINTS.CANDIDATES,
-      { params: { page, pageSize: limit, limit, offset, sort, direction } }
+      { params: { page, pageSize: limit, limit, offset, sort, direction, search } }
     )
     return response.data
   }
