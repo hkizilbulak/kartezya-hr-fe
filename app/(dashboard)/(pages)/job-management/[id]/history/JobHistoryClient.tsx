@@ -13,7 +13,12 @@ import JobHistoryModal from '@/components/modals/JobHistoryModal';
 import '@/styles/table-list.scss';
 import '@/styles/components/table-common.scss';
 
-type HistorySortKey = 'start_time' | 'end_time' | 'processed_count' | 'status';
+type HistorySortKey = 'start_time' | 'end_time' | 'processed_count' | 'status' | 'reference_date';
+
+const JOBS_WITHOUT_REFERENCE_DATE = new Set([
+  'document_cleanup_job',
+  'contract_status_info_job',
+]);
 
 const JobHistoryPage = () => {
   const params = useParams();
@@ -101,6 +106,19 @@ const JobHistoryPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
+  useEffect(() => {
+    if (!job?.job_key) return;
+    if (!JOBS_WITHOUT_REFERENCE_DATE.has(job.job_key)) return;
+    if (sortConfig.key !== 'reference_date') return;
+
+    setSortConfig({ key: 'start_time', direction: 'DESC' });
+    setCurrentPage(1);
+    if (id) {
+      fetchHistory(Number(id), 1, 'start_time', 'DESC', itemsPerPage);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [job?.job_key, sortConfig.key]);
+
   const handleSort = (key: HistorySortKey) => {
     let direction: 'ASC' | 'DESC' = 'ASC';
     if (sortConfig.key === key && sortConfig.direction === 'ASC') {
@@ -166,6 +184,9 @@ const JobHistoryPage = () => {
     return `${day}.${month}.${year}`;
   };
 
+  const showReferenceDate = !job?.job_key || !JOBS_WITHOUT_REFERENCE_DATE.has(job.job_key);
+  const emptyStateColSpan = showReferenceDate ? 7 : 6;
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'SUCCESS':
@@ -214,7 +235,11 @@ const JobHistoryPage = () => {
                             <th className="sortable-header" style={{ cursor: 'pointer' }} onClick={() => handleSort('start_time')}>
                               Başlangıç {getSortIcon('start_time')}
                             </th>
-                            <th>Referans Tarihi</th>
+                            {showReferenceDate && (
+                              <th className="sortable-header" style={{ cursor: 'pointer' }} onClick={() => handleSort('reference_date')}>
+                                Referans Tarihi {getSortIcon('reference_date')}
+                              </th>
+                            )}
                             <th className="sortable-header" style={{ cursor: 'pointer' }} onClick={() => handleSort('end_time')}>
                               Bitiş {getSortIcon('end_time')}
                             </th>
@@ -233,7 +258,9 @@ const JobHistoryPage = () => {
                             history.map((item: JobHistory) => (
                               <tr key={item.id}>
                                 <td>{new Date(item.start_time).toLocaleString()}</td>
-                                <td>{formatReferenceDate(item.reference_date)}</td>
+                                {showReferenceDate && (
+                                  <td>{formatReferenceDate(item.reference_date)}</td>
+                                )}
                                 <td>{item.end_time ? new Date(item.end_time).toLocaleString() : '-'}</td>
                                 <td>{calculateDuration(item.start_time, item.end_time)}</td>
                                 <td>{item.processed_count}</td>
@@ -252,7 +279,7 @@ const JobHistoryPage = () => {
                             ))
                           ) : (
                             <tr>
-                              <td colSpan={7} className="text-center py-4">
+                              <td colSpan={emptyStateColSpan} className="text-center py-4">
                                 <div className="text-muted">
                                   <p className="mb-0">Bu görev için çalışma geçmişi bulunamadı.</p>
                                 </div>
