@@ -1,0 +1,37 @@
+# AI context ignore — Kartezya HR Frontend
+# Cursor-only discovery/context filter; not a hard security or permission boundary.
+# Other tools need their own exclusion (e.g. .geminiignore). Explicit reads may bypass.
+# Source (app/, components/, lib/, services/, routes/, styles/) intentionally not excluded.
+
+# Secrets — .env.example referans için açık bırakıldı
+.env
+.env.*
+!.env.example
+
+# Bağımlılıklar ve build çıktıları
+node_modules/
+.next/
+out/
+dist/
+build/
+coverage/
+.turbo/
+*.tsbuildinfo
+
+# Tracked binary ve build log (root)
+/server
+/.build-log.txt
+
+# Büyük binary assetler — SVG bilinçli olarak ignore edilmedi (ikon/path taskları)
+public/**/*.png
+public/**/*.jpg
+public/**/*.jpeg
+public/**/*.webp
+public/**/*.gif
+public/**/*.ico
+public/**/*.woff
+public/**/*.woff2
+public/**/*.ttf
+public/**/*.otf
+
+# package-lock.json bilinçli olarak ignore edilmedi (dependency taskları için gerekebilir)

@@ -1,0 +1,35 @@
+# Gemini context ignore — Kartezya HR Frontend
+# Discovery/context filter only; not a hard security deny.
+# Source (app/, components/, lib/, services/, routes/, styles/), tests,
+# package-lock.json, .env.example, AGENTS.md and adapters stay available.
+
+# Secrets — .env.example kept for schema reference
+.env
+.env.*
+!.env.example
+
+# Dependencies and build outputs
+node_modules/
+.next/
+out/
+dist/
+build/
+coverage/
+.turbo/
+*.tsbuildinfo
+
+# Tracked binary and build log (root)
+/server
+/.build-log.txt
+
+# Large binary assets — SVG kept for icon/path tasks
+public/**/*.png
+public/**/*.jpg
+public/**/*.jpeg
+public/**/*.webp
+public/**/*.gif
+public/**/*.ico
+public/**/*.woff
+public/**/*.woff2
+public/**/*.ttf
+public/**/*.otf
