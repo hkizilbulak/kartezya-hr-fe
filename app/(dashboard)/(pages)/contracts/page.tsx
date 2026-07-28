@@ -357,7 +357,7 @@ export default function ContractsPage() {
           setShowModal(false);
           setSelectedContract(null);
         }}
-        onSave={() => fetchContracts(currentPage)}
+        onSave={async () => await fetchContracts(currentPage)}
         contract={selectedContract}
         isEdit={isEdit}
         companies={companies}
