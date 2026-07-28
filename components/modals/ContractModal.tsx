@@ -55,7 +55,6 @@ const ContractModal: React.FC<ContractModalProps> = ({
       setDepartments([]);
       setSelectedDepartmentIds([]);
       setEmployees([]);
-      setSelectedEmployees([]);
       setLoading(true);
       lookupService.getDepartmentsByCompanyLookup(parseInt(selectedCompany))
         .then(res => {
@@ -349,7 +348,14 @@ const ContractModal: React.FC<ContractModalProps> = ({
                           <div 
                             key={'avail-'+emp.id}
                             className="p-2 border-bottom cursor-pointer d-flex justify-content-between align-items-center"
-                            onClick={() => setSelectedEmployees(prev => [...prev, emp.id.toString()])}
+                            onClick={() => {
+                              const empIdStr = emp.id.toString();
+                              setSelectedEmployees(prev => prev.includes(empIdStr) ? prev : [...prev, empIdStr]);
+                              setParticipantNames(prev => ({
+                                ...prev,
+                                [empIdStr]: `${emp.first_name} ${emp.last_name}`,
+                              }));
+                            }}
                             style={{ cursor: 'pointer' }}
                             title="Sağa ekle"
                           >
@@ -365,8 +371,31 @@ const ContractModal: React.FC<ContractModalProps> = ({
 
                   {/* Middle arrows */}
                   <div className="d-flex flex-column justify-content-center">
-                    <Button variant="outline-secondary" size="sm" className="mb-2" onClick={(e) => { e.preventDefault(); setSelectedEmployees(employees.map(e => e.id.toString())); }}>&gt;&gt;</Button>
-                    <Button variant="outline-secondary" size="sm" onClick={(e) => { e.preventDefault(); setSelectedEmployees([]); }}>&lt;&lt;</Button>
+                    <Button
+                      variant="outline-secondary"
+                      size="sm"
+                      className="mb-2"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setSelectedEmployees(prev => [...new Set([...prev, ...employees.map(emp => emp.id.toString())])]);
+                        setParticipantNames(prev => {
+                          const next = { ...prev };
+                          employees.forEach(emp => {
+                            next[emp.id.toString()] = `${emp.first_name} ${emp.last_name}`;
+                          });
+                          return next;
+                        });
+                      }}
+                    >&gt;&gt;</Button>
+                    <Button
+                      variant="outline-secondary"
+                      size="sm"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setSelectedEmployees([]);
+                        setParticipantNames({});
+                      }}
+                    >&lt;&lt;</Button>
                   </div>
 
                   {/* Right Panel: Selected Employees */}
