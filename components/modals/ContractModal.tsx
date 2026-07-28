@@ -16,7 +16,7 @@ import { Employee } from '@/models/hr/hr-models';
 interface ContractModalProps {
   show: boolean;
   onHide: () => void;
-  onSave: () => void;
+  onSave: () => void | Promise<void>;
   contract?: Contract | null;
   isEdit?: boolean;
   companies?: CompanyLookup[];
@@ -161,13 +161,12 @@ const ContractModal: React.FC<ContractModalProps> = ({
 
       if (isEdit && contract) {
         await contractService.update(contract.id, submitData);
-        toast.success('Sözleşme başarıyla güncellendi.');
       } else {
         await contractService.create(submitData);
-        toast.success('Sözleşme başarıyla oluşturuldu.');
       }
-      
-      onSave();
+
+      await onSave();
+      toast.success(isEdit && contract ? 'Sözleşme başarıyla güncellendi.' : 'Sözleşme başarıyla oluşturuldu.');
       onHide();
     } catch (error: any) {
       if (error.response?.data?.errors) {
