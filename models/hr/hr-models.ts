@@ -57,7 +57,9 @@ export interface Employee {
   emergency_contact?: string;
   emergency_contact_name?: string;
   emergency_contact_relation?: string;
-  grade_id?: number;
+  /** Compatibility mirror of ACTIVE EmployeeGrade.grade_id; prefer current_employee_grade. */
+  grade_id?: number | null;
+  current_employee_grade?: CurrentEmployeeGrade | null;
   contract_no?: string;
   profession_start_date?: string;
   note?: string;
@@ -192,19 +194,43 @@ export interface Grade {
   modifiedBy: string;
 }
 
+export type EmployeeGradeStatus = 'ACTIVE' | 'INACTIVE';
+
+/** ACTIVE employee-grade row embedded on Employee API responses. */
+export interface CurrentEmployeeGrade {
+  id: number;
+  employee_id: number;
+  grade_id: number;
+  grade?: Pick<Grade, 'id' | 'name'> | null;
+  start_date: string;
+  end_date?: string | null;
+  status: EmployeeGradeStatus;
+}
+
 export interface EmployeeGrade {
   id: number;
   employee_id: number;
   employee?: Employee;
   grade_id: number;
-  grade?: Grade;
+  grade?: Grade | Pick<Grade, 'id' | 'name'>;
   start_date: string;
-  end_date?: string;
+  end_date?: string | null;
+  status: EmployeeGradeStatus;
   deleted: boolean;
   createdAt: string;
   updatedAt: string;
   createdBy: string;
   modifiedBy: string;
+}
+
+export function isActiveEmployeeGrade(
+  grade: Pick<EmployeeGrade, 'status' | 'end_date'> | CurrentEmployeeGrade | null | undefined
+): boolean {
+  if (!grade) return false;
+  if (grade.status === 'ACTIVE') return true;
+  if (grade.status === 'INACTIVE') return false;
+  // Fallback if status not yet present: open-ended row is treated as current.
+  return grade.end_date == null || grade.end_date === '';
 }
 
 export interface EmployeeContract {

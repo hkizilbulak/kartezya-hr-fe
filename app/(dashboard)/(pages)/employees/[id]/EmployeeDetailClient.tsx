@@ -2,8 +2,8 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter, useParams, usePathname } from 'next/navigation';
 import { Container, Spinner, Row, Col, Card, Button, Nav, Tab, Form, Table } from 'react-bootstrap';
-import { employeeService, workInformationService, employeeGradeService, employeeContractService, lookupService } from '@/services';
-import { Employee, EmployeeWorkInformation } from '@/models/hr/hr-models';
+import { employeeService, workInformationService, employeeGradeService, employeeContractService } from '@/services';
+import { Employee, EmployeeGrade, EmployeeWorkInformation, isActiveEmployeeGrade } from '@/models/hr/hr-models';
 import { toast } from 'react-toastify';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
 import { Edit, Trash2, Download, Upload, ChevronUp, ChevronDown, User, FileText, Briefcase, Folder, Award, Clipboard, Shield, Calendar, DollarSign } from 'react-feather';
@@ -18,7 +18,6 @@ import styles from './page.module.scss';
 import { genderOptions, maritalStatusOptions, emergencyContactRelationOptions, statusOptions } from '@/contants/options';
 import FormDateField from '@/components/FormDateField';
 import FormSelectField from '@/components/FormSelectField';
-import { GradeLookup } from '@/services/lookup.service';
 import FormTextField from '@/components/FormTextField';
 import { UserRole } from '@/models/enums/hr.enum';
 import LoadingOverlay from '@/components/LoadingOverlay';
@@ -53,7 +52,7 @@ const EmployeeDetailPage = () => {
 
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [workInformations, setWorkInformations] = useState<EmployeeWorkInformation[]>([]);
-  const [employeeGrades, setEmployeeGrades] = useState<any[]>([]);
+  const [employeeGrades, setEmployeeGrades] = useState<EmployeeGrade[]>([]);
   const [employeeContracts, setEmployeeContracts] = useState<any[]>([]);
   const [portalContracts, setPortalContracts] = useState<any[]>([]);
   const [employeeDocuments, setEmployeeDocuments] = useState<any[]>([]);
@@ -90,12 +89,11 @@ const EmployeeDetailPage = () => {
   const [isContractEdit, setIsContractEdit] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [selectedWorkInfo, setSelectedWorkInfo] = useState<EmployeeWorkInformation | null>(null);
-  const [selectedGrade, setSelectedGrade] = useState<any | null>(null);
+  const [selectedGrade, setSelectedGrade] = useState<EmployeeGrade | null>(null);
   const [selectedContract, setSelectedContract] = useState<any | null>(null);
   const [workInfoToDelete, setWorkInfoToDelete] = useState<EmployeeWorkInformation | null>(null);
-  const [gradeToDelete, setGradeToDelete] = useState<any | null>(null);
+  const [gradeToDelete, setGradeToDelete] = useState<EmployeeGrade | null>(null);
   const [contractToDelete, setContractToDelete] = useState<any | null>(null);
-  const [grades, setGrades] = useState<GradeLookup[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [roles, setRoles] = useState<string[]>(['EMPLOYEE']);
   const targetHasAdmin = roles.includes(UserRole.ADMIN);
@@ -155,7 +153,6 @@ const EmployeeDetailPage = () => {
       if (activeTab === 'work-info') {
         fetchWorkInformations(employee.id);
       } else if (activeTab === 'grade-info') {
-        fetchGrades();
         fetchEmployeeGrades(employee.id);
       } else if (activeTab === 'contract-info') {
         fetchEmployeeContracts(employee.id);
@@ -180,17 +177,6 @@ const EmployeeDetailPage = () => {
     }
   }, [employee]);
 
-  const fetchGrades = async () => {
-    try {
-      const response = await lookupService.getGradesLookup();
-      if (response.success && response.data) {
-        setGrades(response.data);
-      }
-    } catch (error) {
-      console.error('Failed to fetch grades:', error);
-    }
-  };
-
   const fetchEmployeeDetails = async () => {
     if (!employeeId) return;
     const idNum = parseInt(employeeId, 10);
@@ -212,6 +198,20 @@ const EmployeeDetailPage = () => {
       router.push('/employees');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const refreshEmployeeAfterGradeChange = async () => {
+    const empId = employee?.id || parseInt(employeeId, 10);
+    if (!empId || Number.isNaN(empId)) return;
+    await fetchEmployeeGrades(empId);
+    try {
+      const response = await employeeService.getById(empId);
+      if (response?.data) {
+        setEmployee(response.data);
+      }
+    } catch {
+      // History already refreshed; current grade may stay briefly stale
     }
   };
 
@@ -252,7 +252,7 @@ const EmployeeDetailPage = () => {
       const response = await employeeGradeService.getByEmployeeId(empId);
 
       if (response?.data) {
-        let allGrades: any[] = [];
+        let allGrades: EmployeeGrade[] = [];
 
         // Check if response.data is paginated or direct array
         if ((response.data as any).items && Array.isArray((response.data as any).items)) {
@@ -260,14 +260,14 @@ const EmployeeDetailPage = () => {
           allGrades = (response.data as any).items;
         } else if (Array.isArray(response.data)) {
           // Direct array response
-          allGrades = response.data as any[];
+          allGrades = response.data as EmployeeGrade[];
         }
 
         // Sort by start_date descending (en yeni en üstte)
-        const sorted = allGrades.sort((a: any, b: any) => {
-          const dateA = new Date(a.start_date || 0).getTime();
-          const dateB = new Date(b.start_date || 0).getTime();
-          return dateB - dateA;
+        const sorted = allGrades.sort((a, b) => {
+          const dateA = (a.start_date || '').slice(0, 10);
+          const dateB = (b.start_date || '').slice(0, 10);
+          return dateB.localeCompare(dateA);
         });
 
         setEmployeeGrades(sorted);
@@ -519,6 +519,10 @@ const EmployeeDetailPage = () => {
 
   const handleDeleteGrade = async () => {
     if (!gradeToDelete || !canEditEmployee) return;
+    if (isActiveEmployeeGrade(gradeToDelete)) {
+      toast.error('Aktif grade silinemez; önce yeni bir grade atayın');
+      return;
+    }
 
     setIsDeleting(true);
     try {
@@ -526,11 +530,9 @@ const EmployeeDetailPage = () => {
       toast.success('Grade bilgisi başarıyla silindi');
       setShowDeleteModal(false);
       setGradeToDelete(null);
-      if (employee) {
-        fetchEmployeeGrades(employee.id);
-      }
+      await refreshEmployeeAfterGradeChange();
     } catch (error: any) {
-      const errorMessage = error.response?.data?.error || error.message || 'Silme işlemi sırasında hata oluştu';
+      const errorMessage = error.response?.data?.error || error.response?.data?.details || error.message || 'Silme işlemi sırasında hata oluştu';
       toast.error(translateErrorMessage(errorMessage));
     } finally {
       setIsDeleting(false);
@@ -686,6 +688,20 @@ const EmployeeDetailPage = () => {
     } catch (error) {
       return '-';
     }
+  };
+
+  /** DATE-only display without UTC day shift (grade start/end). */
+  const formatDateOnly = (dateString: string | undefined | null): string => {
+    if (!dateString) return '-';
+    const raw = dateString.includes('T') ? dateString.split('T')[0] : dateString.slice(0, 10);
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw);
+    if (!match) return formatDate(dateString);
+    const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+    return date.toLocaleDateString('tr-TR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
   };
 
   const calculateExperienceFromProfessionStartDate = (startDate: string | undefined | null, totalGap: number = 0): string => {
@@ -1430,6 +1446,20 @@ const EmployeeDetailPage = () => {
                   {canManageEmployees && (
                   <Tab.Pane eventKey="grade-info">
                     <div className={styles.section}>
+                      <div className="mb-4">
+                        <h6 className="mb-2">Güncel Grade</h6>
+                        {employee.current_employee_grade ? (
+                          <p className="mb-0">
+                            <strong>{employee.current_employee_grade.grade?.name || '-'}</strong>
+                            {' · '}
+                            Başlangıç: {formatDateOnly(employee.current_employee_grade.start_date)}
+                            {employee.current_employee_grade.status ? ` · ${employee.current_employee_grade.status}` : ''}
+                          </p>
+                        ) : (
+                          <p className="text-muted mb-0">Aktif grade atanmamış</p>
+                        )}
+                      </div>
+
                       {canEditEmployee && (
                         <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '1.5rem' }}>
                           <Button
@@ -1442,11 +1472,12 @@ const EmployeeDetailPage = () => {
                             }}
                           >
                             <i className="fe fe-plus"></i>
-                            <span className="d-none d-lg-flex ms-2">Yeni Grade Bilgisi</span>
+                            <span className="d-none d-lg-flex ms-2">Yeni Grade Ata</span>
                           </Button>
                         </div>
                       )}
 
+                      <h6 className="mb-3">Grade Geçmişi</h6>
                       {employeeGrades.length > 0 ? (
                         <Table responsive className="table-list">
                           <thead>
@@ -1454,17 +1485,21 @@ const EmployeeDetailPage = () => {
                               <th>Grade</th>
                               <th>Başlama Tarihi</th>
                               <th>Bitiş Tarihi</th>
+                              <th>Durum</th>
                               <th></th>
                             </tr>
                           </thead>
                           <tbody>
-                            {employeeGrades.map((grade) => (
+                            {employeeGrades.map((grade) => {
+                              const isActive = isActiveEmployeeGrade(grade);
+                              return (
                               <tr key={grade.id}>
                                 <td>{grade.grade?.name || '-'}</td>
-                                <td>{grade.start_date ? formatDate(grade.start_date) : '-'}</td>
-                                <td>{grade.end_date ? formatDate(grade.end_date) : '-'}</td>
+                                <td>{grade.start_date ? formatDateOnly(grade.start_date) : '-'}</td>
+                                <td>{grade.end_date ? formatDateOnly(grade.end_date) : '-'}</td>
+                                <td>{grade.status || (isActive ? 'ACTIVE' : 'INACTIVE')}</td>
                                 <td>
-                                  {canEditEmployee && (
+                                  {canEditEmployee && !isActive && (
                                   <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
                                     <Button
                                       variant="outline-primary"
@@ -1494,7 +1529,8 @@ const EmployeeDetailPage = () => {
                                   )}
                                 </td>
                               </tr>
-                            ))}
+                              );
+                            })}
                           </tbody>
                         </Table>
                       ) : (
@@ -1891,14 +1927,7 @@ const EmployeeDetailPage = () => {
           setSelectedGrade(null);
           setIsGradeEdit(false);
         }}
-        onSave={() => {
-          setShowGradeModal(false);
-          setSelectedGrade(null);
-          setIsGradeEdit(false);
-          if (employee) {
-            fetchEmployeeGrades(employee.id);
-          }
-        }}
+        onSave={refreshEmployeeAfterGradeChange}
         employeeId={employee?.id || parseInt(employeeId)}
         employeeGrade={selectedGrade}
         isEdit={isGradeEdit}

@@ -53,7 +53,6 @@ export interface CreateEmployeeRequest {
   emergency_contact?: string;
   emergency_contact_name?: string;
   emergency_contact_relation?: string;
-  grade_id?: number;
   contract_no?: string;
   profession_start_date?: string;
   note?: string;
@@ -82,7 +81,6 @@ export interface UpdateEmployeeRequest {
   emergency_contact?: string;
   emergency_contact_name?: string;
   emergency_contact_relation?: string;
-  grade_id?: number;
   contract_no?: string;
   profession_start_date?: string;
   note?: string;
@@ -196,15 +194,20 @@ export interface UpdateGradeRequest extends CreateGradeRequest {
   id: number;
 }
 
+/** Assign / create ACTIVE grade (backend closes previous ACTIVE automatically). */
 export interface CreateEmployeeGradeRequest {
   employee_id: number;
   grade_id: number;
   start_date: string;
-  end_date?: string;
 }
 
-export interface UpdateEmployeeGradeRequest extends CreateEmployeeGradeRequest {
+/** Limited correction of INACTIVE history rows only. */
+export interface UpdateEmployeeGradeRequest {
   id: number;
+  employee_id: number;
+  grade_id: number;
+  start_date: string;
+  end_date: string;
 }
 
 export interface CreateEmployeeContractRequest {
