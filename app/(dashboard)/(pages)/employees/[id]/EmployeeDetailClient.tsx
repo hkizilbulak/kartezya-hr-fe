@@ -119,12 +119,10 @@ const EmployeeDetailPage = () => {
     marital_status: '',
     identity_no: '',
     nationality: '',
-    mother_name: '',
     father_name: '',
     hire_date: '',
     leave_date: '',
     profession_start_date: '',
-    total_gap: 0,
     status: '',
     note: '',
     emergency_contact_name: '',
@@ -593,13 +591,11 @@ const EmployeeDetailPage = () => {
         emergency_contact_relation: employee.emergency_contact_relation || undefined,
         profession_start_date: (employee as any).profession_start_date || undefined,
         note: ((employee as any).note || '').trim(),
-        mother_name: ((employee as any).mother_name || '').trim(),
         father_name: ((employee as any).father_name || '').trim(),
         nationality: ((employee as any).nationality || '').trim(),
         identity_no: ((employee as any).identity_no || '').trim(),
         roles: roles,
         status: employee.status,
-        total_gap: parseFloat(String(employee.total_gap || 0)),
       };
 
       await employeeService.update(employee.id, submitData);
@@ -704,7 +700,7 @@ const EmployeeDetailPage = () => {
     });
   };
 
-  const calculateExperienceFromProfessionStartDate = (startDate: string | undefined | null, totalGap: number = 0): string => {
+  const calculateExperienceFromProfessionStartDate = (startDate: string | undefined | null): string => {
     if (!startDate) return '-';
 
     try {
@@ -724,24 +720,6 @@ const EmployeeDetailPage = () => {
         months += 12;
       }
 
-      // Subtract total_gap (in years) from the calculated experience
-      const gapYears = Math.floor(totalGap);
-      const gapMonths = Math.round((totalGap - gapYears) * 12);
-
-      years -= gapYears;
-      months -= gapMonths;
-
-      // Adjust if months is negative
-      if (months < 0) {
-        years--;
-        months += 12;
-      }
-
-      // Ensure years is not negative
-      if (years < 0) {
-        return '-';
-      }
-
       // Format as "X yıl Y ay"
       if (years === 0 && months === 0) {
         return '-';
@@ -758,12 +736,10 @@ const EmployeeDetailPage = () => {
   };
 
   const getDisplayExperience = (): string => {
-    // Calculate from profession_start_date with total_gap subtraction
-    const totalGap = (employee as any)?.total_gap || 0;
     const professionStartDate = (employee as any)?.profession_start_date;
 
     if (professionStartDate) {
-      return calculateExperienceFromProfessionStartDate(professionStartDate, totalGap);
+      return calculateExperienceFromProfessionStartDate(professionStartDate);
     }
 
     return '-';
@@ -1090,20 +1066,6 @@ const EmployeeDetailPage = () => {
                         </Col>
                       </Row>
                       <Row>
-                        <Col md={4}>
-                          <Form.Group>
-                            <Form.Label>Toplam Boşluk (Yıl)</Form.Label>
-                            <Form.Control
-                              min={0}
-                              type="number"
-                              name="total_gap"
-                              value={employee.total_gap}
-                              onChange={(e) => setEmployee({ ...employee, total_gap: e.target.value || 0 } as any)}
-                              placeholder="0"
-                              disabled={!canEditEmployee}
-                            />
-                          </Form.Group>
-                        </Col>
                         <Col md={4}>
                           <FormSelectField
                             name="status"

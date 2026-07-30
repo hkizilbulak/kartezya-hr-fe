@@ -112,7 +112,6 @@ export default function MissingInfoModal() {
                 profession_start_date: fullProfile?.profession_start_date || '',
                 marital_status: fullProfile?.marital_status || '',
                 emergency_contact_relation: fullProfile?.emergency_contact_relation || '',
-                mother_name: fullProfile?.mother_name || '',
                 father_name: fullProfile?.father_name || '',
                 nationality: fullProfile?.nationality || '',
                 identity_no: fullProfile?.identity_no || ''

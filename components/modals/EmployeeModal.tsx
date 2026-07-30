@@ -30,7 +30,6 @@ interface FormData {
   date_of_birth: string;
   profession_start_date: string;
   hire_date: string;
-  total_gap: number | string;
   marital_status: string;
   identity_no: string;
   roles: string[];
@@ -47,7 +46,6 @@ const emptyFormData = (): FormData => ({
   date_of_birth: '',
   profession_start_date: '',
   hire_date: '',
-  total_gap: '',
   marital_status: '',
   identity_no: '',
   roles: [],
@@ -170,7 +168,6 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
         date_of_birth: formData.date_of_birth || undefined,
         profession_start_date: formData.profession_start_date || undefined,
         hire_date: formData.hire_date,
-        total_gap: parseFloat(formData.total_gap as string),
         marital_status: formData.marital_status || undefined,
         identity_no: formData.identity_no.trim(),
         roles: formData.roles,
@@ -407,21 +404,6 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
                       {fieldErrors.hire_date}
                     </div>
                   )}
-                </Form.Group>
-              </Col>
-            </Row>
-
-            <Row className="mb-3">
-              <Col md={6}>
-                <Form.Group>
-                  <Form.Label>Toplam Boşluk (Yıl)</Form.Label>
-                  <Form.Control
-                    type="number"
-                    name="total_gap"
-                    value={formData.total_gap}
-                    onChange={handleInputChange}
-                    placeholder="0"
-                  />
                 </Form.Group>
               </Col>
             </Row>

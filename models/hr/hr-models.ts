@@ -52,7 +52,6 @@ export interface Employee {
   date_of_birth?: string;
   hire_date: string;
   leave_date?: string;
-  total_gap?: number;
   marital_status?: string;
   emergency_contact?: string;
   emergency_contact_name?: string;
@@ -60,10 +59,8 @@ export interface Employee {
   /** Compatibility mirror of ACTIVE EmployeeGrade.grade_id; prefer current_employee_grade. */
   grade_id?: number | null;
   current_employee_grade?: CurrentEmployeeGrade | null;
-  contract_no?: string;
   profession_start_date?: string;
   note?: string;
-  mother_name?: string;
   father_name?: string;
   nationality?: string;
   identity_no?: string;

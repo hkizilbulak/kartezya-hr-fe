@@ -277,10 +277,7 @@ const GradeReportPage = () => {
                             <tbody>
                               {getSortedAndPaginatedData().length > 0 ? (
                                 getSortedAndPaginatedData().map((row) => (
-                                  <tr
-                                    key={row.id}
-                                    style={row.total_gap > 0 ? { backgroundColor: '#fff3cd' } : undefined}
-                                  >
+                                  <tr key={row.id}>
                                     <td>{row.first_name} {row.last_name}</td>
                                     <td>{row.hire_date ? new Date(row.hire_date).toLocaleDateString('tr-TR') : '-'}</td>
                                     <td>{row.team_start_date ? new Date(row.team_start_date).toLocaleDateString('tr-TR') : '-'}</td>

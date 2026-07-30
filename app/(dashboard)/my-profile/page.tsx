@@ -29,7 +29,6 @@ interface FormData {
   emergency_contact: string;
   emergency_contact_name: string;
   emergency_contact_relation: string;
-  mother_name: string;
   father_name: string;
   nationality: string;
   identity_no: string;
@@ -56,7 +55,6 @@ const Profile = () => {
     emergency_contact: '',
     emergency_contact_name: '',
     emergency_contact_relation: '',
-    mother_name: '',
     father_name: '',
     nationality: '',
     identity_no: ''
@@ -101,7 +99,6 @@ const Profile = () => {
           emergency_contact: normalizePhoneForMask(response.data.emergency_contact),
           emergency_contact_name: response.data.emergency_contact_name || '',
           emergency_contact_relation: response.data.emergency_contact_relation || '',
-          mother_name: response.data.mother_name || '',
           father_name: response.data.father_name || '',
           nationality: response.data.nationality || '',
           identity_no: response.data.identity_no || ''
@@ -160,7 +157,6 @@ const Profile = () => {
         emergency_contact: formData.emergency_contact || '',
         emergency_contact_name: formData.emergency_contact_name || '',
         emergency_contact_relation: formData.emergency_contact_relation || '',
-        mother_name: formData.mother_name || '',
         father_name: formData.father_name || '',
         nationality: formData.nationality || '',
         identity_no: formData.identity_no || ''
@@ -485,17 +481,6 @@ const Profile = () => {
 
                     {/* Parent Names */}
                     <Row className="mb-4">
-                      <Col md={6}>
-                        <Form.Group className="mb-3">
-                          <Form.Label>Anne Adı</Form.Label>
-                          <Form.Control
-                            type="text"
-                            name="mother_name"
-                            value={formData.mother_name}
-                            onChange={handleInputChange}
-                          />
-                        </Form.Group>
-                      </Col>
                       <Col md={6}>
                         <Form.Group className="mb-3">
                           <Form.Label>Baba Adı</Form.Label>
