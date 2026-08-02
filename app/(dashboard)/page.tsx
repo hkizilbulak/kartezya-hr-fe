@@ -744,219 +744,329 @@ const Home = () => {
 
             <Container fluid className="px-6 py-4">
 
-                <Row>
-                    <Col xl={3} lg={6} md={12} xs={12} className="mb-6">
-                        <Card className="border-0" style={{ cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s' }} onClick={() => router.push('/employees')} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-5px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}>
-                            <Card.Body>
-                                <div className="d-flex justify-content-between align-items-center mb-3">
-                                    <div>
-                                        <h4 className="mb-0">Toplam Çalışan</h4>
-                                    </div>
-                                    <div className="icon-shape icon-md bg-light-primary text-primary rounded-2">
-                                        <i className="fe fe-users fs-4"></i>
-                                    </div>
+                <Card className="border-0 shadow-sm mb-6" style={{ borderRadius: '16px', backgroundColor: '#ffffff' }}>
+                    <Card.Body className="p-4">
+                        {/* Header */}
+                        <div className="d-flex justify-content-between align-items-center mb-3">
+                            <div className="d-flex align-items-center gap-2">
+                                <div className="d-flex align-items-center justify-content-center rounded-3" style={{ width: '32px', height: '32px', backgroundColor: 'rgba(99, 102, 241, 0.1)', color: '#6366f1' }}>
+                                    <i className="fe fe-grid fs-5"></i>
                                 </div>
-                                <div>
-                                    <h1 className="fw-bold">
-                                        {loadingStats ? (
-                                            <Spinner animation="border" role="status" size="sm">
-                                                <span className="visually-hidden">Yükleniyor...</span>
-                                            </Spinner>
-                                        ) : stats.total_employees}
-                                    </h1>
-                                    <p className="mb-0">
-                                        <span className="text-success me-2">
-                                            <i className="fe fe-trending-up me-1"></i>
-                                        </span>
-                                        Aktif çalışanlar
-                                    </p>
-                                </div>
-                            </Card.Body>
-                        </Card>
-                    </Col>
+                                <h5 className="mb-0 fw-bold text-dark" style={{ fontSize: '15.5px', letterSpacing: '-0.2px' }}>
+                                    Genel Bakış ve Bekleyen İşlemler
+                                </h5>
+                            </div>
+                            <div className="d-flex align-items-center gap-2 px-3 py-1.5 rounded-pill" style={{ backgroundColor: 'rgba(99, 102, 241, 0.08)', color: '#6366f1', fontSize: '11.5px', fontWeight: 600 }}>
+                                <i className="fe fe-activity"></i>
+                                Canlı Sistem Özeti
+                            </div>
+                        </div>
 
-                    <Col xl={3} lg={6} md={12} xs={12} className="mb-6">
-                        <Card className="border-0" style={{ cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s' }} onClick={() => router.push('/companies')} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-5px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}>
-                            <Card.Body>
-                                <div className="d-flex justify-content-between align-items-center mb-3">
-                                    <div>
-                                        <h4 className="mb-0">Şirketler</h4>
-                                    </div>
-                                    <div className="icon-shape icon-md bg-light-danger text-danger rounded-2">
-                                        <i className="fe fe-building fs-4"></i>
-                                    </div>
-                                </div>
-                                <div>
-                                    <h1 className="fw-bold">
-                                        {loadingStats ? (
-                                            <Spinner animation="border" role="status" size="sm">
-                                                <span className="visually-hidden">Yükleniyor...</span>
-                                            </Spinner>
-                                        ) : stats.total_companies}
-                                    </h1>
-                                    <p className="mb-0">
-                                        <span className="text-dark me-2">
-                                            <i className="fe fe-building me-1"></i>
-                                        </span>
-                                        Toplam şirket
-                                    </p>
-                                </div>
-                            </Card.Body>
-                        </Card>
-                    </Col>
+                        {/* Divider */}
+                        <hr className="my-3" style={{ borderColor: '#f1f5f9', opacity: 0.8 }} />
 
-                    <Col xl={3} lg={6} md={12} xs={12} className="mb-6">
-                        <Card className="border-0" style={{ cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s' }} onClick={() => router.push('/departments')} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-5px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}>
-                            <Card.Body>
-                                <div className="d-flex justify-content-between align-items-center mb-3">
-                                    <div>
-                                        <h4 className="mb-0">Departmanlar</h4>
+                        {/* Row 1: Large Cards */}
+                        <Row className="g-4 mb-4">
+                            {/* Card 1: Toplam Çalışan */}
+                            <Col xl={4} lg={4} md={12} xs={12}>
+                                <div
+                                    className="d-flex align-items-center gap-3 p-4"
+                                    style={{
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s ease-in-out',
+                                        border: '1px solid #f1f5f9',
+                                        borderRadius: '12px',
+                                        backgroundColor: '#ffffff'
+                                    }}
+                                    onClick={() => router.push('/employees')}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.transform = 'translateY(-3px)';
+                                        e.currentTarget.style.boxShadow = '0 10px 20px rgba(0, 0, 0, 0.03)';
+                                        e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.15)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.transform = 'translateY(0)';
+                                        e.currentTarget.style.boxShadow = 'none';
+                                        e.currentTarget.style.borderColor = '#f1f5f9';
+                                    }}
+                                >
+                                    <div className="d-flex align-items-center justify-content-center rounded-3" style={{ width: '56px', height: '56px', backgroundColor: 'rgba(99, 102, 241, 0.1)', color: '#6366f1', flexShrink: 0 }}>
+                                        <i className="fe fe-users fs-3"></i>
                                     </div>
-                                    <div className="icon-shape icon-md bg-light-warning text-warning rounded-2">
-                                        <i className="fe fe-briefcase fs-4"></i>
+                                    <div className="d-flex flex-column gap-0.5">
+                                        <span className="fw-bold" style={{ fontSize: '13px', color: '#4f46e5' }}>Toplam Çalışan</span>
+                                        <h1 className="mb-0 fw-bold text-dark" style={{ fontSize: '28px', lineHeight: 1.2 }}>
+                                            {loadingStats ? (
+                                                <Spinner animation="border" role="status" size="sm">
+                                                    <span className="visually-hidden">Yükleniyor...</span>
+                                                </Spinner>
+                                            ) : stats.total_employees}
+                                        </h1>
                                     </div>
                                 </div>
-                                <div>
-                                    <h1 className="fw-bold">
-                                        {loadingStats ? (
-                                            <Spinner animation="border" role="status" size="sm">
-                                                <span className="visually-hidden">Yükleniyor...</span>
-                                            </Spinner>
-                                        ) : stats.total_departments}
-                                    </h1>
-                                    <p className="mb-0">
-                                        <span className="text-dark me-2">
-                                            <i className="fe fe-users me-1"></i>
-                                        </span>
-                                        Toplam departman
-                                    </p>
-                                </div>
-                            </Card.Body>
-                        </Card>
-                    </Col>
+                            </Col>
 
-                    <Col xl={3} lg={6} md={12} xs={12} className="mb-6">
-                        <Card className="border-0" style={{ cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s' }} onClick={() => router.push('/leave-management/requests')} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-5px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}>
-                            <Card.Body>
-                                <div className="d-flex justify-content-between align-items-center mb-3">
-                                    <div>
-                                        <h4 className="mb-0">Onay Bekleyen İzinler</h4>
+                            {/* Card 2: Şirketler */}
+                            <Col xl={4} lg={4} md={12} xs={12}>
+                                <div
+                                    className="d-flex align-items-center gap-3 p-4"
+                                    style={{
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s ease-in-out',
+                                        border: '1px solid #f1f5f9',
+                                        borderRadius: '12px',
+                                        backgroundColor: '#ffffff'
+                                    }}
+                                    onClick={() => router.push('/companies')}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.transform = 'translateY(-3px)';
+                                        e.currentTarget.style.boxShadow = '0 10px 20px rgba(0, 0, 0, 0.03)';
+                                        e.currentTarget.style.borderColor = 'rgba(244, 63, 94, 0.15)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.transform = 'translateY(0)';
+                                        e.currentTarget.style.boxShadow = 'none';
+                                        e.currentTarget.style.borderColor = '#f1f5f9';
+                                    }}
+                                >
+                                    <div className="d-flex align-items-center justify-content-center rounded-3" style={{ width: '56px', height: '56px', backgroundColor: 'rgba(244, 63, 94, 0.1)', color: '#f43f5e', flexShrink: 0 }}>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect>
+                                            <line x1="9" y1="22" x2="9" y2="16"></line>
+                                            <line x1="15" y1="22" x2="15" y2="16"></line>
+                                            <line x1="9" y1="16" x2="15" y2="16"></line>
+                                            <path d="M9 10h.01"></path>
+                                            <path d="M15 10h.01"></path>
+                                            <path d="M9 14h.01"></path>
+                                            <path d="M15 14h.01"></path>
+                                            <path d="M9 6h.01"></path>
+                                            <path d="M15 6h.01"></path>
+                                        </svg>
                                     </div>
-                                    <div className="icon-shape icon-md bg-light-info text-info rounded-2">
+                                    <div className="d-flex flex-column gap-0.5">
+                                        <span className="fw-bold" style={{ fontSize: '13px', color: '#e11d48' }}>Şirketler</span>
+                                        <h1 className="mb-0 fw-bold text-dark" style={{ fontSize: '28px', lineHeight: 1.2 }}>
+                                            {loadingStats ? (
+                                                <Spinner animation="border" role="status" size="sm">
+                                                    <span className="visually-hidden">Yükleniyor...</span>
+                                                </Spinner>
+                                            ) : stats.total_companies}
+                                        </h1>
+                                    </div>
+                                </div>
+                            </Col>
+
+                            {/* Card 3: Departmanlar */}
+                            <Col xl={4} lg={4} md={12} xs={12}>
+                                <div
+                                    className="d-flex align-items-center gap-3 p-4"
+                                    style={{
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s ease-in-out',
+                                        border: '1px solid #f1f5f9',
+                                        borderRadius: '12px',
+                                        backgroundColor: '#ffffff'
+                                    }}
+                                    onClick={() => router.push('/departments')}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.transform = 'translateY(-3px)';
+                                        e.currentTarget.style.boxShadow = '0 10px 20px rgba(0, 0, 0, 0.03)';
+                                        e.currentTarget.style.borderColor = 'rgba(245, 158, 11, 0.15)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.transform = 'translateY(0)';
+                                        e.currentTarget.style.boxShadow = 'none';
+                                        e.currentTarget.style.borderColor = '#f1f5f9';
+                                    }}
+                                >
+                                    <div className="d-flex align-items-center justify-content-center rounded-3" style={{ width: '56px', height: '56px', backgroundColor: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', flexShrink: 0 }}>
+                                        <i className="fe fe-briefcase fs-3"></i>
+                                    </div>
+                                    <div className="d-flex flex-column gap-0.5">
+                                        <span className="fw-bold" style={{ fontSize: '13px', color: '#d97706' }}>Departmanlar</span>
+                                        <h1 className="mb-0 fw-bold text-dark" style={{ fontSize: '28px', lineHeight: 1.2 }}>
+                                            {loadingStats ? (
+                                                <Spinner animation="border" role="status" size="sm">
+                                                    <span className="visually-hidden">Yükleniyor...</span>
+                                                </Spinner>
+                                            ) : stats.total_departments}
+                                        </h1>
+                                    </div>
+                                </div>
+                            </Col>
+                        </Row>
+
+                        {/* Divider */}
+                        <hr className="my-3" style={{ borderColor: '#f1f5f9', opacity: 0.8 }} />
+
+                        {/* Row 2: Small Cards */}
+                        <Row className="g-4">
+                            {/* Card 4: Onay Bekleyen İzinler */}
+                            <Col xl={3} lg={6} md={6} xs={12}>
+                                <div
+                                    className="d-flex align-items-center gap-3 p-3"
+                                    style={{
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s ease-in-out',
+                                        border: '1px solid #f1f5f9',
+                                        borderRadius: '12px',
+                                        backgroundColor: '#ffffff'
+                                    }}
+                                    onClick={() => router.push('/leave-management/requests')}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.transform = 'translateY(-3px)';
+                                        e.currentTarget.style.boxShadow = '0 10px 20px rgba(0, 0, 0, 0.03)';
+                                        e.currentTarget.style.borderColor = 'rgba(6, 182, 212, 0.15)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.transform = 'translateY(0)';
+                                        e.currentTarget.style.boxShadow = 'none';
+                                        e.currentTarget.style.borderColor = '#f1f5f9';
+                                    }}
+                                >
+                                    <div className="d-flex align-items-center justify-content-center rounded-3" style={{ width: '42px', height: '42px', backgroundColor: 'rgba(6, 182, 212, 0.1)', color: '#06b6d4', flexShrink: 0 }}>
                                         <i className="fe fe-calendar fs-4"></i>
                                     </div>
-                                </div>
-                                <div>
-                                    <h1 className="fw-bold">
-                                        {loadingStats ? (
-                                            <Spinner animation="border" role="status" size="sm">
-                                                <span className="visually-hidden">Yükleniyor...</span>
-                                            </Spinner>
-                                        ) : stats.pending_leave_requests}
-                                    </h1>
-                                    <p className="mb-0">
-                                        <span className="text-info me-2">
-                                            <i className="fe fe-clock me-1"></i>
-                                        </span>
-                                        Onay bekleyen
-                                    </p>
-                                </div>
-                            </Card.Body>
-                        </Card>
-                    </Col>
-                </Row>
-
-                <Row>
-                    <Col xl={4} lg={4} md={12} xs={12} className="mb-6">
-                        <Card className="border-0" style={{ cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s' }} onClick={() => router.push('/expense-management/requests')} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-5px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}>
-                            <Card.Body>
-                                <div className="d-flex justify-content-between align-items-center mb-3">
-                                    <div>
-                                        <h4 className="mb-0">Onay Bekleyen Masraflar</h4>
+                                    <div className="d-flex flex-column gap-0.5">
+                                        <span className="fw-bold" style={{ fontSize: '13px', color: '#0891b2' }}>Onay Bekleyen İzinler</span>
+                                        <div className="d-flex align-items-center gap-2">
+                                            <h2 className="mb-0 fw-bold text-dark" style={{ fontSize: '18px', lineHeight: 1 }}>
+                                                {loadingStats ? (
+                                                    <Spinner animation="border" role="status" size="sm">
+                                                        <span className="visually-hidden">Yükleniyor...</span>
+                                                    </Spinner>
+                                                ) : stats.pending_leave_requests}
+                                            </h2>
+                                        </div>
                                     </div>
-                                    <div className="icon-shape icon-md bg-light-warning text-warning rounded-2">
+                                </div>
+                            </Col>
+
+                            {/* Card 5: Onay Bekleyen Masraflar */}
+                            <Col xl={3} lg={6} md={6} xs={12}>
+                                <div
+                                    className="d-flex align-items-center gap-3 p-3"
+                                    style={{
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s ease-in-out',
+                                        border: '1px solid #f1f5f9',
+                                        borderRadius: '12px',
+                                        backgroundColor: '#ffffff'
+                                    }}
+                                    onClick={() => router.push('/expense-management/requests')}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.transform = 'translateY(-3px)';
+                                        e.currentTarget.style.boxShadow = '0 10px 20px rgba(0, 0, 0, 0.03)';
+                                        e.currentTarget.style.borderColor = 'rgba(245, 158, 11, 0.15)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.transform = 'translateY(0)';
+                                        e.currentTarget.style.boxShadow = 'none';
+                                        e.currentTarget.style.borderColor = '#f1f5f9';
+                                    }}
+                                >
+                                    <div className="d-flex align-items-center justify-content-center rounded-3" style={{ width: '42px', height: '42px', backgroundColor: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', flexShrink: 0 }}>
                                         <i className="fe fe-refresh-cw fs-4"></i>
                                     </div>
-                                </div>
-                                <div>
-                                    <h1 className="fw-bold">
-                                        {loadingStats ? (
-                                            <Spinner animation="border" role="status" size="sm">
-                                                <span className="visually-hidden">Yükleniyor...</span>
-                                            </Spinner>
-                                        ) : stats.pending_expense_requests}
-                                    </h1>
-                                    <p className="mb-0">
-                                        <span className="text-warning me-2">
-                                            <i className="fe fe-clock me-1"></i>
-                                        </span>
-                                        Onay bekleyen
-                                    </p>
-                                </div>
-                            </Card.Body>
-                        </Card>
-                    </Col>
-
-                    <Col xl={4} lg={4} md={12} xs={12} className="mb-6">
-                        <Card className="border-0" style={{ cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s' }} onClick={() => router.push('/expense-management/requests')} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-5px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}>
-                            <Card.Body>
-                                <div className="d-flex justify-content-between align-items-center mb-3">
-                                    <div>
-                                        <h4 className="mb-0">Ödeme Bekleyen Masraflar</h4>
+                                    <div className="d-flex flex-column gap-0.5">
+                                        <span className="fw-bold" style={{ fontSize: '13px', color: '#d97706' }}>Onay Bekleyen Masraflar</span>
+                                        <div className="d-flex align-items-center gap-2">
+                                            <h2 className="mb-0 fw-bold text-dark" style={{ fontSize: '18px', lineHeight: 1 }}>
+                                                {loadingStats ? (
+                                                    <Spinner animation="border" role="status" size="sm">
+                                                        <span className="visually-hidden">Yükleniyor...</span>
+                                                    </Spinner>
+                                                ) : stats.pending_expense_requests}
+                                            </h2>
+                                        </div>
                                     </div>
-                                    <div className="icon-shape icon-md bg-light-danger text-danger rounded-2">
+                                </div>
+                            </Col>
+
+                            {/* Card 6: Ödeme Bekleyen Masraflar */}
+                            <Col xl={3} lg={6} md={6} xs={12}>
+                                <div
+                                    className="d-flex align-items-center gap-3 p-3"
+                                    style={{
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s ease-in-out',
+                                        border: '1px solid #f1f5f9',
+                                        borderRadius: '12px',
+                                        backgroundColor: '#ffffff'
+                                    }}
+                                    onClick={() => router.push('/expense-management/requests')}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.transform = 'translateY(-3px)';
+                                        e.currentTarget.style.boxShadow = '0 10px 20px rgba(0, 0, 0, 0.03)';
+                                        e.currentTarget.style.borderColor = 'rgba(244, 63, 94, 0.15)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.transform = 'translateY(0)';
+                                        e.currentTarget.style.boxShadow = 'none';
+                                        e.currentTarget.style.borderColor = '#f1f5f9';
+                                    }}
+                                >
+                                    <div className="d-flex align-items-center justify-content-center rounded-3" style={{ width: '42px', height: '42px', backgroundColor: 'rgba(244, 63, 94, 0.1)', color: '#f43f5e', flexShrink: 0 }}>
                                         <i className="fe fe-credit-card fs-4"></i>
                                     </div>
-                                </div>
-                                <div>
-                                    <h1 className="fw-bold">
-                                        {loadingStats ? (
-                                            <Spinner animation="border" role="status" size="sm">
-                                                <span className="visually-hidden">Yükleniyor...</span>
-                                            </Spinner>
-                                        ) : stats.pending_payment_expenses}
-                                    </h1>
-                                    <p className="mb-0">
-                                        <span className="text-danger me-2">
-                                            <i className="fe fe-clock me-1"></i>
-                                        </span>
-                                        Ödeme bekleyen
-                                    </p>
-                                </div>
-                            </Card.Body>
-                        </Card>
-                    </Col>
-
-                    <Col xl={4} lg={4} md={12} xs={12} className="mb-6">
-                        <Card className="border-0" style={{ cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s' }} onClick={() => router.push('/events')} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-5px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}>
-                            <Card.Body>
-                                <div className="d-flex justify-content-between align-items-center mb-3">
-                                    <div>
-                                        <h4 className="mb-0">Aktif Etkinlikler</h4>
+                                    <div className="d-flex flex-column gap-0.5">
+                                        <span className="fw-bold" style={{ fontSize: '13px', color: '#e11d48' }}>Ödeme Bekleyen Masraflar</span>
+                                        <div className="d-flex align-items-center gap-2">
+                                            <h2 className="mb-0 fw-bold text-dark" style={{ fontSize: '18px', lineHeight: 1 }}>
+                                                {loadingStats ? (
+                                                    <Spinner animation="border" role="status" size="sm">
+                                                        <span className="visually-hidden">Yükleniyor...</span>
+                                                    </Spinner>
+                                                ) : stats.pending_payment_expenses}
+                                            </h2>
+                                        </div>
                                     </div>
-                                    <div className="icon-shape icon-md bg-light-primary text-primary rounded-2">
+                                </div>
+                            </Col>
+
+                            {/* Card 7: Aktif Etkinlikler */}
+                            <Col xl={3} lg={6} md={6} xs={12}>
+                                <div
+                                    className="d-flex align-items-center gap-3 p-3"
+                                    style={{
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s ease-in-out',
+                                        border: '1px solid #f1f5f9',
+                                        borderRadius: '12px',
+                                        backgroundColor: '#ffffff'
+                                    }}
+                                    onClick={() => router.push('/events')}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.transform = 'translateY(-3px)';
+                                        e.currentTarget.style.boxShadow = '0 10px 20px rgba(0, 0, 0, 0.03)';
+                                        e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.15)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.transform = 'translateY(0)';
+                                        e.currentTarget.style.boxShadow = 'none';
+                                        e.currentTarget.style.borderColor = '#f1f5f9';
+                                    }}
+                                >
+                                    <div className="d-flex align-items-center justify-content-center rounded-3" style={{ width: '42px', height: '42px', backgroundColor: 'rgba(99, 102, 241, 0.1)', color: '#6366f1', flexShrink: 0 }}>
                                         <i className="fe fe-calendar fs-4"></i>
                                     </div>
+                                    <div className="d-flex flex-column gap-0.5">
+                                        <span className="fw-bold" style={{ fontSize: '13px', color: '#4f46e5' }}>Aktif Etkinlikler</span>
+                                        <div className="d-flex align-items-center gap-2">
+                                            <h2 className="mb-0 fw-bold text-dark" style={{ fontSize: '18px', lineHeight: 1 }}>
+                                                {loadingStats ? (
+                                                    <Spinner animation="border" role="status" size="sm">
+                                                        <span className="visually-hidden">Yükleniyor...</span>
+                                                    </Spinner>
+                                                ) : stats.active_events}
+                                            </h2>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h1 className="fw-bold">
-                                        {loadingStats ? (
-                                            <Spinner animation="border" role="status" size="sm">
-                                                <span className="visually-hidden">Yükleniyor...</span>
-                                            </Spinner>
-                                        ) : stats.active_events}
-                                    </h1>
-                                    <p className="mb-0">
-                                        <span className="text-primary me-2">
-                                            <i className="fe fe-activity me-1"></i>
-                                        </span>
-                                        Yayında olan etkinlikler
-                                    </p>
-                                </div>
-                            </Card.Body>
-                        </Card>
-                    </Col>
-                </Row>
+                            </Col>
+                        </Row>
+                    </Card.Body>
+                </Card>
 
                 {/* Charts Row */}
                 <Row className="mt-4">
