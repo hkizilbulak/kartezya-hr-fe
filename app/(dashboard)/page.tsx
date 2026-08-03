@@ -774,28 +774,28 @@ const Home = () => {
                                     style={{
                                         cursor: 'pointer',
                                         transition: 'all 0.2s ease-in-out',
-                                        border: '1px solid #f1f5f9',
+                                        border: '1px solid #e0e7ff',
                                         borderRadius: '12px',
-                                        backgroundColor: '#ffffff'
+                                        backgroundColor: '#f5f7ff'
                                     }}
                                     onClick={() => router.push('/employees')}
                                     onMouseEnter={(e) => {
                                         e.currentTarget.style.transform = 'translateY(-3px)';
-                                        e.currentTarget.style.boxShadow = '0 10px 20px rgba(0, 0, 0, 0.03)';
-                                        e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.15)';
+                                        e.currentTarget.style.boxShadow = '0 10px 20px rgba(99, 102, 241, 0.08)';
+                                        e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.35)';
                                     }}
                                     onMouseLeave={(e) => {
                                         e.currentTarget.style.transform = 'translateY(0)';
                                         e.currentTarget.style.boxShadow = 'none';
-                                        e.currentTarget.style.borderColor = '#f1f5f9';
+                                        e.currentTarget.style.borderColor = '#e0e7ff';
                                     }}
                                 >
-                                    <div className="d-flex align-items-center justify-content-center rounded-3" style={{ width: '56px', height: '56px', backgroundColor: 'rgba(99, 102, 241, 0.1)', color: '#6366f1', flexShrink: 0 }}>
+                                    <div className="d-flex align-items-center justify-content-center rounded-3" style={{ width: '56px', height: '56px', backgroundColor: 'rgba(99, 102, 241, 0.15)', color: '#4f46e5', flexShrink: 0 }}>
                                         <i className="fe fe-users fs-3"></i>
                                     </div>
                                     <div className="d-flex flex-column gap-0.5">
                                         <span className="fw-bold" style={{ fontSize: '13px', color: '#4f46e5' }}>Toplam Çalışan</span>
-                                        <h1 className="mb-0 fw-bold text-dark" style={{ fontSize: '28px', lineHeight: 1.2 }}>
+                                        <h1 className="mb-0 fw-bold" style={{ fontSize: '28px', lineHeight: 1.2, color: '#3730a3' }}>
                                             {loadingStats ? (
                                                 <Spinner animation="border" role="status" size="sm">
                                                     <span className="visually-hidden">Yükleniyor...</span>
@@ -813,23 +813,23 @@ const Home = () => {
                                     style={{
                                         cursor: 'pointer',
                                         transition: 'all 0.2s ease-in-out',
-                                        border: '1px solid #f1f5f9',
+                                        border: '1px solid #c7d2fe',
                                         borderRadius: '12px',
-                                        backgroundColor: '#ffffff'
+                                        backgroundColor: '#eef2ff'
                                     }}
                                     onClick={() => router.push('/companies')}
                                     onMouseEnter={(e) => {
                                         e.currentTarget.style.transform = 'translateY(-3px)';
-                                        e.currentTarget.style.boxShadow = '0 10px 20px rgba(0, 0, 0, 0.03)';
-                                        e.currentTarget.style.borderColor = 'rgba(244, 63, 94, 0.15)';
+                                        e.currentTarget.style.boxShadow = '0 10px 20px rgba(79, 70, 229, 0.08)';
+                                        e.currentTarget.style.borderColor = 'rgba(79, 70, 229, 0.4)';
                                     }}
                                     onMouseLeave={(e) => {
                                         e.currentTarget.style.transform = 'translateY(0)';
                                         e.currentTarget.style.boxShadow = 'none';
-                                        e.currentTarget.style.borderColor = '#f1f5f9';
+                                        e.currentTarget.style.borderColor = '#c7d2fe';
                                     }}
                                 >
-                                    <div className="d-flex align-items-center justify-content-center rounded-3" style={{ width: '56px', height: '56px', backgroundColor: 'rgba(244, 63, 94, 0.1)', color: '#f43f5e', flexShrink: 0 }}>
+                                    <div className="d-flex align-items-center justify-content-center rounded-3" style={{ width: '56px', height: '56px', backgroundColor: 'rgba(79, 70, 229, 0.15)', color: '#4338ca', flexShrink: 0 }}>
                                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                             <rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect>
                                             <line x1="9" y1="22" x2="9" y2="16"></line>
@@ -844,8 +844,8 @@ const Home = () => {
                                         </svg>
                                     </div>
                                     <div className="d-flex flex-column gap-0.5">
-                                        <span className="fw-bold" style={{ fontSize: '13px', color: '#e11d48' }}>Şirketler</span>
-                                        <h1 className="mb-0 fw-bold text-dark" style={{ fontSize: '28px', lineHeight: 1.2 }}>
+                                        <span className="fw-bold" style={{ fontSize: '13px', color: '#4338ca' }}>Şirketler</span>
+                                        <h1 className="mb-0 fw-bold" style={{ fontSize: '28px', lineHeight: 1.2, color: '#3730a3' }}>
                                             {loadingStats ? (
                                                 <Spinner animation="border" role="status" size="sm">
                                                     <span className="visually-hidden">Yükleniyor...</span>
@@ -863,28 +863,28 @@ const Home = () => {
                                     style={{
                                         cursor: 'pointer',
                                         transition: 'all 0.2s ease-in-out',
-                                        border: '1px solid #f1f5f9',
+                                        border: '1px solid #a5b4fc',
                                         borderRadius: '12px',
-                                        backgroundColor: '#ffffff'
+                                        backgroundColor: '#e0e7ff'
                                     }}
                                     onClick={() => router.push('/departments')}
                                     onMouseEnter={(e) => {
                                         e.currentTarget.style.transform = 'translateY(-3px)';
-                                        e.currentTarget.style.boxShadow = '0 10px 20px rgba(0, 0, 0, 0.03)';
-                                        e.currentTarget.style.borderColor = 'rgba(245, 158, 11, 0.15)';
+                                        e.currentTarget.style.boxShadow = '0 10px 20px rgba(67, 56, 202, 0.1)';
+                                        e.currentTarget.style.borderColor = 'rgba(67, 56, 202, 0.5)';
                                     }}
                                     onMouseLeave={(e) => {
                                         e.currentTarget.style.transform = 'translateY(0)';
                                         e.currentTarget.style.boxShadow = 'none';
-                                        e.currentTarget.style.borderColor = '#f1f5f9';
+                                        e.currentTarget.style.borderColor = '#a5b4fc';
                                     }}
                                 >
-                                    <div className="d-flex align-items-center justify-content-center rounded-3" style={{ width: '56px', height: '56px', backgroundColor: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', flexShrink: 0 }}>
+                                    <div className="d-flex align-items-center justify-content-center rounded-3" style={{ width: '56px', height: '56px', backgroundColor: 'rgba(67, 56, 202, 0.18)', color: '#3730a3', flexShrink: 0 }}>
                                         <i className="fe fe-briefcase fs-3"></i>
                                     </div>
                                     <div className="d-flex flex-column gap-0.5">
-                                        <span className="fw-bold" style={{ fontSize: '13px', color: '#d97706' }}>Departmanlar</span>
-                                        <h1 className="mb-0 fw-bold text-dark" style={{ fontSize: '28px', lineHeight: 1.2 }}>
+                                        <span className="fw-bold" style={{ fontSize: '13px', color: '#3730a3' }}>Departmanlar</span>
+                                        <h1 className="mb-0 fw-bold" style={{ fontSize: '28px', lineHeight: 1.2, color: '#312e81' }}>
                                             {loadingStats ? (
                                                 <Spinner animation="border" role="status" size="sm">
                                                     <span className="visually-hidden">Yükleniyor...</span>
@@ -908,29 +908,29 @@ const Home = () => {
                                     style={{
                                         cursor: 'pointer',
                                         transition: 'all 0.2s ease-in-out',
-                                        border: '1px solid #f1f5f9',
+                                        border: '1px solid #fce7f3',
                                         borderRadius: '12px',
-                                        backgroundColor: '#ffffff'
+                                        backgroundColor: '#fdf2f8'
                                     }}
                                     onClick={() => router.push('/leave-management/requests')}
                                     onMouseEnter={(e) => {
                                         e.currentTarget.style.transform = 'translateY(-3px)';
-                                        e.currentTarget.style.boxShadow = '0 10px 20px rgba(0, 0, 0, 0.03)';
-                                        e.currentTarget.style.borderColor = 'rgba(6, 182, 212, 0.15)';
+                                        e.currentTarget.style.boxShadow = '0 10px 20px rgba(219, 39, 119, 0.08)';
+                                        e.currentTarget.style.borderColor = 'rgba(219, 39, 119, 0.3)';
                                     }}
                                     onMouseLeave={(e) => {
                                         e.currentTarget.style.transform = 'translateY(0)';
                                         e.currentTarget.style.boxShadow = 'none';
-                                        e.currentTarget.style.borderColor = '#f1f5f9';
+                                        e.currentTarget.style.borderColor = '#fce7f3';
                                     }}
                                 >
-                                    <div className="d-flex align-items-center justify-content-center rounded-3" style={{ width: '42px', height: '42px', backgroundColor: 'rgba(6, 182, 212, 0.1)', color: '#06b6d4', flexShrink: 0 }}>
+                                    <div className="d-flex align-items-center justify-content-center rounded-3" style={{ width: '42px', height: '42px', backgroundColor: 'rgba(219, 39, 119, 0.12)', color: '#db2777', flexShrink: 0 }}>
                                         <i className="fe fe-calendar fs-4"></i>
                                     </div>
                                     <div className="d-flex flex-column gap-0.5">
-                                        <span className="fw-bold" style={{ fontSize: '13px', color: '#0891b2' }}>Onay Bekleyen İzinler</span>
+                                        <span className="fw-bold" style={{ fontSize: '13px', color: '#be185d' }}>Onay Bekleyen İzinler</span>
                                         <div className="d-flex align-items-center gap-2">
-                                            <h2 className="mb-0 fw-bold text-dark" style={{ fontSize: '18px', lineHeight: 1 }}>
+                                            <h2 className="mb-0 fw-bold" style={{ fontSize: '18px', lineHeight: 1, color: '#9d174d' }}>
                                                 {loadingStats ? (
                                                     <Spinner animation="border" role="status" size="sm">
                                                         <span className="visually-hidden">Yükleniyor...</span>
@@ -949,29 +949,29 @@ const Home = () => {
                                     style={{
                                         cursor: 'pointer',
                                         transition: 'all 0.2s ease-in-out',
-                                        border: '1px solid #f1f5f9',
+                                        border: '1px solid #fbcfe8',
                                         borderRadius: '12px',
-                                        backgroundColor: '#ffffff'
+                                        backgroundColor: '#fdf4fb'
                                     }}
                                     onClick={() => router.push('/expense-management/requests')}
                                     onMouseEnter={(e) => {
                                         e.currentTarget.style.transform = 'translateY(-3px)';
-                                        e.currentTarget.style.boxShadow = '0 10px 20px rgba(0, 0, 0, 0.03)';
-                                        e.currentTarget.style.borderColor = 'rgba(245, 158, 11, 0.15)';
+                                        e.currentTarget.style.boxShadow = '0 10px 20px rgba(236, 72, 153, 0.08)';
+                                        e.currentTarget.style.borderColor = 'rgba(236, 72, 153, 0.3)';
                                     }}
                                     onMouseLeave={(e) => {
                                         e.currentTarget.style.transform = 'translateY(0)';
                                         e.currentTarget.style.boxShadow = 'none';
-                                        e.currentTarget.style.borderColor = '#f1f5f9';
+                                        e.currentTarget.style.borderColor = '#fbcfe8';
                                     }}
                                 >
-                                    <div className="d-flex align-items-center justify-content-center rounded-3" style={{ width: '42px', height: '42px', backgroundColor: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', flexShrink: 0 }}>
+                                    <div className="d-flex align-items-center justify-content-center rounded-3" style={{ width: '42px', height: '42px', backgroundColor: 'rgba(236, 72, 153, 0.12)', color: '#ec4899', flexShrink: 0 }}>
                                         <i className="fe fe-refresh-cw fs-4"></i>
                                     </div>
                                     <div className="d-flex flex-column gap-0.5">
-                                        <span className="fw-bold" style={{ fontSize: '13px', color: '#d97706' }}>Onay Bekleyen Masraflar</span>
+                                        <span className="fw-bold" style={{ fontSize: '13px', color: '#db2777' }}>Onay Bekleyen Masraflar</span>
                                         <div className="d-flex align-items-center gap-2">
-                                            <h2 className="mb-0 fw-bold text-dark" style={{ fontSize: '18px', lineHeight: 1 }}>
+                                            <h2 className="mb-0 fw-bold" style={{ fontSize: '18px', lineHeight: 1, color: '#9d174d' }}>
                                                 {loadingStats ? (
                                                     <Spinner animation="border" role="status" size="sm">
                                                         <span className="visually-hidden">Yükleniyor...</span>
@@ -990,29 +990,29 @@ const Home = () => {
                                     style={{
                                         cursor: 'pointer',
                                         transition: 'all 0.2s ease-in-out',
-                                        border: '1px solid #f1f5f9',
+                                        border: '1px solid #f9a8d4',
                                         borderRadius: '12px',
-                                        backgroundColor: '#ffffff'
+                                        backgroundColor: '#fff0f7'
                                     }}
                                     onClick={() => router.push('/expense-management/requests')}
                                     onMouseEnter={(e) => {
                                         e.currentTarget.style.transform = 'translateY(-3px)';
-                                        e.currentTarget.style.boxShadow = '0 10px 20px rgba(0, 0, 0, 0.03)';
-                                        e.currentTarget.style.borderColor = 'rgba(244, 63, 94, 0.15)';
+                                        e.currentTarget.style.boxShadow = '0 10px 20px rgba(244, 63, 94, 0.08)';
+                                        e.currentTarget.style.borderColor = 'rgba(244, 63, 94, 0.35)';
                                     }}
                                     onMouseLeave={(e) => {
                                         e.currentTarget.style.transform = 'translateY(0)';
                                         e.currentTarget.style.boxShadow = 'none';
-                                        e.currentTarget.style.borderColor = '#f1f5f9';
+                                        e.currentTarget.style.borderColor = '#f9a8d4';
                                     }}
                                 >
-                                    <div className="d-flex align-items-center justify-content-center rounded-3" style={{ width: '42px', height: '42px', backgroundColor: 'rgba(244, 63, 94, 0.1)', color: '#f43f5e', flexShrink: 0 }}>
+                                    <div className="d-flex align-items-center justify-content-center rounded-3" style={{ width: '42px', height: '42px', backgroundColor: 'rgba(244, 63, 94, 0.12)', color: '#f43f5e', flexShrink: 0 }}>
                                         <i className="fe fe-credit-card fs-4"></i>
                                     </div>
                                     <div className="d-flex flex-column gap-0.5">
                                         <span className="fw-bold" style={{ fontSize: '13px', color: '#e11d48' }}>Ödeme Bekleyen Masraflar</span>
                                         <div className="d-flex align-items-center gap-2">
-                                            <h2 className="mb-0 fw-bold text-dark" style={{ fontSize: '18px', lineHeight: 1 }}>
+                                            <h2 className="mb-0 fw-bold" style={{ fontSize: '18px', lineHeight: 1, color: '#be123c' }}>
                                                 {loadingStats ? (
                                                     <Spinner animation="border" role="status" size="sm">
                                                         <span className="visually-hidden">Yükleniyor...</span>
@@ -1031,29 +1031,29 @@ const Home = () => {
                                     style={{
                                         cursor: 'pointer',
                                         transition: 'all 0.2s ease-in-out',
-                                        border: '1px solid #f1f5f9',
+                                        border: '1px solid #f5b8d8',
                                         borderRadius: '12px',
-                                        backgroundColor: '#ffffff'
+                                        backgroundColor: '#fef0f9'
                                     }}
                                     onClick={() => router.push('/events')}
                                     onMouseEnter={(e) => {
                                         e.currentTarget.style.transform = 'translateY(-3px)';
-                                        e.currentTarget.style.boxShadow = '0 10px 20px rgba(0, 0, 0, 0.03)';
-                                        e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.15)';
+                                        e.currentTarget.style.boxShadow = '0 10px 20px rgba(219, 39, 119, 0.08)';
+                                        e.currentTarget.style.borderColor = 'rgba(219, 39, 119, 0.35)';
                                     }}
                                     onMouseLeave={(e) => {
                                         e.currentTarget.style.transform = 'translateY(0)';
                                         e.currentTarget.style.boxShadow = 'none';
-                                        e.currentTarget.style.borderColor = '#f1f5f9';
+                                        e.currentTarget.style.borderColor = '#f5b8d8';
                                     }}
                                 >
-                                    <div className="d-flex align-items-center justify-content-center rounded-3" style={{ width: '42px', height: '42px', backgroundColor: 'rgba(99, 102, 241, 0.1)', color: '#6366f1', flexShrink: 0 }}>
+                                    <div className="d-flex align-items-center justify-content-center rounded-3" style={{ width: '42px', height: '42px', backgroundColor: 'rgba(219, 39, 119, 0.12)', color: '#db2777', flexShrink: 0 }}>
                                         <i className="fe fe-calendar fs-4"></i>
                                     </div>
                                     <div className="d-flex flex-column gap-0.5">
-                                        <span className="fw-bold" style={{ fontSize: '13px', color: '#4f46e5' }}>Aktif Etkinlikler</span>
+                                        <span className="fw-bold" style={{ fontSize: '13px', color: '#be185d' }}>Aktif Etkinlikler</span>
                                         <div className="d-flex align-items-center gap-2">
-                                            <h2 className="mb-0 fw-bold text-dark" style={{ fontSize: '18px', lineHeight: 1 }}>
+                                            <h2 className="mb-0 fw-bold" style={{ fontSize: '18px', lineHeight: 1, color: '#9d174d' }}>
                                                 {loadingStats ? (
                                                     <Spinner animation="border" role="status" size="sm">
                                                         <span className="visually-hidden">Yükleniyor...</span>
