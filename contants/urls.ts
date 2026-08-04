@@ -69,6 +69,8 @@ export const CV_SEARCH_ENDPOINTS = {
   HYBRID_SEARCH: '/search/hybrid',
   // Candidates
   CANDIDATES: '/candidates',
+  CANDIDATES_DUPLICATES: '/candidates/duplicates',
+  CANDIDATES_MERGE: '/candidates/merge',
   // Search
   POPULAR_QUERIES: '/search/popular-queries',
   SUGGEST: '/search/suggest',

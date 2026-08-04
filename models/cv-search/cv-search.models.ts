@@ -134,3 +134,44 @@ export interface SuggestionResult {
   text: string
   type: 'skill' | 'company' | 'position' | string
 }
+
+// ── Duplicate Detection Models ────────────────────────────────────────────────
+
+/** Mirrors storage.DuplicateCandidateItem */
+export interface DuplicateCandidateItem {
+  candidate_id: number
+  graph_node_id: number
+  person_node_id: string
+  name: string
+  current_position: string
+  seniority: string
+  experience_years: number
+  top_skills: string[]
+  companies: string[]
+  education: string[]
+  cv_files: string[]
+  created_at: string
+}
+
+/** Mirrors storage.DuplicateCandidateGroup */
+export interface DuplicateCandidateGroup {
+  group_key: string
+  candidates: DuplicateCandidateItem[]
+  suggested_master_id: number
+}
+
+export interface DuplicatesResponse {
+  groups: DuplicateCandidateGroup[]
+  total_groups: number
+}
+
+export interface MergeCandidatesRequest {
+  master_candidate_id: number
+  duplicate_candidate_ids: number[]
+}
+
+export interface MergeCandidatesResponse {
+  success: boolean
+  message: string
+  master_candidate?: CandidateDetail
+}
