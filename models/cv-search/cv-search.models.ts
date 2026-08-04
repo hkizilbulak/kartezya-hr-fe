@@ -125,6 +125,7 @@ export interface CandidateDetail {
   current_position: string
   seniority: string
   interviews: Interview[]
+  original_cv_text?: string
   created_at: string
 }
 

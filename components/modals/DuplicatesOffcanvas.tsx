@@ -7,7 +7,6 @@ import {
   Spinner,
   Modal,
   Alert,
-  ListGroup,
 } from 'react-bootstrap';
 import {
   GitMerge,
@@ -17,15 +16,14 @@ import {
   CheckCircle,
   RefreshCw,
   Eye,
-  BookOpen,
-  FileText,
-  Star,
 } from 'react-feather';
 import { cvSearchService } from '@/services/cv-search.service';
 import type {
   DuplicateCandidateGroup,
   DuplicateCandidateItem,
+  CandidateDetail
 } from '@/models/cv-search/cv-search.models';
+import CandidatePreviewModal from './CandidatePreviewModal';
 import { toast } from 'react-toastify';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -39,151 +37,7 @@ interface Props {
   onMerged: (mergedGroupKey: string) => void;
 }
 
-// ── Candidate Detail Modal ────────────────────────────────────────────────────
 
-function CandidateDetailModal({
-  item,
-  isMaster,
-  show,
-  onHide,
-  onSelectMaster,
-}: {
-  item: DuplicateCandidateItem;
-  isMaster: boolean;
-  show: boolean;
-  onHide: () => void;
-  onSelectMaster: () => void;
-}) {
-  if (!item) return null;
-
-  const Section = ({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) => (
-    <div className="mb-3">
-      <div className="d-flex align-items-center gap-2 mb-2" style={{ color: '#495057' }}>
-        {icon}
-        <span className="fw-semibold small">{title}</span>
-      </div>
-      {children}
-    </div>
-  );
-
-  return (
-    <Modal show={show} onHide={onHide} size="lg" centered scrollable>
-      <Modal.Header closeButton>
-        <Modal.Title className="d-flex align-items-center gap-2" style={{ fontSize: 17 }}>
-          <User size={18} />
-          {item.name}
-          {isMaster && <Badge bg="primary" style={{ fontSize: 11 }}>Master</Badge>}
-        </Modal.Title>
-      </Modal.Header>
-
-      <Modal.Body>
-        {/* Özet satır */}
-        <div
-          className="d-flex flex-wrap gap-3 mb-4 p-3 rounded"
-          style={{ backgroundColor: '#f8f9fa', fontSize: 13 }}
-        >
-          <span className="d-flex align-items-center gap-1">
-            <Briefcase size={13} className="text-muted" />
-            {item.current_position || '—'}
-          </span>
-          <span className="d-flex align-items-center gap-1">
-            <Award size={13} className="text-muted" />
-            {item.seniority || '—'}
-          </span>
-          {item.experience_years > 0 && (
-            <span className="text-muted">{item.experience_years} yıl deneyim</span>
-          )}
-          <span className="text-muted">ID: {item.candidate_id}</span>
-          {item.created_at && (
-            <span className="text-muted">
-              {new Date(item.created_at).toLocaleDateString('tr-TR')}
-            </span>
-          )}
-        </div>
-
-        {/* Yetenekler */}
-        {item.top_skills?.length > 0 && (
-          <Section icon={<Star size={14} />} title="Yetenekler">
-            <div className="d-flex flex-wrap gap-2">
-              {item.top_skills.map((s) => (
-                <span
-                  key={s}
-                  className="badge rounded-pill"
-                  style={{ backgroundColor: '#e7f1ff', color: '#0d6efd', fontSize: 12, fontWeight: 500 }}
-                >
-                  {s}
-                </span>
-              ))}
-            </div>
-          </Section>
-        )}
-
-        {/* Şirketler */}
-        {item.companies?.length > 0 && (
-          <Section icon={<Briefcase size={14} />} title="Çalıştığı Şirketler">
-            <ListGroup variant="flush">
-              {item.companies.map((c, i) => (
-                <ListGroup.Item key={i} className="px-0 py-1 border-0" style={{ fontSize: 13 }}>
-                  {c}
-                </ListGroup.Item>
-              ))}
-            </ListGroup>
-          </Section>
-        )}
-
-        {/* Eğitim */}
-        {item.education?.length > 0 && (
-          <Section icon={<BookOpen size={14} />} title="Eğitim">
-            <ListGroup variant="flush">
-              {item.education.map((e, i) => (
-                <ListGroup.Item key={i} className="px-0 py-1 border-0" style={{ fontSize: 13 }}>
-                  {e}
-                </ListGroup.Item>
-              ))}
-            </ListGroup>
-          </Section>
-        )}
-
-        {/* CV Dosyaları */}
-        {item.cv_files?.length > 0 && (
-          <Section icon={<FileText size={14} />} title="CV Dosyaları">
-            <ListGroup variant="flush">
-              {item.cv_files.map((f, i) => (
-                <ListGroup.Item key={i} className="px-0 py-1 border-0" style={{ fontSize: 13, color: '#0d6efd' }}>
-                  {f}
-                </ListGroup.Item>
-              ))}
-            </ListGroup>
-          </Section>
-        )}
-
-        {/* Boş uyarısı */}
-        {!item.top_skills?.length && !item.companies?.length && !item.education?.length && !item.cv_files?.length && (
-          <p className="text-muted small">Bu aday için ek detay bulunamadı.</p>
-        )}
-      </Modal.Body>
-
-      <Modal.Footer className="justify-content-between">
-        <Button variant="secondary" size="sm" onClick={onHide}>
-          Kapat
-        </Button>
-        {!isMaster && (
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => {
-              onSelectMaster();
-              onHide();
-            }}
-          >
-            <CheckCircle size={13} className="me-1" />
-            Bu Adayı Master Yap
-          </Button>
-        )}
-      </Modal.Footer>
-    </Modal>
-  );
-}
 
 // ── Candidate mini card ────────────────────────────────────────────────────────
 
@@ -199,6 +53,23 @@ function CandidateMiniCard({
   onSelectMaster: () => void;
 }) {
   const [detailOpen, setDetailOpen] = useState(false);
+  const [detail, setDetail] = useState<CandidateDetail | null>(null);
+  const [loadingDetail, setLoadingDetail] = useState(false);
+
+  const handleOpenDetail = async () => {
+    setDetailOpen(true);
+    if (!detail) {
+      setLoadingDetail(true);
+      try {
+        const res = await cvSearchService.getCandidateDetail(item.candidate_id);
+        setDetail(res);
+      } catch (err) {
+        toast.error('Aday detayı yüklenemedi.');
+      } finally {
+        setLoadingDetail(false);
+      }
+    }
+  };
 
   return (
     <>
@@ -289,7 +160,7 @@ function CandidateMiniCard({
             size="sm"
             className="flex-fill"
             style={{ fontSize: 11, padding: '3px 6px' }}
-            onClick={() => setDetailOpen(true)}
+            onClick={handleOpenDetail}
           >
             <Eye size={11} className="me-1" />
             Detay
@@ -309,12 +180,28 @@ function CandidateMiniCard({
         </div>
       </div>
 
-      <CandidateDetailModal
-        item={item}
-        isMaster={isMaster}
+      <CandidatePreviewModal
         show={detailOpen}
         onHide={() => setDetailOpen(false)}
-        onSelectMaster={onSelectMaster}
+        candidate={item}
+        detail={detail}
+        loadingDetail={loadingDetail}
+        isDuplicateView={true}
+        footerActions={
+          !isMaster && (
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => {
+                onSelectMaster();
+                setDetailOpen(false);
+              }}
+            >
+              <CheckCircle size={13} className="me-1" />
+              Bu Adayı Master Yap
+            </Button>
+          )
+        }
       />
     </>
   );
