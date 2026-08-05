@@ -23,12 +23,6 @@ axiosInstance.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
     
-    // Add CV-Search API Key for secure endpoints
-    const cvApiKey = process.env.NEXT_PUBLIC_CV_API_KEY;
-    if (cvApiKey) {
-      config.headers['X-API-Key'] = cvApiKey;
-    }
-    
     return config;
   },
   (error) => {
