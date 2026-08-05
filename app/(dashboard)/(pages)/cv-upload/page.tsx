@@ -24,6 +24,12 @@ const getStatusBadge = (status: string) => {
       return <Badge bg="info">İşleniyor</Badge>;
     case 'failed':
       return <Badge bg="danger">Hata</Badge>;
+    case 'duplicate':
+      return <Badge bg="secondary">Kopya (Atlandı)</Badge>;
+    case 'too_large':
+      return <Badge bg="danger">Boyut Çok Büyük</Badge>;
+    case 'invalid_type':
+      return <Badge bg="danger">Geçersiz Format</Badge>;
     case 'pending':
     default:
       return <Badge bg="warning" text="dark">Bekliyor</Badge>;
