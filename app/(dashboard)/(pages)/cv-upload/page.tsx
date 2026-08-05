@@ -23,14 +23,20 @@ const getStatusBadge = (status: string) => {
     case 'processing':
       return <Badge bg="info">İşleniyor</Badge>;
     case 'failed':
+    case 'error':
       return <Badge bg="danger">Hata</Badge>;
     case 'duplicate':
-      return <Badge bg="secondary">Kopya (Atlandı)</Badge>;
+      return <Badge bg="secondary">Zaten Var (Kopya)</Badge>;
     case 'too_large':
       return <Badge bg="danger">Boyut Çok Büyük</Badge>;
     case 'invalid_type':
       return <Badge bg="danger">Geçersiz Format</Badge>;
+    case 'queue_full':
+      return <Badge bg="danger">Kabul Edilmedi</Badge>;
+    case 'batch_submitted':
+      return <Badge bg="info">Toplu İşleme Gönderildi</Badge>;
     case 'pending':
+    case 'queued':
     default:
       return <Badge bg="warning" text="dark">Bekliyor</Badge>;
   }
@@ -61,23 +67,29 @@ const CvUploadPage = () => {
     const poll = async () => {
       try {
         const status = await cvSearchService.getBatchStatus(batchId);
-        if (status.results && status.results.length > 0) {
-          setJobResults(status.results);
+        const currentJobs = status.jobs || [];
+        if (currentJobs.length > 0) {
+          setJobResults(currentJobs);
         }
 
+        const terminalStatuses = ['completed', 'failed', 'duplicate', 'too_large', 'invalid_type', 'error', 'queue_full', 'batch_submitted'];
         const allDone =
-          status.results.length > 0 &&
-          status.results.every(
-            (r) => r.status === 'completed' || r.status === 'failed'
-          );
+          currentJobs.length > 0 &&
+          currentJobs.every((r) => terminalStatuses.includes(r.status));
         if (allDone) {
           stopPolling();
-          const failed = status.results.filter((r) => r.status === 'failed').length;
-          const completed = status.results.filter((r) => r.status === 'completed').length;
-          if (failed === 0) {
-            toast.success(`${completed} dosya başarıyla işlendi.`);
+          const completed = currentJobs.filter((r) => r.status === 'completed').length;
+          const duplicate = currentJobs.filter((r) => r.status === 'duplicate').length;
+          const failed = currentJobs.filter((r) => !['completed', 'duplicate'].includes(r.status)).length;
+          
+          if (completed > 0 && failed === 0) {
+            toast.success(`${completed} dosya başarıyla işlendi.${duplicate > 0 ? ` (${duplicate} kopya atlandı)` : ''}`);
+          } else if (completed === 0 && duplicate > 0 && failed === 0) {
+            toast.info(`${duplicate} dosya zaten mevcut olduğu için atlandı.`);
+          } else if (failed > 0) {
+            toast.warning(`${completed} başarılı, ${duplicate} kopya, ${failed} başarısız.`);
           } else {
-            toast.warning(`${completed} başarılı, ${failed} başarısız.`);
+            toast.info(`İşlem tamamlandı.`);
           }
         }
       } catch {
@@ -214,9 +226,10 @@ const CvUploadPage = () => {
     setSelectedFiles([]);
   };
 
+  const terminalStatuses = ['completed', 'failed', 'duplicate', 'too_large', 'invalid_type', 'error', 'queue_full', 'batch_submitted'];
   const allDone =
     jobResults.length > 0 &&
-    jobResults.every((r: BulkUploadJobResult) => r.status === 'completed' || r.status === 'failed');
+    jobResults.every((r: BulkUploadJobResult) => terminalStatuses.includes(r.status));
 
   return (
     <Container fluid className="page-container">
@@ -228,35 +241,48 @@ const CvUploadPage = () => {
         />
       </div>
 
-      {/* Upload area — shown when no active batch */}
-      {!batchId && (
-        <Row className="mb-4">
-          <Col lg={12}>
-            <Card className="border-0 shadow-sm">
-              <Card.Body className="p-4">
+      {/* Upload area — always visible */}
+      <Row className="mb-4 justify-content-center">
+          <Col lg={10} xl={9}>
+            <Card className="border-0 shadow-sm" style={{ borderRadius: '16px', backgroundColor: '#ffffff' }}>
+              <Card.Body className="p-4 p-md-5">
+                <div className="text-center mb-4">
+                  <h5 className="fw-bold" style={{ color: '#1e293b', letterSpacing: '0.5px' }}>CV YÜKLEME MERKEZİ</h5>
+                </div>
+
                 {/* Drop zone */}
                 <div
                   onClick={() => fileInputRef.current?.click()}
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
+                  className="d-flex flex-column align-items-center justify-content-center"
                   style={{
-                    border: `2px dashed ${isDragOver ? '#0d6efd' : '#dee2e6'}`,
-                    borderRadius: '8px',
-                    padding: '48px 24px',
+                    border: `2px dashed ${isDragOver ? '#6366f1' : '#cbd5e1'}`,
+                    borderRadius: '16px',
+                    padding: '60px 24px 30px',
                     textAlign: 'center',
                     cursor: 'pointer',
-                    background: isDragOver ? '#f0f6ff' : '#fafafa',
+                    background: isDragOver ? '#eef2ff' : '#f8fafc',
                     transition: 'all 0.2s',
+                    minHeight: '280px'
                   }}
                 >
-                  <Upload size={36} color={isDragOver ? '#0d6efd' : '#6c757d'} />
-                  <p className="mt-3 mb-1 fw-semibold">
-                    Dosyaları buraya sürükleyin veya seçmek için tıklayın
-                  </p>
-                  <p className="text-muted small mb-0">
-                    PDF, DOCX, TXT · Maksimum {MAX_FILES} dosya · Dosya başına {MAX_FILE_SIZE_MB} MB
-                  </p>
+                  <div className="mb-3">
+                    <svg width="72" height="72" viewBox="0 0 24 24" fill="#eef2ff" stroke="#6366f1" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                      <path d="M12 17v-8"></path>
+                      <path d="M9 12l3-3 3 3"></path>
+                    </svg>
+                  </div>
+                  <h4 className="fw-bold mb-2 text-dark" style={{ fontSize: '20px' }}>Sürükle ve Bırak</h4>
+                  <p className="text-muted mb-4 pb-2" style={{ fontSize: '15px' }}>Veya bir dosya seçmek için tıklayın</p>
+                  
+                  <div className="mt-auto w-100">
+                    <p className="text-muted small mb-0" style={{ fontSize: '13px' }}>
+                      Maksimum {MAX_FILES} dosya. PDF, DOCX ve TXT desteklenir. (Max {MAX_FILE_SIZE_MB} MB per file).
+                    </p>
+                  </div>
                   <Form.Control
                     ref={fileInputRef}
                     type="file"
@@ -265,6 +291,17 @@ const CvUploadPage = () => {
                     onChange={handleFileChange}
                     style={{ display: 'none' }}
                   />
+                </div>
+
+                <div className="text-center mt-4 mb-2">
+                  <Button 
+                    variant="primary" 
+                    className="fw-semibold px-5 py-2 shadow-sm"
+                    style={{ borderRadius: '50px', backgroundColor: '#4f46e5', border: 'none', minWidth: '220px', fontSize: '15px' }}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    KLASÖR SEÇ
+                  </Button>
                 </div>
 
                 {/* Selected file list */}
@@ -319,84 +356,79 @@ const CvUploadPage = () => {
             </Card>
           </Col>
         </Row>
-      )}
 
       {/* Batch status table — shown after upload */}
       {batchId && (
-        <Row>
-          <Col lg={12}>
-            <div className="table-wrapper">
-              <Card className="border-0 shadow-sm position-relative">
-                <Card.Header className="bg-white d-flex align-items-center justify-content-between py-3 px-4">
-                  <div>
-                    <span className="fw-semibold">İşlem Durumu</span>
-                    <span className="text-muted small ms-2">
-                      Batch: {batchId === 'uploading' ? 'Yükleniyor...' : batchId === 'failed' ? 'Yükleme Başarısız' : batchId}
-                    </span>
-                  </div>
+        <Row className="justify-content-center pb-5">
+          <Col lg={10} xl={9}>
+            <Card className="border-0 shadow-sm position-relative" style={{ borderRadius: '16px', backgroundColor: '#ffffff', overflow: 'hidden' }}>
+              <Card.Header className="bg-white border-bottom-0 d-flex align-items-center justify-content-between py-4 px-4 px-md-5">
+                <div>
+                  <h5 className="fw-bold mb-1" style={{ color: '#1e293b' }}>İşlem Durumu</h5>
+                  <span className="text-muted small">
+                    Batch: {batchId === 'uploading' ? 'Yükleniyor...' : batchId === 'failed' ? 'Yükleme Başarısız' : batchId}
+                  </span>
+                </div>
                   <div className="d-flex gap-2 align-items-center">
                     {batchId === 'uploading' && (
-                      <span className="text-muted small">
+                      <span className="text-muted small me-2">
                         <RefreshCw size={14} className="me-1 spin" />
                         Dosyalar gönderiliyor…
                       </span>
                     )}
                     {isPolling && batchId !== 'uploading' && (
-                      <span className="text-muted small">
+                      <span className="text-muted small me-2">
                         <RefreshCw size={14} className="me-1 spin" />
                         Güncelleniyor…
                       </span>
                     )}
                     {allDone && (
-                      <Button variant="outline-primary" size="sm" onClick={handleReset}>
-                        <Upload size={14} className="me-1" />
+                      <Button variant="outline-primary" size="sm" onClick={handleReset} style={{ borderRadius: '50px', padding: '6px 16px', color: '#4f46e5', borderColor: '#eef2ff', backgroundColor: '#eef2ff', fontWeight: 600 }}>
+                        <Upload size={14} className="me-1 mb-1" />
                         Yeni Yükleme
                       </Button>
                     )}
                   </div>
                 </Card.Header>
-                <Card.Body className="p-0">
-                  <div className="table-box">
-                    <div className="table-responsive">
-                      <Table hover className="mb-0">
-                        <thead>
-                          <tr>
-                            <th style={{ width: 50 }}>#</th>
-                            <th>Dosya Adı</th>
-                            <th style={{ width: 140 }}>Durum</th>
-                            <th style={{ width: 100 }}>Job ID</th>
-                            <th>Hata Mesajı</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {jobResults.length > 0 ? (
-                            jobResults.map((job, i) => (
-                              <tr key={i}>
-                                <td>{i + 1}</td>
-                                <td className="text-break">{job.filename}</td>
-                                <td>{getStatusBadge(job.status)}</td>
-                                <td className="text-muted small">
-                                  {job.job_id ?? '—'}
-                                </td>
-                                <td className="text-danger small">
-                                  {job.error || '—'}
-                                </td>
-                              </tr>
-                            ))
-                          ) : (
-                            <tr>
-                              <td colSpan={5} className="text-center py-4 text-muted">
-                                Durum bilgisi bekleniyor…
+                <Card.Body className="p-0 px-4 px-md-5 pb-4">
+                  <div className="table-responsive">
+                    <Table hover className="mb-0 align-middle">
+                      <thead className="bg-transparent">
+                        <tr>
+                          <th className="border-0 text-muted small fw-semibold py-3 px-0" style={{ width: 50 }}>#</th>
+                          <th className="border-0 text-muted small fw-semibold py-3">Dosya Adı</th>
+                          <th className="border-0 text-muted small fw-semibold py-3" style={{ width: 140 }}>Durum</th>
+                          <th className="border-0 text-muted small fw-semibold py-3" style={{ width: 100 }}>Job ID</th>
+                          <th className="border-0 text-muted small fw-semibold py-3">Hata Mesajı</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {jobResults.length > 0 ? (
+                          jobResults.map((job, i) => (
+                            <tr key={i} className="border-bottom" style={{ borderColor: '#f1f5f9' }}>
+                              <td className="border-0 py-3 px-0 text-muted small">{i + 1}</td>
+                              <td className="border-0 py-3 text-dark fw-medium text-break" style={{ fontSize: '14.5px' }}>{job.filename}</td>
+                              <td className="border-0 py-3">{getStatusBadge(job.status)}</td>
+                              <td className="border-0 py-3 text-muted small">
+                                {job.job_id ?? '—'}
+                              </td>
+                              <td className="border-0 py-3 text-danger small">
+                                {job.error || '—'}
                               </td>
                             </tr>
-                          )}
-                        </tbody>
-                      </Table>
-                    </div>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan={5} className="border-0 text-center py-5 text-muted">
+                              Durum bilgisi bekleniyor…
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </Table>
                   </div>
                 </Card.Body>
               </Card>
-            </div>
           </Col>
         </Row>
       )}
