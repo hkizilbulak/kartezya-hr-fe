@@ -55,7 +55,7 @@ export interface HybridSearchResponse {
 export interface BulkUploadJobResult {
   job_id?: number
   filename: string
-  status: 'pending' | 'processing' | 'completed' | 'failed'
+  status: string // 'pending', 'processing', 'completed', 'failed', 'duplicate', 'error', etc.
   error?: string
 }
 
@@ -67,11 +67,15 @@ export interface BulkUploadResponse {
 
 export interface BatchStatusResponse {
   batch_id: string
-  total: number
-  completed: number
-  failed: number
-  pending: number
-  results: BulkUploadJobResult[]
+  jobs: BulkUploadJobResult[]
+  summary: {
+    total: number
+    completed: number
+    failed: number
+    pending: number
+    processing: number
+    duplicate?: number
+  }
 }
 
 // ── Candidate Models ──────────────────────────────────────────────────────────
