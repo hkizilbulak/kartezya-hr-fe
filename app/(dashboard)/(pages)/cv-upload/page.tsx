@@ -28,7 +28,9 @@ const getStatusBadge = (status: string) => {
     case 'duplicate':
       return <Badge bg="secondary">Zaten Var (Kopya)</Badge>;
     case 'too_large':
+      return <Badge bg="danger">Boyut Çok Büyük</Badge>;
     case 'invalid_type':
+      return <Badge bg="danger">Geçersiz Format</Badge>;
     case 'queue_full':
       return <Badge bg="danger">Kabul Edilmedi</Badge>;
     case 'batch_submitted':
