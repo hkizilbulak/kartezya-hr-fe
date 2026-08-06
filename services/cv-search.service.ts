@@ -8,6 +8,9 @@ import type {
   CandidateDetail,
   InterviewRequest,
   SuggestionResult,
+  DuplicatesResponse,
+  MergeCandidatesRequest,
+  MergeCandidatesResponse,
 } from '@/models/cv-search/cv-search.models'
 
 class CvSearchService {
@@ -131,6 +134,23 @@ class CvSearchService {
     const response = await cvSearchAxiosInstance.get<SuggestionResult[]>(
       CV_SEARCH_ENDPOINTS.SUGGEST,
       { params: { q, limit } }
+    )
+    return response.data
+  }
+
+  // ── Duplicates ───────────────────────────────────────────────────────────────
+
+  async getDuplicateCandidates(): Promise<DuplicatesResponse> {
+    const response = await cvSearchAxiosInstance.get<DuplicatesResponse>(
+      CV_SEARCH_ENDPOINTS.CANDIDATES_DUPLICATES
+    )
+    return response.data
+  }
+
+  async mergeCandidates(req: MergeCandidatesRequest): Promise<MergeCandidatesResponse> {
+    const response = await cvSearchAxiosInstance.post<MergeCandidatesResponse>(
+      CV_SEARCH_ENDPOINTS.CANDIDATES_MERGE,
+      req
     )
     return response.data
   }

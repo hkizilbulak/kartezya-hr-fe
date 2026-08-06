@@ -8,15 +8,20 @@ import {
   Button,
   Container,
   Spinner,
+  Badge,
 } from 'react-bootstrap';
 import { useRouter } from 'next/navigation';
 import { cvSearchService } from '@/services/cv-search.service';
-import type { CandidateListItem } from '@/models/cv-search/cv-search.models';
+import type {
+  CandidateListItem,
+  DuplicateCandidateGroup,
+} from '@/models/cv-search/cv-search.models';
 import { PageHeading } from '@/widgets';
 import CustomPagination from '@/components/Pagination';
 import StatusBadge from '@/components/StatusBadge';
-import { Eye, ChevronUp, ChevronDown } from 'react-feather';
+import { Eye, ChevronUp, ChevronDown, GitMerge } from 'react-feather';
 import FormTextField from '@/components/FormTextField';
+import DuplicatesOffcanvas from '@/components/modals/DuplicatesOffcanvas';
 import { toast } from 'react-toastify';
 import '@/styles/table-list.scss';
 import '@/styles/components/table-common.scss';
@@ -64,6 +69,27 @@ const CandidatesPage = () => {
     key: string | null;
     direction: 'ASC' | 'DESC';
   }>({ key: null, direction: 'DESC' });
+
+  // ── Duplicate detection ────────────────────────────────────────────────────
+  const [dupGroups, setDupGroups] = useState<DuplicateCandidateGroup[]>([]);
+  const [dupLoading, setDupLoading] = useState(false);
+  const [dupOpen, setDupOpen] = useState(false);
+
+  const fetchDuplicates = useCallback(async () => {
+    setDupLoading(true);
+    try {
+      const data = await cvSearchService.getDuplicateCandidates();
+      setDupGroups(data.groups ?? []);
+    } catch {
+      // Sessizce geç — badge gösterilmez
+    } finally {
+      setDupLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchDuplicates();
+  }, [fetchDuplicates]);
 
   const fetchCandidates = useCallback(async (
     page: number,
@@ -137,13 +163,43 @@ const CandidatesPage = () => {
 
   return (
     <Container fluid className="page-container">
-      <div className="page-heading-wrapper">
+      <div className="page-heading-wrapper d-flex align-items-center justify-content-between">
         <PageHeading
           heading="Adaylar"
           showCreateButton={false}
           showFilterButton={false}
         />
+        <Button
+          variant={dupGroups.length > 0 ? 'outline-danger' : 'outline-secondary'}
+          size="sm"
+          className="d-flex align-items-center gap-2"
+          onClick={() => setDupOpen(true)}
+          disabled={dupLoading}
+          title="Duplikasyon tespiti"
+        >
+          {dupLoading
+            ? <Spinner animation="border" size="sm" />
+            : <GitMerge size={14} />
+          }
+          Duplikasyonlar
+          {dupGroups.length > 0 && (
+            <Badge bg="danger" pill style={{ fontSize: 10 }}>
+              {dupGroups.length}
+            </Badge>
+          )}
+        </Button>
       </div>
+
+      <DuplicatesOffcanvas
+        show={dupOpen}
+        onHide={() => setDupOpen(false)}
+        groups={dupGroups}
+        loading={dupLoading}
+        onRefresh={fetchDuplicates}
+        onMerged={() => {
+          fetchCandidates(currentPage, pageSize, appliedSearch, sortConfig.key, sortConfig.direction);
+        }}
+      />
 
       {/* Arama Kartı */}
       <Row className="mb-3">

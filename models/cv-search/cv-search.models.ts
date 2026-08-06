@@ -55,7 +55,7 @@ export interface HybridSearchResponse {
 export interface BulkUploadJobResult {
   job_id?: number
   filename: string
-  status: 'pending' | 'processing' | 'completed' | 'failed'
+  status: string // 'pending', 'processing', 'completed', 'failed', 'duplicate', 'error', etc.
   error?: string
 }
 
@@ -67,11 +67,15 @@ export interface BulkUploadResponse {
 
 export interface BatchStatusResponse {
   batch_id: string
-  total: number
-  completed: number
-  failed: number
-  pending: number
-  results: BulkUploadJobResult[]
+  jobs: BulkUploadJobResult[]
+  summary: {
+    total: number
+    completed: number
+    failed: number
+    pending: number
+    processing: number
+    duplicate?: number
+  }
 }
 
 // ── Candidate Models ──────────────────────────────────────────────────────────
@@ -125,6 +129,7 @@ export interface CandidateDetail {
   current_position: string
   seniority: string
   interviews: Interview[]
+  original_cv_text?: string
   created_at: string
 }
 
@@ -133,4 +138,45 @@ export interface CandidateDetail {
 export interface SuggestionResult {
   text: string
   type: 'skill' | 'company' | 'position' | string
+}
+
+// ── Duplicate Detection Models ────────────────────────────────────────────────
+
+/** Mirrors storage.DuplicateCandidateItem */
+export interface DuplicateCandidateItem {
+  candidate_id: number
+  graph_node_id: number
+  person_node_id: string
+  name: string
+  current_position: string
+  seniority: string
+  experience_years: number
+  top_skills: string[]
+  companies: string[]
+  education: string[]
+  cv_files: string[]
+  created_at: string
+}
+
+/** Mirrors storage.DuplicateCandidateGroup */
+export interface DuplicateCandidateGroup {
+  group_key: string
+  candidates: DuplicateCandidateItem[]
+  suggested_master_id: number
+}
+
+export interface DuplicatesResponse {
+  groups: DuplicateCandidateGroup[]
+  total_groups: number
+}
+
+export interface MergeCandidatesRequest {
+  master_candidate_id: number
+  duplicate_candidate_ids: number[]
+}
+
+export interface MergeCandidatesResponse {
+  success: boolean
+  message: string
+  master_candidate?: CandidateDetail
 }
