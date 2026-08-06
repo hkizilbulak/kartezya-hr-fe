@@ -252,13 +252,16 @@ const EmployeeDetailPage = () => {
       if (response?.data) {
         let allGrades: EmployeeGrade[] = [];
 
-        // Check if response.data is paginated or direct array
-        if ((response.data as any).items && Array.isArray((response.data as any).items)) {
-          // Paginated response
-          allGrades = (response.data as any).items;
-        } else if (Array.isArray(response.data)) {
-          // Direct array response
-          allGrades = response.data as EmployeeGrade[];
+        const payload = response.data as any;
+        // API returns PaginatedResponse { data: [...], page } as the body;
+        // getByEmployeeId already unwraps axios → body, so payload is either
+        // the grade array or a nested { data | items } envelope.
+        if (Array.isArray(payload)) {
+          allGrades = payload as EmployeeGrade[];
+        } else if (Array.isArray(payload.data)) {
+          allGrades = payload.data as EmployeeGrade[];
+        } else if (Array.isArray(payload.items)) {
+          allGrades = payload.items as EmployeeGrade[];
         }
 
         // Sort by start_date descending (en yeni en üstte)
