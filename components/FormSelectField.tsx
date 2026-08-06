@@ -72,13 +72,16 @@ const FormSelectField = ({
 
         if (isOpen) {
             document.addEventListener('mousedown', handleClickOutside);
-            document.body.classList.add('modal-open');
             // Focus search input when dropdown opens
-            setTimeout(() => {
-                if (searchable && searchInputRef.current && !isMobile) {
+            const timer = setTimeout(() => {
+                if (searchable && searchInputRef.current) {
                     searchInputRef.current.focus();
                 }
-            }, 100);
+            }, 50);
+            return () => {
+                clearTimeout(timer);
+                document.removeEventListener('mousedown', handleClickOutside);
+            };
         } else {
             // Clear search when dropdown closes
             setSearchQuery("");
@@ -86,7 +89,6 @@ const FormSelectField = ({
 
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
-            document.body.classList.remove('modal-open');
         };
     }, [isOpen, isMobile, searchable]);
 
@@ -139,11 +141,11 @@ const FormSelectField = ({
                 : Math.min(spaceBelow - 8, 300); // Leave some margin from bottom
                 
             const top = shouldOpenUpward 
-                ? rect.top + window.scrollY - Math.min(estimatedHeight, maxHeight)
-                : rect.bottom + window.scrollY;
+                ? rect.top - Math.min(estimatedHeight, maxHeight)
+                : rect.bottom;
                 
             // Ensure dropdown doesn't overflow horizontally
-            let left = rect.left + window.scrollX;
+            let left = rect.left;
             const dropdownWidth = rect.width;
             
             // Check if dropdown would overflow right edge
@@ -357,12 +359,13 @@ const FormSelectField = ({
                         typeof window !== 'undefined' && createPortal(
                             <div 
                                 ref={dropdownRef}
-                                className={`position-absolute bg-white border rounded shadow-sm ${dropdownPosition.openUpward ? 'dropdown-upward' : 'dropdown-downward'}`}
+                                className={`bg-white border rounded shadow-sm ${dropdownPosition.openUpward ? 'dropdown-upward' : 'dropdown-downward'}`}
                                 style={{ 
+                                    position: 'fixed',
                                     top: `${dropdownPosition.top}px`,
                                     left: `${dropdownPosition.left}px`,
                                     width: `${dropdownPosition.width}px`,
-                                    zIndex: 1065,
+                                    zIndex: 1070,
                                     maxHeight: `${dropdownPosition.maxHeight}px`
                                 }}
                             >
@@ -376,6 +379,8 @@ const FormSelectField = ({
                                             value={searchQuery}
                                             onChange={(e) => setSearchQuery(e.target.value)}
                                             onClick={(e) => e.stopPropagation()}
+                                            onMouseDown={(e) => e.stopPropagation()}
+                                            onKeyDown={(e) => e.stopPropagation()}
                                         />
                                     </div>
                                 )}
@@ -386,46 +391,51 @@ const FormSelectField = ({
                                     </div>
                                 </div>
                             </div>,
-                            document.body
+                            selectRef.current?.closest('.modal') || selectRef.current?.closest('.offcanvas') || document.body
                         )
                     )}
 
                     {/* Mobile Bottom Sheet */}
                     {isOpen && isMobile && (
-                        <>
-                            <div 
-                                className="modal-backdrop fade show"
-                                onClick={() => setIsOpen(false)}
-                                style={{ cursor: 'pointer' }}
-                            ></div>
-                            <div className="position-fixed bottom-0 start-0 w-100 bg-white shadow-lg border-top rounded-top-3" 
-                                 style={{ zIndex: 1070, maxHeight: '60vh' }}>
-                                {/* Handle bar */}
-                                <div className="py-2">
-                                </div>
-                                
-                                {searchable && (
-                                    <div className="px-3 pb-2 border-bottom bg-light">
-                                        <input
-                                            ref={searchInputRef}
-                                            type="text"
-                                            className="form-control"
-                                            placeholder="Ara..."
-                                            value={searchQuery}
-                                            onChange={(e) => setSearchQuery(e.target.value)}
-                                            onClick={(e) => e.stopPropagation()}
-                                        />
+                        typeof window !== 'undefined' && createPortal(
+                            <>
+                                <div
+                                    className="modal-backdrop fade show"
+                                    onClick={() => setIsOpen(false)}
+                                    style={{ cursor: 'pointer', zIndex: 1069 }}
+                                ></div>
+                                <div className="position-fixed bottom-0 start-0 w-100 bg-white shadow-lg border-top rounded-top-3"
+                                     style={{ zIndex: 1070, maxHeight: '60vh' }}>
+                                    {/* Handle bar */}
+                                    <div className="py-2">
                                     </div>
-                                )}
-                                
-                                {/* Options */}
-                                <div className="overflow-auto" style={{ maxHeight: searchable ? 'calc(60vh - 120px)' : 'calc(60vh - 40px)' }}>
-                                    <div className="list-group list-group-flush">
-                                        {renderOptions()}
+
+                                    {searchable && (
+                                        <div className="px-3 pb-2 border-bottom bg-light">
+                                            <input
+                                                ref={searchInputRef}
+                                                type="text"
+                                                className="form-control"
+                                                placeholder="Ara..."
+                                                value={searchQuery}
+                                                onChange={(e) => setSearchQuery(e.target.value)}
+                                                onClick={(e) => e.stopPropagation()}
+                                                onMouseDown={(e) => e.stopPropagation()}
+                                                onKeyDown={(e) => e.stopPropagation()}
+                                            />
+                                        </div>
+                                    )}
+
+                                    {/* Options */}
+                                    <div className="overflow-auto" style={{ maxHeight: searchable ? 'calc(60vh - 120px)' : 'calc(60vh - 40px)' }}>
+                                        <div className="list-group list-group-flush">
+                                            {renderOptions()}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        </>
+                            </>,
+                            selectRef.current?.closest('.modal') || selectRef.current?.closest('.offcanvas') || document.body
+                        )
                     )}
                 </div>
 
