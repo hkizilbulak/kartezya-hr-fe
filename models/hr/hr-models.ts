@@ -72,6 +72,7 @@ export interface Employee {
     manager: string;
     job_title: string;
     personnel_no?: string;
+    work_email?: string;
   };
   status?: 'ACTIVE' | 'PASSIVE';
   user?: UserInfo;

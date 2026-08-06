@@ -459,11 +459,11 @@ export const exportEmployeesToExcel = async (employees: Employee[]) => {
     // Title Row
     const titleRow = ws.addRow(['Çalışan Listesi']);
     titleRow.font = { bold: true, size: 14 };
-    ws.mergeCells(1, 1, 1, 16);
+    ws.mergeCells(1, 1, 1, 17);
 
     // Headers
     const headers = [
-      'ID', 'Sicil No', 'Ad Soyad', 'E-posta', 'Şirket E-posta', 'Telefon', 
+      'ID', 'Sicil No', 'Ad Soyad', 'E-posta', 'Şirket E-posta', 'İş e-postası', 'Telefon', 
       'Cinsiyet', 'Durum', 'Şirket', 'Departman', 'Yönetici', 'Pozisyon', 
       'İşe Giriş Tarihi', 'Çıkış Tarihi', 'Doğum Tarihi', 'Mesleğe Başlangıç'
     ];
@@ -485,17 +485,18 @@ export const exportEmployeesToExcel = async (employees: Employee[]) => {
     ws.getColumn(3).width = 25; // Ad Soyad
     ws.getColumn(4).width = 30; // E-posta
     ws.getColumn(5).width = 30; // Şirket E-posta
-    ws.getColumn(6).width = 15; // Telefon
-    ws.getColumn(7).width = 10; // Cinsiyet
-    ws.getColumn(8).width = 15; // Durum
-    ws.getColumn(9).width = 20; // Şirket
-    ws.getColumn(10).width = 20; // Departman
-    ws.getColumn(11).width = 25; // Yönetici
-    ws.getColumn(12).width = 20; // Pozisyon
-    ws.getColumn(13).width = 15; // İşe Giriş Tarihi
-    ws.getColumn(14).width = 15; // Çıkış Tarihi
-    ws.getColumn(15).width = 15; // Doğum Tarihi
-    ws.getColumn(16).width = 15; // Mesleğe Başlangıç
+    ws.getColumn(6).width = 30; // Kurum E-posta
+    ws.getColumn(7).width = 15; // Telefon
+    ws.getColumn(8).width = 10; // Cinsiyet
+    ws.getColumn(9).width = 15; // Durum
+    ws.getColumn(10).width = 20; // Şirket
+    ws.getColumn(11).width = 20; // Departman
+    ws.getColumn(12).width = 25; // Yönetici
+    ws.getColumn(13).width = 20; // Pozisyon
+    ws.getColumn(14).width = 15; // İşe Giriş Tarihi
+    ws.getColumn(15).width = 15; // Çıkış Tarihi
+    ws.getColumn(16).width = 15; // Doğum Tarihi
+    ws.getColumn(17).width = 15; // Mesleğe Başlangıç
 
     // Data rows
     employees.forEach((emp, index) => {
@@ -511,6 +512,7 @@ export const exportEmployeesToExcel = async (employees: Employee[]) => {
         `${emp.first_name} ${emp.last_name}`,
         emp.email || '-',
         emp.company_email || '-',
+        emp.work_information?.work_email || '-',
         emp.phone || '-',
         emp.gender === 'MALE' ? 'Erkek' : emp.gender === 'FEMALE' ? 'Kadın' : '-',
         emp.status === 'ACTIVE' ? 'Çalışıyor' : 'Ayrıldı',
