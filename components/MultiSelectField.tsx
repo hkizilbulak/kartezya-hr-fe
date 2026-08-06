@@ -71,13 +71,16 @@ const MultiSelectField: React.FC<MultiSelectFieldProps> = ({
 
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
-      document.body.classList.add('modal-open');
       // Focus search input when dropdown opens
-      setTimeout(() => {
-        if (searchInputRef.current && !isMobile) {
+      const timer = setTimeout(() => {
+        if (searchInputRef.current) {
           searchInputRef.current.focus();
         }
-      }, 100);
+      }, 50);
+      return () => {
+        clearTimeout(timer);
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
     } else {
       // Clear search when dropdown closes
       setSearchQuery("");
@@ -85,7 +88,6 @@ const MultiSelectField: React.FC<MultiSelectFieldProps> = ({
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
-      document.body.classList.remove('modal-open');
     };
   }, [isOpen, isMobile]);
 
@@ -105,9 +107,9 @@ const MultiSelectField: React.FC<MultiSelectFieldProps> = ({
         ? Math.min(spaceAbove - 8, 300)
         : Math.min(spaceBelow - 8, 300);
       const top = shouldOpenUpward 
-        ? rect.top + window.scrollY - Math.min(estimatedHeight, maxHeight)
-        : rect.bottom + window.scrollY;
-      let left = rect.left + window.scrollX;
+        ? rect.top - Math.min(estimatedHeight, maxHeight)
+        : rect.bottom;
+      let left = rect.left;
       const dropdownWidth = rect.width;
       
       if (left + dropdownWidth > viewport.width) {
@@ -241,12 +243,13 @@ const MultiSelectField: React.FC<MultiSelectFieldProps> = ({
         typeof window !== 'undefined' && createPortal(
           <div 
             ref={dropdownRef}
-            className={`position-absolute bg-white border rounded shadow-sm ${dropdownPosition.openUpward ? 'dropdown-upward' : 'dropdown-downward'}`}
+            className={`bg-white border rounded shadow-sm ${dropdownPosition.openUpward ? 'dropdown-upward' : 'dropdown-downward'}`}
             style={{ 
+              position: 'fixed',
               top: `${dropdownPosition.top}px`,
               left: `${dropdownPosition.left}px`,
               width: `${dropdownPosition.width}px`,
-              zIndex: 1065,
+              zIndex: 1070,
               maxHeight: `${dropdownPosition.maxHeight}px`
             }}
             onMouseDown={(e) => e.stopPropagation()}
@@ -262,7 +265,7 @@ const MultiSelectField: React.FC<MultiSelectFieldProps> = ({
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onClick={(e) => e.stopPropagation()}
                 onMouseDown={(e) => e.stopPropagation()}
-                autoFocus
+                onKeyDown={(e) => e.stopPropagation()}
               />
             </div>
             
@@ -321,90 +324,95 @@ const MultiSelectField: React.FC<MultiSelectFieldProps> = ({
               </div>
             </div>
           </div>,
-          document.body
+          selectRef.current?.closest('.modal') || selectRef.current?.closest('.offcanvas') || document.body
         )
       )}
 
       {/* Mobile Bottom Sheet */}
       {isOpen && isMobile && !loading && (
-        <>
-          <div 
-            className="modal-backdrop fade show"
-            onClick={() => setIsOpen(false)}
-            style={{ cursor: 'pointer' }}
-          />
-          <div className="position-fixed bottom-0 start-0 w-100 bg-white shadow-lg border-top rounded-top-3" 
-               style={{ zIndex: 1070, maxHeight: '60vh' }}>
-            
-            {/* Search Input for Mobile */}
-            <div className="p-3 border-bottom bg-light">
-              <input
-                ref={searchInputRef}
-                type="text"
-                className="form-control"
-                placeholder="Ara..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onClick={(e) => e.stopPropagation()}
-              />
-            </div>
-            
-            <div className="overflow-auto" style={{ maxHeight: 'calc(60vh - 120px)' }}>
-              <div className="list-group list-group-flush">
-                {showSelectAll && filteredOptions.length > 0 && (
-                  <button
-                    type="button"
-                    className="list-group-item list-group-item-action border-0 d-flex align-items-center fw-semibold text-primary"
-                    onClick={() => {
-                      const allValues = options.map(o => o.value);
-                      const allSelected = allValues.every(v => value.includes(v));
-                      onChange(allSelected ? [] : allValues);
-                    }}
-                    style={{ minHeight: '40px' }}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={options.length > 0 && options.every(o => value.includes(o.value))}
-                      onChange={() => {}}
-                      className="me-2"
-                      style={{ pointerEvents: 'none' }}
-                    />
-                    {selectAllLabel}
-                  </button>
-                )}
-                {filteredOptions.length === 0 ? (
-                  <div className="list-group-item border-0 text-center text-muted py-3">
-                    {searchQuery ? 'Sonuç bulunamadı' : 'Seçenek bulunamadı'}
-                  </div>
-                ) : (
-                  filteredOptions.map((option) => {
-                    const isSelected = value.includes(option.value);
-                    return (
-                      <button
-                        key={option.value}
-                        type="button"
-                        className={`list-group-item list-group-item-action border-0 d-flex align-items-center ${
-                          isSelected ? 'active' : ''
-                        }`}
-                        onClick={() => handleOptionToggle(option.value)}
-                        style={{ minHeight: '40px' }}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={() => {}} // Handled by button onClick
-                          className="me-2"
-                          style={{ pointerEvents: 'none' }}
-                        />
-                        {option.label}
-                      </button>
-                    );
-                  })
-                )}
+        typeof window !== 'undefined' && createPortal(
+          <>
+            <div
+              className="modal-backdrop fade show"
+              onClick={() => setIsOpen(false)}
+              style={{ cursor: 'pointer', zIndex: 1069 }}
+            />
+            <div className="position-fixed bottom-0 start-0 w-100 bg-white shadow-lg border-top rounded-top-3"
+                 style={{ zIndex: 1070, maxHeight: '60vh' }}>
+
+              {/* Search Input for Mobile */}
+              <div className="p-3 border-bottom bg-light">
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  className="form-control"
+                  placeholder="Ara..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onClick={(e) => e.stopPropagation()}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => e.stopPropagation()}
+                />
+              </div>
+
+              <div className="overflow-auto" style={{ maxHeight: 'calc(60vh - 120px)' }}>
+                <div className="list-group list-group-flush">
+                  {showSelectAll && filteredOptions.length > 0 && (
+                    <button
+                      type="button"
+                      className="list-group-item list-group-item-action border-0 d-flex align-items-center fw-semibold text-primary"
+                      onClick={() => {
+                        const allValues = options.map(o => o.value);
+                        const allSelected = allValues.every(v => value.includes(v));
+                        onChange(allSelected ? [] : allValues);
+                      }}
+                      style={{ minHeight: '40px' }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={options.length > 0 && options.every(o => value.includes(o.value))}
+                        onChange={() => {}}
+                        className="me-2"
+                        style={{ pointerEvents: 'none' }}
+                      />
+                      {selectAllLabel}
+                    </button>
+                  )}
+                  {filteredOptions.length === 0 ? (
+                    <div className="list-group-item border-0 text-center text-muted py-3">
+                      {searchQuery ? 'Sonuç bulunamadı' : 'Seçenek bulunamadı'}
+                    </div>
+                  ) : (
+                    filteredOptions.map((option) => {
+                      const isSelected = value.includes(option.value);
+                      return (
+                        <button
+                          key={option.value}
+                          type="button"
+                          className={`list-group-item list-group-item-action border-0 d-flex align-items-center ${
+                            isSelected ? 'active' : ''
+                          }`}
+                          onClick={() => handleOptionToggle(option.value)}
+                          style={{ minHeight: '40px' }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => {}} // Handled by button onClick
+                            className="me-2"
+                            style={{ pointerEvents: 'none' }}
+                          />
+                          {option.label}
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        </>
+          </>,
+          selectRef.current?.closest('.modal') || selectRef.current?.closest('.offcanvas') || document.body
+        )
       )}
 
       <style jsx>{`
