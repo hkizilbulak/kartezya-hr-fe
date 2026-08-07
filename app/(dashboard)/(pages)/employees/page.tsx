@@ -40,6 +40,34 @@ interface EmployeeListCache {
 
 let _employeeListCache: EmployeeListCache | null = null;
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const SESSION_CACHE_KEY = 'employees_list_state_cache';
+
+// Load from session storage if module cache is empty (e.g. after hard reload)
+if (typeof window !== 'undefined' && _employeeListCache === null) {
+  try {
+    const saved = sessionStorage.getItem(SESSION_CACHE_KEY);
+    if (saved) {
+      _employeeListCache = JSON.parse(saved);
+    }
+  } catch (e) {
+    console.error('Failed to parse employee cache from session', e);
+  }
+}
+
+function updateEmployeeListCache(newCache: EmployeeListCache | null) {
+  _employeeListCache = newCache;
+  if (typeof window !== 'undefined') {
+    try {
+      if (newCache) {
+        sessionStorage.setItem(SESSION_CACHE_KEY, JSON.stringify(newCache));
+      } else {
+        sessionStorage.removeItem(SESSION_CACHE_KEY);
+      }
+    } catch (e) {
+      console.error('Failed to save employee cache to session', e);
+    }
+  }
+}
 
 const SCROLL_KEY = 'employees_scroll_y';
 
@@ -172,7 +200,7 @@ const EmployeesPage = () => {
   // ── Persist cache whenever data changes ──────────────────────────────────
   useEffect(() => {
     if (employees.length === 0) return;
-    _employeeListCache = {
+    updateEmployeeListCache({
       employees,
       currentPage,
       totalPages,
@@ -184,7 +212,7 @@ const EmployeesPage = () => {
       quickSearchParams,
       statusFilter,
       timestamp: Date.now(),
-    };
+    });
   }, [employees, currentPage, totalPages, totalItems, itemsPerPage, sortConfig, filterParams, quickSearchParams, statusFilter]);
 
   // Fetch lookups on mount
@@ -551,7 +579,7 @@ const EmployeesPage = () => {
       };
 
       // Invalidate cache on new filter/search
-      _employeeListCache = null;
+      updateEmployeeListCache(null);
 
       // Update URL with current filters
       updateURL(allFilters, 1, sortConfig.key || undefined, sortConfig.direction, itemsPerPage);
@@ -594,7 +622,7 @@ const EmployeesPage = () => {
     };
 
     // Invalidate cache on manual filter apply
-    _employeeListCache = null;
+    updateEmployeeListCache(null);
 
     // Update URL with current filters
     updateURL(allFilters, 1, sortConfig.key || undefined, sortConfig.direction, itemsPerPage);
@@ -604,7 +632,7 @@ const EmployeesPage = () => {
 
   const clearFilters = () => {
     skipNextAutoFilter.current = true;
-    _employeeListCache = null;
+    updateEmployeeListCache(null);
     setFilterParams({
       first_name: '',
       email: '',
@@ -680,7 +708,7 @@ const EmployeesPage = () => {
     };
 
     // Invalidate cache on sort
-    _employeeListCache = null;
+    updateEmployeeListCache(null);
 
     // Update URL with current filters and sorting
     updateURL(allFilters, 1, key, direction, itemsPerPage);
@@ -719,7 +747,7 @@ const EmployeesPage = () => {
       try {
         await employeeService.delete(selectedEmployee.id);
         toast.success('Çalışan başarıyla silindi');
-        _employeeListCache = null;
+        updateEmployeeListCache(null);
         const activeFilters = getActiveFilters();
 
         const quickFilters = getQuickSearchFilters();
@@ -755,7 +783,7 @@ const EmployeesPage = () => {
 
   const handleModalSave = () => {
     // Apply current filters when refreshing after modal save
-    _employeeListCache = null;
+    updateEmployeeListCache(null);
     const activeFilters = getActiveFilters();
 
     const quickFilters = getQuickSearchFilters();
@@ -788,7 +816,7 @@ const EmployeesPage = () => {
     };
 
     // Invalidate cache on page change
-    _employeeListCache = null;
+    updateEmployeeListCache(null);
 
     // Update URL with current page
     updateURL(allFilters, newPage, sortConfig.key || undefined, sortConfig.direction, itemsPerPage);
@@ -811,7 +839,7 @@ const EmployeesPage = () => {
     };
 
     // Invalidate cache on page size change
-    _employeeListCache = null;
+    updateEmployeeListCache(null);
 
     // Update URL with new page size
     updateURL(allFilters, 1, sortConfig.key || undefined, sortConfig.direction, newPageSize);
