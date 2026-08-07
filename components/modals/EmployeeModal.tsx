@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form, Row, Col } from 'react-bootstrap';
 import { IMaskInput } from 'react-imask';
 import { Employee } from '@/models/hr/hr-models';
-import { employeeService, lookupService } from '@/services';
-import { GradeLookup } from '@/services/lookup.service';
+import { employeeService } from '@/services';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
 import { genderOptions } from '@/contants/options';
 import { UserRole } from '@/models/enums/hr.enum';
@@ -31,7 +30,6 @@ interface FormData {
   date_of_birth: string;
   profession_start_date: string;
   hire_date: string;
-  total_gap: number | string;
   marital_status: string;
   identity_no: string;
   roles: string[];
@@ -48,7 +46,6 @@ const emptyFormData = (): FormData => ({
   date_of_birth: '',
   profession_start_date: '',
   hire_date: '',
-  total_gap: '',
   marital_status: '',
   identity_no: '',
   roles: [],
@@ -65,26 +62,6 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
 
   const [loading, setLoading] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
-  const [grades, setGrades] = useState<GradeLookup[]>([]);
-
-  useEffect(() => {
-    // Fetch grades when modal opens
-    if (show) {
-      fetchGrades();
-    }
-  }, [show]);
-
-  const fetchGrades = async () => {
-    try {
-      const response = await lookupService.getGradesLookup();
-      if (response.success && response.data) {
-        setGrades(response.data);
-      }
-    } catch (error) {
-      console.error('Failed to fetch grades:', error);
-      // Silent fail - grades list will be empty
-    }
-  };
 
   useEffect(() => {
     setFormData(emptyFormData());
@@ -191,7 +168,6 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
         date_of_birth: formData.date_of_birth || undefined,
         profession_start_date: formData.profession_start_date || undefined,
         hire_date: formData.hire_date,
-        total_gap: parseFloat(formData.total_gap as string),
         marital_status: formData.marital_status || undefined,
         identity_no: formData.identity_no.trim(),
         roles: formData.roles,
@@ -428,21 +404,6 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
                       {fieldErrors.hire_date}
                     </div>
                   )}
-                </Form.Group>
-              </Col>
-            </Row>
-
-            <Row className="mb-3">
-              <Col md={6}>
-                <Form.Group>
-                  <Form.Label>Toplam Boşluk (Yıl)</Form.Label>
-                  <Form.Control
-                    type="number"
-                    name="total_gap"
-                    value={formData.total_gap}
-                    onChange={handleInputChange}
-                    placeholder="0"
-                  />
                 </Form.Group>
               </Col>
             </Row>

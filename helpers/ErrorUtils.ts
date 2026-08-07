@@ -67,6 +67,26 @@ export const translateErrorMessage = (error: string): string => {
     'Bu görev seçilen tarih için daha önce başarıyla çalıştırılmış veya halen çalışıyor.': 'Bu görev seçilen tarih için daha önce başarıyla çalıştırılmış veya halen çalışıyor.',
     'Bu görev geçmiş tarih için çalıştırılamaz.': 'Bu görev geçmiş tarih için çalıştırılamaz.',
     'reference_date cannot be in the future': 'Referans tarihi gelecekte olamaz',
+
+    // Employee grade lifecycle
+    'new start date must be at least one day after the active grade start date':
+      'Yeni başlangıç tarihi, aktif grade başlangıç tarihinden en az bir gün sonra olmalıdır',
+    'duplicate employee grade assignment for the same employee, grade and start date':
+      'Aynı çalışan, grade ve başlangıç tarihi için kayıt zaten mevcut',
+    'another active grade already exists for this employee':
+      'Bu çalışan için başka bir aktif grade zaten mevcut',
+    'active employee grade cannot be deleted; assign a new grade first':
+      'Aktif grade silinemez; önce yeni bir grade atayın',
+    'active employee grade cannot be updated via this endpoint; assign a new grade instead':
+      'Aktif grade bu yolla güncellenemez; yeni grade atayın',
+    'employee_id cannot be changed on an employee grade record':
+      'Çalışan bilgisi değiştirilemez',
+    'inactive employee grade requires an end date':
+      'Pasif grade kaydı için bitiş tarihi zorunludur',
+    'end date must be on or after start date':
+      'Bitiş tarihi başlangıç tarihinden önce olamaz',
+    'invalid employee grade start date':
+      'Geçersiz grade başlangıç tarihi',
   };
 
   // Önce tam eşleşme ara (büyük/küçük harf duyarlı olmadan)

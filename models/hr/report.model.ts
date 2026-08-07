@@ -75,7 +75,6 @@ export interface GradeReportRow {
 	manager: string;
 	team_start_date: string | null;
 	profession_start_date: string | null;
-	total_gap: number;
 	total_experience_text: string;
 	current_grade: string;
 	expected_grade: string;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Button, Form, Row, Col } from 'react-bootstrap';
+import { Modal, Button, Form, Row, Col, Alert } from 'react-bootstrap';
 import { employeeGradeService, lookupService } from '@/services';
 import { GradeLookup } from '@/services/lookup.service';
 import { CreateEmployeeGradeRequest, UpdateEmployeeGradeRequest } from '@/models/hr/hr-requests';
@@ -8,15 +8,22 @@ import { toast } from 'react-toastify';
 import LoadingOverlay from '@/components/LoadingOverlay';
 import FormDateField from '@/components/FormDateField';
 import FormSelectField from '@/components/FormSelectField';
-import { EmployeeGrade } from '@/models/hr/hr-models';
+import { EmployeeGrade, isActiveEmployeeGrade } from '@/models/hr/hr-models';
 
 interface EmployeeGradeModalProps {
   show: boolean;
   onHide: () => void;
-  onSave: () => void;
+  /** Called after successful API; await refreshes before toast/close. */
+  onSave: () => void | Promise<void>;
   employeeId: number;
   employeeGrade?: EmployeeGrade | null;
   isEdit?: boolean;
+}
+
+/** Prefer date-only YYYY-MM-DD; avoid timezone day-shift via Date parsing. */
+function toDateInputValue(value?: string | null): string {
+  if (!value) return '';
+  return value.includes('T') ? value.split('T')[0] : value.slice(0, 10);
 }
 
 const EmployeeGradeModal: React.FC<EmployeeGradeModalProps> = ({
@@ -27,16 +34,14 @@ const EmployeeGradeModal: React.FC<EmployeeGradeModalProps> = ({
   employeeGrade = null,
   isEdit = false
 }) => {
-  const [formData, setFormData] = useState<CreateEmployeeGradeRequest>({
-    employee_id: employeeId,
-    grade_id: 0,
-    start_date: '',
-    end_date: ''
-  });
-
+  const [gradeId, setGradeId] = useState(0);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [grades, setGrades] = useState<GradeLookup[]>([]);
   const [loading, setLoading] = useState(false);
-  const [fieldErrors, setFieldErrors] = useState<{[key: string]: string}>({});
+  const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
+
+  const isHistoryEdit = isEdit && !!employeeGrade && !isActiveEmployeeGrade(employeeGrade);
 
   useEffect(() => {
     if (show) {
@@ -45,56 +50,48 @@ const EmployeeGradeModal: React.FC<EmployeeGradeModalProps> = ({
   }, [show]);
 
   useEffect(() => {
-    if (isEdit && employeeGrade) {
-      setFormData({
-        employee_id: employeeId,
-        grade_id: employeeGrade?.grade?.id || 0,
-        start_date: employeeGrade.start_date ? employeeGrade.start_date.split('T')[0] : '',
-        end_date: employeeGrade.end_date ? employeeGrade.end_date.split('T')[0] : ''
-      });
+    if (isHistoryEdit && employeeGrade) {
+      setGradeId(employeeGrade.grade?.id || employeeGrade.grade_id || 0);
+      setStartDate(toDateInputValue(employeeGrade.start_date));
+      setEndDate(toDateInputValue(employeeGrade.end_date));
     } else {
-      setFormData({
-        employee_id: employeeId,
-        grade_id: 0,
-        start_date: '',
-        end_date: ''
-      });
+      setGradeId(0);
+      setStartDate('');
+      setEndDate('');
     }
     setFieldErrors({});
-  }, [show, employeeGrade, isEdit, employeeId]);
+  }, [show, employeeGrade, isEdit, employeeId, isHistoryEdit]);
 
   const fetchGrades = async () => {
     try {
       const response = await lookupService.getGradesLookup();
       setGrades(response.data || []);
-    } catch (error) {
+    } catch {
       toast.error('Gradeler yüklenemedi');
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: name === 'grade_id' ? parseInt(value) || 0 : value
-    }));
-
+  const clearFieldError = (name: string) => {
     if (fieldErrors[name]) {
-      setFieldErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }));
+      setFieldErrors(prev => ({ ...prev, [name]: '' }));
     }
   };
 
   const validateForm = (): boolean => {
-    const errors: {[key: string]: string} = {};
+    const errors: { [key: string]: string } = {};
 
-    if (!formData.grade_id || formData.grade_id <= 0) {
+    if (!gradeId || gradeId <= 0) {
       errors.grade_id = 'Grade seçimi zorunludur';
     }
-    if (!formData.start_date) {
+    if (!startDate) {
       errors.start_date = 'Başlama tarihi zorunludur';
+    }
+    if (isHistoryEdit) {
+      if (!endDate) {
+        errors.end_date = 'Bitiş tarihi zorunludur';
+      } else if (startDate && endDate < startDate) {
+        errors.end_date = 'Bitiş tarihi başlama tarihinden önce olamaz';
+      }
     }
 
     setFieldErrors(errors);
@@ -104,6 +101,11 @@ const EmployeeGradeModal: React.FC<EmployeeGradeModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (isEdit && employeeGrade && isActiveEmployeeGrade(employeeGrade)) {
+      toast.error('Aktif grade düzenlenemez. Yeni grade atayın.');
+      return;
+    }
+
     if (!validateForm()) {
       return;
     }
@@ -111,19 +113,27 @@ const EmployeeGradeModal: React.FC<EmployeeGradeModalProps> = ({
     setLoading(true);
 
     try {
-      if (isEdit && employeeGrade) {
+      if (isHistoryEdit && employeeGrade) {
         const updateRequest: UpdateEmployeeGradeRequest = {
-          ...formData,
-          id: employeeGrade.id
+          id: employeeGrade.id,
+          employee_id: employeeId,
+          grade_id: gradeId,
+          start_date: startDate,
+          end_date: endDate,
         };
         await employeeGradeService.update(employeeGrade.id, updateRequest);
-        toast.success('Grade bilgisi başarıyla güncellendi');
+        await onSave();
+        toast.success('Grade geçmişi başarıyla güncellendi');
       } else {
-        const createRequest: CreateEmployeeGradeRequest = formData;
+        const createRequest: CreateEmployeeGradeRequest = {
+          employee_id: employeeId,
+          grade_id: gradeId,
+          start_date: startDate,
+        };
         await employeeGradeService.create(createRequest);
-        toast.success('Grade bilgisi başarıyla oluşturuldu');
+        await onSave();
+        toast.success('Yeni grade başarıyla atandı');
       }
-      onSave();
       onHide();
     } catch (error: any) {
       let errorMessage = '';
@@ -142,8 +152,7 @@ const EmployeeGradeModal: React.FC<EmployeeGradeModalProps> = ({
         errorMessage = 'Bir hata oluştu';
       }
 
-      const translatedError = translateErrorMessage(errorMessage);
-      toast.error(translatedError);
+      toast.error(translateErrorMessage(errorMessage));
     } finally {
       setLoading(false);
     }
@@ -156,18 +165,27 @@ const EmployeeGradeModal: React.FC<EmployeeGradeModalProps> = ({
 
         <Modal.Header closeButton>
           <Modal.Title>
-            {isEdit ? 'Grade Bilgisi Düzenle' : 'Yeni Grade Bilgisi'}
+            {isHistoryEdit ? 'Grade Geçmişini Düzenle' : 'Yeni Grade Ata'}
           </Modal.Title>
         </Modal.Header>
 
         <Form onSubmit={handleSubmit}>
           <Modal.Body>
+            {!isHistoryEdit && (
+              <Alert variant="info" className="py-2">
+                Yeni grade atandığında mevcut aktif grade otomatik olarak kapatılır.
+              </Alert>
+            )}
+
             <Form.Group className="mb-3">
               <Form.Label>Grade <span className="text-danger">*</span></Form.Label>
               <FormSelectField
                 name="grade_id"
-                value={formData.grade_id.toString()}
-                onChange={handleInputChange}
+                value={gradeId.toString()}
+                onChange={(e) => {
+                  setGradeId(parseInt(e.target.value, 10) || 0);
+                  clearFieldError('grade_id');
+                }}
                 isInvalid={!!fieldErrors.grade_id}
               >
                 <option value="0">Grade seçiniz</option>
@@ -185,12 +203,15 @@ const EmployeeGradeModal: React.FC<EmployeeGradeModalProps> = ({
             </Form.Group>
 
             <Row className="mb-3">
-              <Col md={6}>
+              <Col md={isHistoryEdit ? 6 : 12}>
                 <FormDateField
                   label="Başlama Tarihi"
                   name="start_date"
-                  value={formData.start_date}
-                  onChange={handleInputChange}
+                  value={startDate}
+                  onChange={(e) => {
+                    setStartDate(e.target.value);
+                    clearFieldError('start_date');
+                  }}
                   required
                 />
                 {fieldErrors.start_date && (
@@ -199,14 +220,25 @@ const EmployeeGradeModal: React.FC<EmployeeGradeModalProps> = ({
                   </div>
                 )}
               </Col>
-              <Col md={6}>
-                <FormDateField
-                  label="Bitiş Tarihi"
-                  name="end_date"
-                  value={formData.end_date || ''}
-                  onChange={handleInputChange}
-                />
-              </Col>
+              {isHistoryEdit && (
+                <Col md={6}>
+                  <FormDateField
+                    label="Bitiş Tarihi"
+                    name="end_date"
+                    value={endDate}
+                    onChange={(e) => {
+                      setEndDate(e.target.value);
+                      clearFieldError('end_date');
+                    }}
+                    required
+                  />
+                  {fieldErrors.end_date && (
+                    <div className="text-danger mt-1" style={{ fontSize: '0.875rem' }}>
+                      {fieldErrors.end_date}
+                    </div>
+                  )}
+                </Col>
+              )}
             </Row>
           </Modal.Body>
 
