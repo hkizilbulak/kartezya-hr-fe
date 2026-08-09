@@ -520,10 +520,6 @@ const EmployeeDetailPage = () => {
 
   const handleDeleteGrade = async () => {
     if (!gradeToDelete || !canEditEmployee) return;
-    if (isActiveEmployeeGrade(gradeToDelete)) {
-      toast.error('Aktif grade silinemez; önce yeni bir grade atayın');
-      return;
-    }
 
     setIsDeleting(true);
     try {
@@ -1464,7 +1460,7 @@ const EmployeeDetailPage = () => {
                                 <td>{grade.end_date ? formatDateOnly(grade.end_date) : '-'}</td>
                                 <td>{grade.status || (isActive ? 'ACTIVE' : 'INACTIVE')}</td>
                                 <td>
-                                  {canEditEmployee && !isActive && (
+                                  {canEditEmployee && (
                                   <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
                                     <Button
                                       variant="outline-primary"

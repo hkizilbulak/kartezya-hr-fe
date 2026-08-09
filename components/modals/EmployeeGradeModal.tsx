@@ -41,7 +41,9 @@ const EmployeeGradeModal: React.FC<EmployeeGradeModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
 
-  const isHistoryEdit = isEdit && !!employeeGrade && !isActiveEmployeeGrade(employeeGrade);
+  const isActiveEdit = isEdit && !!employeeGrade && isActiveEmployeeGrade(employeeGrade);
+  const isHistoryEdit = isEdit && !!employeeGrade && !isActiveEdit;
+  const isGradeEdit = isActiveEdit || isHistoryEdit;
 
   useEffect(() => {
     if (show) {
@@ -50,7 +52,7 @@ const EmployeeGradeModal: React.FC<EmployeeGradeModalProps> = ({
   }, [show]);
 
   useEffect(() => {
-    if (isHistoryEdit && employeeGrade) {
+    if (isGradeEdit && employeeGrade) {
       setGradeId(employeeGrade.grade?.id || employeeGrade.grade_id || 0);
       setStartDate(toDateInputValue(employeeGrade.start_date));
       setEndDate(toDateInputValue(employeeGrade.end_date));
@@ -60,7 +62,7 @@ const EmployeeGradeModal: React.FC<EmployeeGradeModalProps> = ({
       setEndDate('');
     }
     setFieldErrors({});
-  }, [show, employeeGrade, isEdit, employeeId, isHistoryEdit]);
+  }, [show, employeeGrade, isEdit, employeeId, isGradeEdit]);
 
   const fetchGrades = async () => {
     try {
@@ -101,11 +103,6 @@ const EmployeeGradeModal: React.FC<EmployeeGradeModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (isEdit && employeeGrade && isActiveEmployeeGrade(employeeGrade)) {
-      toast.error('Aktif grade düzenlenemez. Yeni grade atayın.');
-      return;
-    }
-
     if (!validateForm()) {
       return;
     }
@@ -113,17 +110,17 @@ const EmployeeGradeModal: React.FC<EmployeeGradeModalProps> = ({
     setLoading(true);
 
     try {
-      if (isHistoryEdit && employeeGrade) {
+      if (isGradeEdit && employeeGrade) {
         const updateRequest: UpdateEmployeeGradeRequest = {
           id: employeeGrade.id,
           employee_id: employeeId,
           grade_id: gradeId,
           start_date: startDate,
-          end_date: endDate,
+          end_date: isHistoryEdit ? endDate : '',
         };
         await employeeGradeService.update(employeeGrade.id, updateRequest);
         await onSave();
-        toast.success('Grade geçmişi başarıyla güncellendi');
+        toast.success('Grade bilgisi başarıyla güncellendi');
       } else {
         const createRequest: CreateEmployeeGradeRequest = {
           employee_id: employeeId,
@@ -165,13 +162,13 @@ const EmployeeGradeModal: React.FC<EmployeeGradeModalProps> = ({
 
         <Modal.Header closeButton>
           <Modal.Title>
-            {isHistoryEdit ? 'Grade Geçmişini Düzenle' : 'Yeni Grade Ata'}
+            {isActiveEdit ? 'Aktif Grade Düzenle' : isHistoryEdit ? 'Grade Geçmişini Düzenle' : 'Yeni Grade Ata'}
           </Modal.Title>
         </Modal.Header>
 
         <Form onSubmit={handleSubmit}>
           <Modal.Body>
-            {!isHistoryEdit && (
+            {!isGradeEdit && (
               <Alert variant="info" className="py-2">
                 Yeni grade atandığında mevcut aktif grade otomatik olarak kapatılır.
               </Alert>

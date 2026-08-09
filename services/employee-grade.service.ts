@@ -37,7 +37,7 @@ class EmployeeGradeService extends BaseService<EmployeeGrade> {
     }
   }
 
-  /** Update INACTIVE history only. */
+  /** Update an existing ACTIVE or INACTIVE history row. */
   async update(id: number, data: UpdateEmployeeGradeRequest): Promise<APIResponse<EmployeeGrade>> {
     try {
       const response = await axiosInstance.put(`${HR_ENDPOINTS.EMPLOYEE_GRADES}/${id}`, {

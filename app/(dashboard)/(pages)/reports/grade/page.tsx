@@ -284,7 +284,9 @@ const GradeReportPage = () => {
                                     <td>{row.profession_start_date ? new Date(row.profession_start_date).toLocaleDateString('tr-TR') : '-'}</td>
                                     <td>{row.total_experience_text || '-'}</td>
                                     <td>{row.current_grade || '-'}</td>
-                                    <td>{row.expected_grade || '-'}</td>
+                                    <td className={row.expected_grade && row.expected_grade !== row.current_grade ? 'text-warning fw-semibold' : undefined}>
+                                      {row.expected_grade || '-'}
+                                    </td>
                                     <td>{row.company_name}</td>
                                     <td>{row.department_name}</td>
                                     <td>{row.manager || '-'}</td>
