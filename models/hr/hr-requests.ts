@@ -194,7 +194,7 @@ export interface CreateEmployeeGradeRequest {
   start_date: string;
 }
 
-/** Limited correction of INACTIVE history rows only. */
+/** Correct an existing grade row; ACTIVE rows keep end_date empty. */
 export interface UpdateEmployeeGradeRequest {
   id: number;
   employee_id: number;
