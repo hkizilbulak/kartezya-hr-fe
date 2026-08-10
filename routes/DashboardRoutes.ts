@@ -242,9 +242,32 @@ export const DashboardMenu: IMenuProps[] = [
         ]
     },
     {
+        id: 'academy',
+        title: 'Kartezya Akademi',
+        icon: 'book-open',
+        children: [
+            {
+                id: 'my-trainings',
+                name: 'Eğitimlerim',
+                link: '/academy',
+            },
+            {
+                id: 'my-certificates',
+                name: 'Sertifikalarım',
+                link: '/academy/certificates',
+            },
+            {
+                id: 'manage-trainings',
+                name: 'Eğitim Yönetimi',
+                link: '/academy/manage',
+                requiredCapability: Capability.CanManageAcademy,
+            },
+        ],
+    },
+    {
         id: 'employee-faqs',
         title: 'Sıkça Sorulan Sorular',
-        icon: 'help-circle', 
+        icon: 'help-circle',
         link: '/employee-faqs'
     }
 ];

@@ -20,6 +20,9 @@ export const HR_ENDPOINTS = {
 
   FAQS: '/faqs',
   
+  // Lookup
+  LOOKUP: '/lookup',
+
   // Other Requests
   OTHER_REQUESTS: '/other-requests',
   REQUEST_TYPES: '/request-types',

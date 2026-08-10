@@ -15,6 +15,7 @@ export const Capability = {
   CanManageOtherRequests: 'canManageOtherRequests',
   CanManageRequestTypes: 'canManageRequestTypes',
   CanAccessAdminModules: 'canAccessAdminModules',
+  CanManageAcademy: 'canManageAcademy',
 } as const;
 
 export type Capability = (typeof Capability)[keyof typeof Capability];
