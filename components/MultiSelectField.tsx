@@ -129,6 +129,23 @@ const MultiSelectField: React.FC<MultiSelectFieldProps> = ({
     }
   };
 
+  const handleSelectAll = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const allFilteredSelected = filteredOptions.every(opt => value.includes(opt.value));
+    if (allFilteredSelected) {
+      const filteredValues = filteredOptions.map(opt => opt.value);
+      onChange(value.filter(v => !filteredValues.includes(v)));
+    } else {
+      const newValues = [...value];
+      filteredOptions.forEach(opt => {
+        if (!newValues.includes(opt.value)) {
+          newValues.push(opt.value);
+        }
+      });
+      onChange(newValues);
+    }
+  };
+
   const handleToggle = (e: React.MouseEvent) => {
     e.preventDefault();
     if (!disabled && !loading) {

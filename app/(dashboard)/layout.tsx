@@ -35,6 +35,7 @@ const ROUTE_GUARDS: RouteGuard[] = [
   { prefix: '/kspeaker', capability: Capability.CanAccessAdminModules },
   { prefix: '/events', capability: Capability.CanAccessAdminModules },
   { prefix: '/faqs', capability: Capability.CanAccessAdminModules },
+  { prefix: '/academy/manage', capability: Capability.CanManageAcademy },
 ];
 
 function isRouteAllowed(pathname: string, roles: string[]): boolean {

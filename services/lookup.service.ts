@@ -14,6 +14,13 @@ export interface DepartmentLookup {
   company_id?: number;
 }
 
+export interface EmployeeLookup {
+  id: number;
+  first_name: string;
+  last_name: string;
+  company_email?: string;
+}
+
 export interface JobPositionLookup {
   id: number;
   title: string;
@@ -66,6 +73,11 @@ export const lookupService = {
     } catch (error) {
       throw error;
     }
+  },
+
+  async getEmployees(): Promise<APIResponse<EmployeeLookup[]>> {
+    const response = await axiosInstance.get('/lookup/employees');
+    return response.data;
   },
 
   // Get job positions lookup (public - no auth required)
