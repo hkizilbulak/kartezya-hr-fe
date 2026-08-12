@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { Container, Row, Col, Card, Table, Badge, Button, Modal, Form, Spinner, Alert } from 'react-bootstrap';
-import { academyService, Training, TrainingAssignment, CreateTrainingPayload } from '@/services/academy.service';
+import { academyService, surveyService, Training, TrainingAssignment, CreateTrainingPayload, AcademySurvey, CreateSurveyPayload } from '@/services/academy.service';
 import { lookupService } from '@/services/lookup.service';
 import { EmployeeLookup } from '@/services/lookup.service';
 import MultiSelectField from '@/components/MultiSelectField';
@@ -24,6 +24,59 @@ export default function AcademyManagePage() {
   const [formData, setFormData] = useState<CreateTrainingPayload>({ title: '', description: '', duration: 0, status: 'ACTIVE', file: null as unknown as File });
   const [assignEmployeeIds, setAssignEmployeeIds] = useState<string[]>([]);
   const [actionLoading, setActionLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<'trainings' | 'surveys'>('trainings');
+  const [surveys, setSurveys] = useState<AcademySurvey[]>([]);
+  const [showSurveyModal, setShowSurveyModal] = useState(false);
+  const [surveyFormData, setSurveyFormData] = useState<CreateSurveyPayload>({ title: '', description: '', is_multi_select: false, is_active: true, options: [''] });
+  const [showSurveyResultsModal, setShowSurveyResultsModal] = useState(false);
+  const [selectedSurvey, setSelectedSurvey] = useState<AcademySurvey | null>(null);
+  
+  const loadSurveys = useCallback(async () => {
+    try {
+      const res = await surveyService.listSurveys();
+      if (res.success && res.data) setSurveys(res.data);
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'surveys') {
+      loadSurveys();
+    }
+  }, [activeTab, loadSurveys]);
+
+  const handleCreateSurvey = async () => {
+    if (!surveyFormData.title.trim() || surveyFormData.options.filter(o => o.trim() !== '').length < 2) {
+      setError('Lütfen anket başlığını ve en az 2 seçeneği doldurun.');
+      return;
+    }
+    setActionLoading(true);
+    try {
+      const payload = { ...surveyFormData, options: surveyFormData.options.filter(o => o.trim() !== '') };
+      await surveyService.createSurvey(payload);
+      setSuccess('Anket başarıyla oluşturuldu!');
+      setShowSurveyModal(false);
+      setSurveyFormData({ title: '', description: '', is_multi_select: false, is_active: true, options: [''] });
+      loadSurveys();
+    } catch (e) {
+      setError('Anket oluşturulamadı.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleDeleteSurvey = async (id: number) => {
+    if (!confirm('Bu anketi silmek istediğinize emin misiniz?')) return;
+    try {
+      await surveyService.deleteSurvey(id);
+      setSuccess('Anket silindi.');
+      loadSurveys();
+    } catch (e) {
+      setError('Silme işlemi başarısız.');
+    }
+  };
+
 
   const loadTrainingsAndEmployees = useCallback(async () => {
     try {
@@ -62,7 +115,7 @@ export default function AcademyManagePage() {
   // ── Update ────────────────────────────────────────────────────────────────
   const openEdit = (t: Training) => {
     setSelectedTraining(t);
-    setFormData({ title: t.title, description: t.description, duration: t.duration, status: t.status, file: null as unknown as File });
+    setFormData({ title: t.title, description: t.description, duration: t.duration, status: t.status, file: null as unknown as File, imageFile: undefined });
     setShowEditModal(true);
   };
 
@@ -73,7 +126,7 @@ export default function AcademyManagePage() {
       await academyService.updateTraining(selectedTraining.id, formData);
       setSuccess('Eğitim güncellendi!');
       setShowEditModal(false);
-      await loadTrainings();
+      await loadTrainingsAndEmployees();
     } catch (e) {
       setError('Güncelleme başarısız.');
     } finally {
@@ -87,7 +140,7 @@ export default function AcademyManagePage() {
     try {
       await academyService.deleteTraining(id);
       setSuccess('Eğitim silindi.');
-      await loadTrainings();
+      await loadTrainingsAndEmployees();
     } catch (e) {
       setError('Silme işlemi başarısız.');
     }
@@ -120,7 +173,7 @@ export default function AcademyManagePage() {
     setSelectedTraining(t);
     setShowAssignListModal(true);
     try {
-      const res = await academyService.listTrainingAssignments(t.id);
+      const res = await academyService.listTrainingAssignments(t.id, { limit: 5000, offset: 0 });
       if (res.success && res.data) setAssignments(res.data);
     } catch (e) {
       setError('Atamalar yüklenemedi.');
@@ -157,7 +210,7 @@ export default function AcademyManagePage() {
           </div>
         </div>
         <Button
-          onClick={() => { setShowCreateModal(true); setFormData({ title: '', description: '', duration: 0, status: 'ACTIVE' }); }}
+          onClick={() => { setShowCreateModal(true); setFormData({ title: '', description: '', duration: 0, status: 'ACTIVE', file: null as unknown as File }); }}
           style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', border: 'none', borderRadius: 10, fontWeight: 600, padding: '10px 20px' }}
         >
           <i className="fe fe-plus me-2" />Yeni Eğitim Ekle
@@ -167,8 +220,28 @@ export default function AcademyManagePage() {
       {success && <Alert variant="success" dismissible onClose={() => setSuccess('')}>{success}</Alert>}
       {error && <Alert variant="danger" dismissible onClose={() => setError('')}>{error}</Alert>}
 
-      {/* Stats */}
-      <Row className="g-3 mb-5">
+      {/* TABS */}
+      <div className="d-flex mb-4 gap-3 border-bottom pb-2">
+        <Button 
+          variant={activeTab === 'trainings' ? 'primary' : 'light'} 
+          className={activeTab === 'trainings' ? 'fw-bold shadow-sm' : 'text-muted'}
+          onClick={() => setActiveTab('trainings')}
+        >
+          <i className="fe fe-book me-2" /> Eğitimler
+        </Button>
+        <Button 
+          variant={activeTab === 'surveys' ? 'primary' : 'light'} 
+          className={activeTab === 'surveys' ? 'fw-bold shadow-sm' : 'text-muted'}
+          onClick={() => setActiveTab('surveys')}
+        >
+          <i className="fe fe-bar-chart-2 me-2" /> Anketler
+        </Button>
+      </div>
+
+      {activeTab === 'trainings' && (
+        <>
+          {/* Stats */}
+          <Row className="g-3 mb-5">
         {[
           { label: 'Toplam Eğitim', count: trainings.length, color: '#6366f1', icon: 'fe-book-open' },
           { label: 'Aktif Eğitim', count: trainings.filter(t => t.status === 'ACTIVE').length, color: '#10b981', icon: 'fe-check-circle' },
@@ -260,6 +333,8 @@ export default function AcademyManagePage() {
           )}
         </Card.Body>
       </Card>
+      </>
+      )}
 
       {/* ── Create Modal ── */}
       <TrainingFormModal
@@ -359,6 +434,127 @@ export default function AcademyManagePage() {
           )}
         </Modal.Body>
       </Modal>
+
+
+      {activeTab === 'surveys' && (
+        <Card className="border-0 shadow-sm rounded-4 overflow-hidden">
+          <Card.Header className="bg-white border-bottom-0 pt-4 pb-0 px-4">
+            <div className="d-flex justify-content-between align-items-center">
+              <div>
+                <h5 className="fw-bold mb-1" style={{ color: '#0f172a' }}>Akademi Anketleri</h5>
+                <p className="text-muted small mb-0">Aktif ve geçmiş anketleri yönetin.</p>
+              </div>
+              <Button variant="primary" className="fw-medium px-4 rounded-3 shadow-sm" onClick={() => setShowSurveyModal(true)}>
+                <i className="fe fe-plus me-2" /> Yeni Anket Ekle
+              </Button>
+            </div>
+          </Card.Header>
+          <Card.Body className="p-4">
+            <Table responsive hover className="align-middle mb-0" style={{ borderCollapse: 'separate', borderSpacing: '0 8px' }}>
+              <thead>
+                <tr>
+                  <th className="border-0 text-muted fw-semibold small text-uppercase" style={{ letterSpacing: '1px' }}>Anket Başlığı</th>
+                  <th className="border-0 text-muted fw-semibold small text-uppercase" style={{ letterSpacing: '1px' }}>Çoklu Seçim</th>
+                  <th className="border-0 text-muted fw-semibold small text-uppercase" style={{ letterSpacing: '1px' }}>Durum</th>
+                  <th className="border-0 text-muted fw-semibold small text-uppercase text-end" style={{ letterSpacing: '1px' }}>İşlemler</th>
+                </tr>
+              </thead>
+              <tbody>
+                {surveys.map(s => (
+                  <tr key={s.id} style={{ backgroundColor: '#fff', boxShadow: '0 2px 6px rgba(0,0,0,0.02)', transition: 'all 0.2s' }}>
+                    <td className="border-0 rounded-start-3 p-3">
+                      <div className="fw-bold text-dark">{s.title}</div>
+                      <small className="text-muted">{s.options.length} Seçenek</small>
+                    </td>
+                    <td className="border-0 p-3">
+                      {s.is_multi_select ? <Badge bg="info">Evet</Badge> : <Badge bg="secondary">Hayır</Badge>}
+                    </td>
+                    <td className="border-0 p-3">
+                      {s.is_active ? <Badge bg="success">Aktif</Badge> : <Badge bg="danger">Pasif</Badge>}
+                    </td>
+                    <td className="border-0 rounded-end-3 p-3 text-end">
+                      <Button variant="light" size="sm" className="text-primary border-0 hover-lift me-2" onClick={() => { setSelectedSurvey(s); setShowSurveyResultsModal(true); }}>
+                        <i className="fe fe-bar-chart-2" /> Sonuçlar
+                      </Button>
+                      <Button variant="light" size="sm" className="text-danger border-0 hover-lift" onClick={() => handleDeleteSurvey(s.id)}>
+                        <i className="fe fe-trash-2" />
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+                {surveys.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="text-center py-5 text-muted">Hiç anket bulunamadı.</td>
+                  </tr>
+                )}
+              </tbody>
+            </Table>
+          </Card.Body>
+        </Card>
+      )}
+
+      {/* Survey Create Modal */}
+      <Modal show={showSurveyModal} onHide={() => setShowSurveyModal(false)} centered backdrop="static">
+        <Modal.Header closeButton className="border-0 pb-0">
+          <Modal.Title className="fw-bold h5">Yeni Anket Oluştur</Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="pt-3">
+          <Form>
+            <Form.Group className="mb-3">
+              <Form.Label className="small fw-semibold text-muted">Anket Başlığı</Form.Label>
+              <Form.Control type="text" value={surveyFormData.title} onChange={e => setSurveyFormData({...surveyFormData, title: e.target.value})} />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label className="small fw-semibold text-muted">Açıklama</Form.Label>
+              <Form.Control as="textarea" rows={2} value={surveyFormData.description} onChange={e => setSurveyFormData({...surveyFormData, description: e.target.value})} />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Check type="switch" label="Birden fazla seçenek işaretlenebilir" checked={surveyFormData.is_multi_select} onChange={e => setSurveyFormData({...surveyFormData, is_multi_select: e.target.checked})} />
+            </Form.Group>
+            <hr />
+            <div className="d-flex justify-content-between mb-2">
+              <span className="small fw-semibold text-muted">Seçenekler (Maddeler)</span>
+              <Button size="sm" variant="link" onClick={() => setSurveyFormData({...surveyFormData, options: [...surveyFormData.options, '']})}>
+                + Madde Ekle
+              </Button>
+            </div>
+            {surveyFormData.options.map((opt, i) => (
+              <div key={i} className="d-flex gap-2 mb-2">
+                <Form.Control 
+                  type="text" 
+                  placeholder={`Seçenek ${i+1}`} 
+                  value={opt} 
+                  onChange={e => {
+                    const newOpts = [...surveyFormData.options];
+                    newOpts[i] = e.target.value;
+                    setSurveyFormData({...surveyFormData, options: newOpts});
+                  }} 
+                />
+                <Button variant="outline-danger" onClick={() => {
+                  const newOpts = surveyFormData.options.filter((_, index) => index !== i);
+                  setSurveyFormData({...surveyFormData, options: newOpts});
+                }}>
+                  <i className="fe fe-x" />
+                </Button>
+              </div>
+            ))}
+          </Form>
+        </Modal.Body>
+        <Modal.Footer className="border-0 pt-0">
+          <Button variant="light" onClick={() => setShowSurveyModal(false)}>İptal</Button>
+          <Button variant="primary" onClick={handleCreateSurvey} disabled={actionLoading}>
+            {actionLoading ? <Spinner size="sm" /> : 'Kaydet'}
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Survey Results Modal */}
+      <SurveyResultsModal
+        show={showSurveyResultsModal}
+        survey={selectedSurvey}
+        onClose={() => setShowSurveyResultsModal(false)}
+      />
+
     </Container>
   );
 }
@@ -454,6 +650,60 @@ function TrainingFormModal({
           {loading ? <Spinner size="sm" animation="border" className="me-1" /> : null}
           Kaydet
         </Button>
+      </Modal.Footer>
+    </Modal>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Survey Results Modal
+// ─────────────────────────────────────────────────────────────────────────────
+function SurveyResultsModal({
+  show, survey, onClose,
+}: {
+  show: boolean;
+  survey: AcademySurvey | null;
+  onClose: () => void;
+}) {
+  if (!survey) return null;
+  const totalVotes = Object.values(survey.results || {}).reduce((a, b) => a + b, 0);
+
+  return (
+    <Modal show={show} onHide={onClose} centered>
+      <Modal.Header closeButton style={{ borderBottom: '1px solid #f1f5f9' }}>
+        <Modal.Title style={{ fontSize: 16, fontWeight: 700, color: '#1e1b4b' }}>
+          Anket Sonuçları: {survey.title}
+        </Modal.Title>
+      </Modal.Header>
+      <Modal.Body className="p-4">
+        <p className="text-muted small mb-4">Toplam {totalVotes} oy kullanıldı.</p>
+        <div className="d-flex flex-column gap-3">
+          {survey.options.map((opt) => {
+            const count = survey.results?.[opt.id] || 0;
+            const percentage = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0;
+            return (
+              <div key={opt.id}>
+                <div className="d-flex justify-content-between mb-1">
+                  <span className="fw-semibold text-dark" style={{ fontSize: 14 }}>{opt.text}</span>
+                  <span className="text-muted small fw-medium">{count} Oy ({percentage}%)</span>
+                </div>
+                <div className="progress" style={{ height: 8, borderRadius: 4, backgroundColor: '#f1f5f9' }}>
+                  <div 
+                    className="progress-bar" 
+                    role="progressbar" 
+                    style={{ width: `${percentage}%`, background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', borderRadius: 4 }}
+                    aria-valuenow={percentage} 
+                    aria-valuemin={0} 
+                    aria-valuemax={100}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </Modal.Body>
+      <Modal.Footer style={{ border: 'none' }}>
+        <Button variant="secondary" onClick={onClose} style={{ borderRadius: 8 }}>Kapat</Button>
       </Modal.Footer>
     </Modal>
   );

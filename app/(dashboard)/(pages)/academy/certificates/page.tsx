@@ -14,12 +14,27 @@ export default function CertificatesPage() {
   const [certificates, setCertificates] = useState<TrainingCertificate[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<TrainingCertificate | null>(null);
+  const [recentTrainingId, setRecentTrainingId] = useState<string | null>(null);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const recentId = params.get('recentTrainingId');
+    if (recentId) setRecentTrainingId(recentId);
+
     (async () => {
       try {
         const res = await academyService.getMyCertificates();
-        if (res.success && res.data) setCertificates(res.data);
+        if (res.success && res.data) {
+          const sortedData = res.data;
+          if (recentId) {
+            sortedData.sort((a, b) => {
+              if (a.training.id.toString() === recentId) return -1;
+              if (b.training.id.toString() === recentId) return 1;
+              return 0;
+            });
+          }
+          setCertificates(sortedData);
+        }
       } catch (e) {
         console.error(e);
       } finally {
@@ -73,13 +88,20 @@ export default function CertificatesPage() {
 
       {/* Certificate grid */}
       <Row className="g-4">
-        {certificates.map((cert) => (
+        {certificates.map((cert) => {
+          const isRecent = recentTrainingId === cert.training.id.toString();
+          const shadowColor = isRecent ? 'rgba(59,130,246,0.20)' : 'rgba(16,185,129,0.10)';
+          const hoverShadowColor = isRecent ? 'rgba(59,130,246,0.30)' : 'rgba(16,185,129,0.18)';
+          const headerGradient = isRecent ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' : 'linear-gradient(135deg, #10b981 0%, #6366f1 100%)';
+          
+          return (
           <Col key={cert.id} xs={12} sm={6} xl={4}>
             <Card
               className="border-0 h-100"
               style={{
                 borderRadius: 20,
-                boxShadow: '0 4px 20px rgba(16,185,129,0.10)',
+                boxShadow: `0 4px 20px ${shadowColor}`,
+                border: isRecent ? '2px solid #3b82f6' : '2px solid transparent',
                 overflow: 'hidden',
                 transition: 'all 0.25s ease',
                 cursor: 'pointer',
@@ -87,18 +109,23 @@ export default function CertificatesPage() {
               onMouseEnter={e => {
                 const el = e.currentTarget as HTMLElement;
                 el.style.transform = 'translateY(-4px)';
-                el.style.boxShadow = '0 12px 32px rgba(16,185,129,0.18)';
+                el.style.boxShadow = `0 12px 32px ${hoverShadowColor}`;
               }}
               onMouseLeave={e => {
                 const el = e.currentTarget as HTMLElement;
                 el.style.transform = 'translateY(0)';
-                el.style.boxShadow = '0 4px 20px rgba(16,185,129,0.10)';
+                el.style.boxShadow = `0 4px 20px ${shadowColor}`;
               }}
               onClick={() => setSelected(cert)}
             >
+              {isRecent && (
+                <div style={{ position: 'absolute', top: 12, right: 12, background: 'white', color: '#2563eb', padding: '4px 10px', borderRadius: 20, fontSize: 12, fontWeight: 'bold', zIndex: 10 }}>
+                  Yeni Tamamlandı
+                </div>
+              )}
               {/* Certificate preview strip */}
               <div style={{
-                background: 'linear-gradient(135deg, #10b981 0%, #6366f1 100%)',
+                background: headerGradient,
                 padding: '28px 24px 22px',
                 textAlign: 'center',
               }}>
@@ -141,7 +168,8 @@ export default function CertificatesPage() {
               </Card.Body>
             </Card>
           </Col>
-        ))}
+        );
+        })}
       </Row>
 
       {/* Certificate Modal/PDF */}

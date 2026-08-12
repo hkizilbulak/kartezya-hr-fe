@@ -14,7 +14,7 @@ export interface Training {
   description: string;
   duration: number; // minutes
   status: TrainingStatus;
-  created_at: string;
+    created_at: string;
   updated_at: string;
 }
 
@@ -55,6 +55,7 @@ export interface CreateTrainingPayload {
   duration?: number;
   status?: TrainingStatus;
   file: File;
+  imageFile?: File;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -82,6 +83,7 @@ export const academyService = {
     if (data.duration) formData.append('duration', data.duration.toString());
     if (data.status) formData.append('status', data.status);
     formData.append('file', data.file);
+    if (data.imageFile) formData.append('image', data.imageFile);
 
     const res = await axiosInstance.post(`${BASE}/trainings`, formData, {
       headers: {
@@ -92,7 +94,19 @@ export const academyService = {
   },
 
   updateTraining: async (id: number, data: Partial<CreateTrainingPayload>): Promise<APIResponse<Training>> => {
-    const res = await axiosInstance.put(`${BASE}/trainings/${id}`, data);
+    const formData = new FormData();
+    if (data.title) formData.append('title', data.title);
+    if (data.description !== undefined) formData.append('description', data.description);
+    if (data.duration !== undefined) formData.append('duration', data.duration.toString());
+    if (data.status) formData.append('status', data.status);
+    if (data.file) formData.append('file', data.file);
+    if (data.imageFile) formData.append('image', data.imageFile);
+
+    const res = await axiosInstance.put(`${BASE}/trainings/${id}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return res.data;
   },
 
@@ -107,8 +121,10 @@ export const academyService = {
     return res.data;
   },
 
-  listTrainingAssignments: async (trainingId: number): Promise<APIResponse<TrainingAssignment[]> & { total: number }> => {
-    const res = await axiosInstance.get(`${BASE}/trainings/${trainingId}/assignments`);
+  listTrainingAssignments: async (trainingId: number, params?: { limit?: number; offset?: number }): Promise<APIResponse<TrainingAssignment[]> & { total: number }> => {
+    const limit = params?.limit || 50;
+    const offset = params?.offset || 0;
+    const res = await axiosInstance.get(`${BASE}/trainings/${trainingId}/assignments?limit=${limit}&offset=${offset}`);
     return res.data;
   },
 
@@ -153,4 +169,54 @@ export const academyService = {
     const res = await axiosInstance.get(`${BASE}/certificates/${code}`);
     return res.data;
   },
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Surveys
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface AcademySurveyOption {
+  id: number;
+  survey_id: number;
+  text: string;
+}
+
+export interface AcademySurvey {
+  id: number;
+  title: string;
+  description: string;
+  is_multi_select: boolean;
+  is_active: boolean;
+  options: AcademySurveyOption[];
+  results?: Record<number, number>; // Used for admin to see vote counts
+}
+
+export interface CreateSurveyPayload {
+  title: string;
+  description?: string;
+  is_multi_select: boolean;
+  is_active: boolean;
+  options: string[];
+}
+
+export const surveyService = {
+  listSurveys: async (limit = 50, offset = 0): Promise<APIResponse<AcademySurvey[]>> => {
+    const res = await axiosInstance.get(`${BASE}/surveys`, { params: { limit, offset } });
+    return res.data;
+  },
+
+  createSurvey: async (data: CreateSurveyPayload): Promise<APIResponse<AcademySurvey>> => {
+    const res = await axiosInstance.post(`${BASE}/surveys`, data);
+    return res.data;
+  },
+
+  deleteSurvey: async (id: number): Promise<APIResponse<any>> => {
+    const res = await axiosInstance.delete(`${BASE}/surveys/${id}`);
+    return res.data;
+  },
+
+  submitVote: async (surveyId: number, optionIds: number[]): Promise<APIResponse<any>> => {
+    const res = await axiosInstance.post(`${BASE}/surveys/${surveyId}/vote`, { option_ids: optionIds });
+    return res.data;
+  }
 };

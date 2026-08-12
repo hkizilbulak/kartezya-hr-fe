@@ -4,6 +4,6 @@ export function generateStaticParams() {
   return [{ id: '1' }];
 }
 
-export default function AcademyDetailPage({ params }: { params: { id: string } }) {
-  return <AcademyDetailClient params={params} />;
+export default function AcademyDetailPage() {
+  return <AcademyDetailClient />;
 }

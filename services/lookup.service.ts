@@ -76,7 +76,7 @@ export const lookupService = {
   },
 
   async getEmployees(): Promise<APIResponse<EmployeeLookup[]>> {
-    const response = await axiosInstance.get(`${HR_ENDPOINTS.LOOKUP}/employees`);
+    const response = await axiosInstance.get('/lookup/employees');
     return response.data;
   },
 
