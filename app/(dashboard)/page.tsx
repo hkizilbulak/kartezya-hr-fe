@@ -2,7 +2,7 @@
 import { Fragment, useState, useEffect, useMemo } from "react";
 import { Container, Row, Col, Card, Spinner, OverlayTrigger, Popover } from "react-bootstrap";
 import { dashboardService, DashboardData, GenderChartData, PositionChartData, CompanyDepartmentChartData, GradeChartData } from "@/services/dashboard.service";
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LabelList } from 'recharts';
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LabelList, Rectangle } from 'recharts';
 import { useAuth } from "@/hooks/useAuth";
 import { leaveRequestService } from "@/services/leave-request.service";
 import { leaveBalanceService } from "@/services/leave-balance.service";
@@ -1108,7 +1108,7 @@ const Home = () => {
                                                 fill="url(#positionGrad)"
                                                 radius={[0, 6, 6, 0]}
                                                 maxBarSize={16}
-                                                background={{ fill: '#f8fafc', radius: [0, 6, 6, 0] as any }}
+                                                background={<Rectangle fill="#f8fafc" radius={[0, 6, 6, 0]} />}
                                             >
                                                 <LabelList dataKey="count" position="right" fill="#4f46e5" fontSize={10} fontWeight={700} offset={8} />
                                             </Bar>
@@ -1161,7 +1161,7 @@ const Home = () => {
                                                 fill="url(#gradeGrad)"
                                                 radius={[0, 6, 6, 0]}
                                                 maxBarSize={16}
-                                                background={{ fill: '#f8fafc', radius: [0, 6, 6, 0] as any }}
+                                                background={<Rectangle fill="#f8fafc" radius={[0, 6, 6, 0]} />}
                                             >
                                                 <LabelList dataKey="count" position="right" fill="#db2777" fontSize={10} fontWeight={700} offset={8} />
                                             </Bar>
@@ -1224,7 +1224,7 @@ const Home = () => {
                                                 fill="url(#companyGrad)"
                                                 radius={[0, 6, 6, 0]}
                                                 barSize={16}
-                                                background={{ fill: '#f8fafc', radius: [0, 6, 6, 0] as any }}
+                                                background={<Rectangle fill="#f8fafc" radius={[0, 6, 6, 0]} />}
                                             >
                                                 <LabelList dataKey="count" position="right" fill="#4f46e5" fontSize={10} fontWeight={700} offset={8} />
                                             </Bar>
@@ -1235,7 +1235,7 @@ const Home = () => {
                                                 radius={[0, 6, 6, 0]}
                                                 barSize={16}
                                                 minPointSize={2}
-                                                background={{ fill: '#fdf2f8', radius: [0, 6, 6, 0] as any }}
+                                                background={<Rectangle fill="#fdf2f8" radius={[0, 6, 6, 0]} />}
                                             >
                                                 <LabelList dataKey="internCount" position="right" fill="#db2777" fontSize={9} fontWeight={700} offset={8} />
                                             </Bar>

@@ -1,4 +1,5 @@
 import { Capability } from '@/lib/authz/capabilities';
+import { UserRole } from '@/models/enums/hr.enum';
 
 export interface IMenuProps {
     id: string;
@@ -250,11 +251,13 @@ export const DashboardMenu: IMenuProps[] = [
                 id: 'my-trainings',
                 name: 'Eğitimlerim',
                 link: '/academy',
+                requiredRoles: [UserRole.EMPLOYEE, UserRole.HR, UserRole.FINANCIAL],
             },
             {
                 id: 'my-certificates',
                 name: 'Sertifikalarım',
                 link: '/academy/certificates',
+                requiredRoles: [UserRole.EMPLOYEE, UserRole.HR, UserRole.FINANCIAL],
             },
             {
                 id: 'manage-trainings',
