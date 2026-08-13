@@ -1108,7 +1108,7 @@ const Home = () => {
                                                 fill="url(#positionGrad)"
                                                 radius={[0, 6, 6, 0]}
                                                 maxBarSize={16}
-                                                background={{ fill: '#f8fafc', radius: [0, 6, 6, 0] }}
+                                                background={{ fill: '#f8fafc', radius: [0, 6, 6, 0] as any }}
                                             >
                                                 <LabelList dataKey="count" position="right" fill="#4f46e5" fontSize={10} fontWeight={700} offset={8} />
                                             </Bar>
@@ -1161,7 +1161,7 @@ const Home = () => {
                                                 fill="url(#gradeGrad)"
                                                 radius={[0, 6, 6, 0]}
                                                 maxBarSize={16}
-                                                background={{ fill: '#f8fafc', radius: [0, 6, 6, 0] }}
+                                                background={{ fill: '#f8fafc', radius: [0, 6, 6, 0] as any }}
                                             >
                                                 <LabelList dataKey="count" position="right" fill="#db2777" fontSize={10} fontWeight={700} offset={8} />
                                             </Bar>
@@ -1224,7 +1224,7 @@ const Home = () => {
                                                 fill="url(#companyGrad)"
                                                 radius={[0, 6, 6, 0]}
                                                 barSize={16}
-                                                background={{ fill: '#f8fafc', radius: [0, 6, 6, 0] }}
+                                                background={{ fill: '#f8fafc', radius: [0, 6, 6, 0] as any }}
                                             >
                                                 <LabelList dataKey="count" position="right" fill="#4f46e5" fontSize={10} fontWeight={700} offset={8} />
                                             </Bar>
@@ -1235,7 +1235,7 @@ const Home = () => {
                                                 radius={[0, 6, 6, 0]}
                                                 barSize={16}
                                                 minPointSize={2}
-                                                background={{ fill: '#fdf2f8', radius: [0, 6, 6, 0] }}
+                                                background={{ fill: '#fdf2f8', radius: [0, 6, 6, 0] as any }}
                                             >
                                                 <LabelList dataKey="internCount" position="right" fill="#db2777" fontSize={9} fontWeight={700} offset={8} />
                                             </Bar>

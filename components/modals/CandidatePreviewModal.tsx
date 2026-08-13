@@ -293,7 +293,7 @@ export default function CandidatePreviewModal({
                       </div>
                     ))}
                   </div>
-                ) : isDuplicateView && duplicateCandidate?.companies?.length > 0 ? (
+                ) : isDuplicateView && duplicateCandidate && duplicateCandidate.companies && duplicateCandidate.companies.length > 0 ? (
                    <ListGroup variant="flush">
                      {duplicateCandidate.companies.map((c, i) => (
                        <ListGroup.Item key={i} className="px-0 py-1 border-0 d-flex align-items-center gap-2 text-muted" style={{ fontSize: 13 }}>
@@ -334,7 +334,7 @@ export default function CandidatePreviewModal({
                       </Badge>
                     ))}
                   </div>
-                ) : isDuplicateView && duplicateCandidate?.top_skills?.length > 0 ? (
+                ) : isDuplicateView && duplicateCandidate && duplicateCandidate.top_skills && duplicateCandidate.top_skills.length > 0 ? (
                   <div className="d-flex flex-wrap gap-1">
                     {duplicateCandidate.top_skills.map((s) => (
                       <Badge
