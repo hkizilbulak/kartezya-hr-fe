@@ -251,13 +251,11 @@ export const DashboardMenu: IMenuProps[] = [
                 id: 'my-trainings',
                 name: 'Eğitimlerim',
                 link: '/academy',
-                requiredRoles: [UserRole.EMPLOYEE, UserRole.HR, UserRole.FINANCIAL],
             },
             {
                 id: 'my-certificates',
                 name: 'Sertifikalarım',
                 link: '/academy/certificates',
-                requiredRoles: [UserRole.EMPLOYEE, UserRole.HR, UserRole.FINANCIAL],
             },
             {
                 id: 'manage-trainings',
