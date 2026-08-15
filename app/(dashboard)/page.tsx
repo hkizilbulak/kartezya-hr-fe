@@ -8,6 +8,7 @@ import { leaveRequestService } from "@/services/leave-request.service";
 import { leaveBalanceService } from "@/services/leave-balance.service";
 import { employeeService } from "@/services/employee.service";
 import { LeaveRequest, LeaveBalance } from "@/models/hr/hr-models";
+import { academyService, TrainingAssignment } from "@/services/academy.service";
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import LoadingOverlay from "@/components/LoadingOverlay";
@@ -127,6 +128,7 @@ const Home = () => {
     const [myLeaveRequests, setMyLeaveRequests] = useState<LeaveRequest[]>([]);
     const [leaveBalance, setLeaveBalance] = useState<LeaveBalance | null>(null);
     const [employeeProfile, setEmployeeProfile] = useState<any>(null);
+    const [myAssignments, setMyAssignments] = useState<TrainingAssignment[]>([]);
 
     const [loading, setLoading] = useState(true);
 
@@ -140,6 +142,7 @@ const Home = () => {
     const [loadingLeaveRequests, setLoadingLeaveRequests] = useState(false);
     const [loadingLeaveBalance, setLoadingLeaveBalance] = useState(false);
     const [loadingEmployeeProfile, setLoadingEmployeeProfile] = useState(false);
+    const [loadingAssignments, setLoadingAssignments] = useState(false);
 
     const COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2'];
     const GENDER_COLORS: Record<string, string> = {
@@ -315,6 +318,19 @@ const Home = () => {
             setLoadingLeaveRequests(true);
             setLoadingLeaveBalance(true);
             setLoadingEmployeeProfile(true);
+            setLoadingAssignments(true);
+
+            // Fetch assignments
+            try {
+                const assignmentsResponse = await academyService.getMyAssignments();
+                if (assignmentsResponse.success && assignmentsResponse.data) {
+                    setMyAssignments(assignmentsResponse.data);
+                }
+            } catch (error) {
+                console.error('Error fetching assignments:', error);
+            } finally {
+                setLoadingAssignments(false);
+            }
 
             // Çalışanın izin taleplerini yükle
             try {
@@ -488,6 +504,43 @@ const Home = () => {
 
                     {/* Statistik Kartları */}
                     <Row className="mb-4">
+                        {/* Eğitimlerim */}
+                        <Col xl={3} lg={6} md={12} xs={12} className="mb-6">
+                            <Card 
+                                className="border-0 shadow-sm"
+                                style={{ cursor: 'pointer', transition: 'transform 0.2s' }}
+                                onClick={() => router.push('/academy')}
+                                onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-3px)'}
+                                onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                            >
+                                <Card.Body>
+                                    <div className="d-flex justify-content-between align-items-center mb-3">
+                                        <div>
+                                            <h4 className="mb-0">Eğitimlerim</h4>
+                                        </div>
+                                        <div className="icon-shape icon-md bg-light-primary text-primary rounded-2">
+                                            <i className="fe fe-book-open fs-4"></i>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h1 className="fw-bold">
+                                            {loadingAssignments ? (
+                                                <Spinner animation="border" role="status" size="sm">
+                                                    <span className="visually-hidden">Yükleniyor...</span>
+                                                </Spinner>
+                                            ) : myAssignments.filter(a => a.status === 'ASSIGNED' || a.status === 'IN_PROGRESS').length}
+                                        </h1>
+                                        <p className="mb-0">
+                                            <span className="text-primary me-2">
+                                                <i className="fe fe-play-circle me-1"></i>
+                                            </span>
+                                            Bekleyen / Devam eden
+                                        </p>
+                                    </div>
+                                </Card.Body>
+                            </Card>
+                        </Col>
+
                         {/* İzin Bakiyesi */}
                         <Col xl={3} lg={6} md={12} xs={12} className="mb-6">
                             <Card className="border-0">

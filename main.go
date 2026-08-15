@@ -72,6 +72,10 @@ func (h *spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.serveFile(w, r, "/job-management/1/history.html")
 		return
 	}
+	if strings.HasPrefix(urlPath, "/academy/") && h.fileExists("/academy/1.html") {
+		h.serveFile(w, r, "/academy/1.html")
+		return
+	}
 
 	// 5. Fallback to root index.html for SPA client-side routing
 	if h.fileExists("/index.html") {

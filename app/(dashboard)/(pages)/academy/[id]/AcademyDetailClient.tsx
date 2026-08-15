@@ -20,6 +20,7 @@ export default function TrainingDetailPage() {
   const [pdfUrl, setPdfUrl] = useState<string>('');
   const [pdfError, setPdfError] = useState<string>('');
   const [pdfLoading, setPdfLoading] = useState<boolean>(false);
+  const [isVideo, setIsVideo] = useState<boolean>(false);
   const [hasViewedFullscreen, setHasViewedFullscreen] = useState(false);
   const pdfContainerRef = useRef<HTMLDivElement>(null);
 
@@ -53,6 +54,10 @@ export default function TrainingDetailPage() {
       const res = await documentService.getRelatedDocuments(7, trainingId); // 7 = Academy
       if (res.data && res.data.length > 0) {
         const docId = res.data[0].id;
+        const contentType = res.data[0].content_type || '';
+        const fileName = res.data[0].file_name || '';
+        
+        setIsVideo(contentType.startsWith('video/') || fileName.toLowerCase().endsWith('.mp4'));
         
         // Fetch presigned URL using authenticated axios instance
         const { default: axiosInstance } = await import('@/helpers/api/axiosInstance');
@@ -61,14 +66,14 @@ export default function TrainingDetailPage() {
         if (urlRes.data && urlRes.data.success && urlRes.data.data.url) {
            setPdfUrl(urlRes.data.data.url);
         } else {
-           setPdfError('PDF URL alınamadı: ' + JSON.stringify(urlRes.data));
+           setPdfError('Dosya URL alınamadı: ' + JSON.stringify(urlRes.data));
         }
       } else {
-        setPdfError('Bu eğitim için herhangi bir PDF dokümanı bulunamadı (ID: ' + trainingId + ')');
+        setPdfError('Bu eğitim için herhangi bir doküman bulunamadı (ID: ' + trainingId + ')');
       }
     } catch (e: any) {
-      console.error("Failed to load PDF URL", e);
-      setPdfError('PDF dokümanı yüklenirken hata oluştu: ' + (e.response?.data?.error || e.message));
+      console.error("Failed to load document URL", e);
+      setPdfError('Doküman yüklenirken hata oluştu: ' + (e.response?.data?.error || e.message));
     } finally {
       setPdfLoading(false);
     }
@@ -280,21 +285,31 @@ export default function TrainingDetailPage() {
                 ) : pdfUrl ? (
                   <div
                     ref={pdfContainerRef}
-                    className="shadow-sm"
+                    className="shadow-sm d-flex justify-content-center align-items-center"
                     style={{
                       height: 750, 
                       width: '100%',
-                      background: '#f1f5f9',
+                      background: isVideo ? '#000' : '#f1f5f9',
                       border: '1px solid #e2e8f0',
                       borderRadius: 16,
                       overflow: 'hidden'
                     }}
                   >
-                    <iframe 
-                      src={pdfUrl} 
-                      style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
-                      title="Eğitim Dokümanı"
-                    />
+                    {isVideo ? (
+                      <video 
+                        src={pdfUrl} 
+                        controls 
+                        style={{ maxWidth: '100%', maxHeight: '100%', outline: 'none' }}
+                        onPlay={() => setHasViewedFullscreen(true)}
+                        onEnded={() => setHasViewedFullscreen(true)}
+                      />
+                    ) : (
+                      <iframe 
+                        src={pdfUrl} 
+                        style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
+                        title="Eğitim Dokümanı"
+                      />
+                    )}
                   </div>
                 ) : null}
               </Card.Body>

@@ -72,7 +72,7 @@ export default function KvkkModal() {
                     setShow(false);
                 }
             } catch (error) {
-                console.error('Error fetching settings for KVKK check:', error);
+                console.warn('KVKK Check failed or timed out, skipping modal for now.');
                 // Hata durumunda (örneğin BE bağlantısı kesilirse) kullanıcı deneyimini bozmamak için modalı açmıyoruz
                 setShow(false);
             } finally {
