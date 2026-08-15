@@ -31,6 +31,10 @@ export default function AcademyManagePage() {
   const [showSurveyResultsModal, setShowSurveyResultsModal] = useState(false);
   const [selectedSurvey, setSelectedSurvey] = useState<AcademySurvey | null>(null);
   
+  // Confirm Modal State
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmConfig, setConfirmConfig] = useState<{ title: string; message: string; onConfirm: () => void } | null>(null);
+  
   const loadSurveys = useCallback(async () => {
     try {
       const res = await surveyService.listSurveys();
@@ -66,15 +70,23 @@ export default function AcademyManagePage() {
     }
   };
 
-  const handleDeleteSurvey = async (id: number) => {
-    if (!confirm('Bu anketi silmek istediğinize emin misiniz?')) return;
-    try {
-      await surveyService.deleteSurvey(id);
-      setSuccess('Anket silindi.');
-      loadSurveys();
-    } catch (e) {
-      setError('Silme işlemi başarısız.');
-    }
+  const handleDeleteSurvey = (id: number) => {
+    setConfirmConfig({
+      title: 'Anketi Sil',
+      message: 'Bu anketi silmek istediğinize emin misiniz?',
+      onConfirm: async () => {
+        try {
+          await surveyService.deleteSurvey(id);
+          setSuccess('Anket silindi.');
+          loadSurveys();
+        } catch (e) {
+          setError('Silme işlemi başarısız.');
+        } finally {
+          setShowConfirmModal(false);
+        }
+      }
+    });
+    setShowConfirmModal(true);
   };
 
 
@@ -135,15 +147,23 @@ export default function AcademyManagePage() {
   };
 
   // ── Delete ────────────────────────────────────────────────────────────────
-  const handleDelete = async (id: number) => {
-    if (!confirm('Bu eğitimi silmek istediğinize emin misiniz?')) return;
-    try {
-      await academyService.deleteTraining(id);
-      setSuccess('Eğitim silindi.');
-      await loadTrainingsAndEmployees();
-    } catch (e) {
-      setError('Silme işlemi başarısız.');
-    }
+  const handleDelete = (id: number) => {
+    setConfirmConfig({
+      title: 'Eğitimi Sil',
+      message: 'Bu eğitimi silmek istediğinize emin misiniz?',
+      onConfirm: async () => {
+        try {
+          await academyService.deleteTraining(id);
+          setSuccess('Eğitim silindi.');
+          await loadTrainingsAndEmployees();
+        } catch (e) {
+          setError('Silme işlemi başarısız.');
+        } finally {
+          setShowConfirmModal(false);
+        }
+      }
+    });
+    setShowConfirmModal(true);
   };
 
   // ── Assign ────────────────────────────────────────────────────────────────
@@ -555,6 +575,25 @@ export default function AcademyManagePage() {
         onClose={() => setShowSurveyResultsModal(false)}
       />
 
+      {/* ── Confirm Modal ── */}
+      <Modal show={showConfirmModal} onHide={() => setShowConfirmModal(false)} centered backdrop="static">
+        <Modal.Header closeButton className="border-0 pb-0">
+          <Modal.Title className="fw-bold h5 text-danger">
+            <i className="fe fe-alert-triangle me-2" />
+            {confirmConfig?.title}
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="pt-3 pb-4 text-muted" style={{ fontSize: 15 }}>
+          {confirmConfig?.message}
+        </Modal.Body>
+        <Modal.Footer className="border-0 pt-0">
+          <Button variant="light" className="fw-medium" onClick={() => setShowConfirmModal(false)} style={{ borderRadius: 8 }}>İptal</Button>
+          <Button variant="danger" className="fw-medium" onClick={confirmConfig?.onConfirm} style={{ borderRadius: 8 }}>
+            Evet, Sil
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
     </Container>
   );
 }
@@ -600,10 +639,9 @@ function TrainingFormModal({
           />
         </Form.Group>
         <Form.Group className="mb-3">
-          <Form.Label className="fw-semibold" style={{ fontSize: 14 }}>Eğitim Dosyası (PDF) *</Form.Label>
+          <Form.Label className="fw-semibold" style={{ fontSize: 14 }}>Eğitim Dosyası *</Form.Label>
           <Form.Control
             type="file"
-            accept="application/pdf"
             onChange={(e: any) => {
               if (e.target.files && e.target.files[0]) {
                 onChange({ ...formData, file: e.target.files[0] });
