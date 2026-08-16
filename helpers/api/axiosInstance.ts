@@ -7,8 +7,18 @@ const headers: Readonly<Record<string, string | boolean>> = {
   "X-Requested-With": "XMLHttpRequest",
 };
 
+const getBaseUrl = () => {
+  if (typeof window !== 'undefined') {
+    // Mobil cihazlardan (local network üzerinden) test ederken localhost API çağrılarının patlamasını engellemek için
+    if (HR_API_BASE_URL.includes('localhost') && window.location.hostname !== 'localhost') {
+      return HR_API_BASE_URL.replace('localhost', window.location.hostname);
+    }
+  }
+  return HR_API_BASE_URL;
+};
+
 const axiosInstance = axios.create({
-  baseURL: HR_API_BASE_URL, // Backend API base URL
+  baseURL: getBaseUrl(), // Backend API base URL
   headers,
   withCredentials: false, // CORS için false yaptık
   timeout: 10000 // 10 saniye timeout
