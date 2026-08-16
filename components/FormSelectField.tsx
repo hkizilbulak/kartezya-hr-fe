@@ -404,8 +404,11 @@ const FormSelectField = ({
                                     onClick={() => setIsOpen(false)}
                                     style={{ cursor: 'pointer', zIndex: 1069 }}
                                 ></div>
-                                <div className="position-fixed bottom-0 start-0 w-100 bg-white shadow-lg border-top rounded-top-3"
-                                     style={{ zIndex: 1070, maxHeight: '60vh' }}>
+                                <div 
+                                    ref={dropdownRef}
+                                    className="position-fixed bottom-0 start-0 w-100 bg-white shadow-lg border-top rounded-top-3"
+                                    style={{ zIndex: 1070, maxHeight: '60vh' }}
+                                >
                                     {/* Handle bar */}
                                     <div className="py-2">
                                     </div>
