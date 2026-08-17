@@ -1,14 +1,13 @@
 import { PagedResponse } from '../common';
 
 export enum ContractStatus {
-  PendingProposal = 'PENDING_PROPOSAL',
-  ProposalSent = 'PROPOSAL_SENT',
-  AwaitingResponse = 'AWAITING_RESPONSE',
-  Approved = 'APPROVED',
-  Rejected = 'REJECTED',
-  Active = 'ACTIVE',
-  Completed = 'COMPLETED',
-  Cancelled = 'CANCELLED',
+  PendingProposalInfo = 'PENDING_PROPOSAL_INFO',
+  ProposalSentContractExpected = 'PROPOSAL_SENT_CONTRACT_EXPECTED',
+  ProposalRejected = 'PROPOSAL_REJECTED',
+  ContractCancelled = 'CONTRACT_CANCELLED',
+  ContractCompletedAwaitingPayment = 'CONTRACT_COMPLETED_AWAITING_PAYMENT',
+  ContractCompletedPaymentReceived = 'CONTRACT_COMPLETED_PAYMENT_RECEIVED',
+  ContractCompletedPartialPayment = 'CONTRACT_COMPLETED_PARTIAL_PAYMENT',
 }
 
 export interface Contract {

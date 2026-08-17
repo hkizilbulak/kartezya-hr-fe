@@ -209,14 +209,13 @@ export default function ContractsPage() {
                     onChange={e => setStatusFilter(e.target.value)}
                   >
                     <option value="">Tümü</option>
-                    <option value={ContractStatus.PendingProposal}>Teklif Aşamasında</option>
-                    <option value={ContractStatus.ProposalSent}>Teklif İletildi</option>
-                    <option value={ContractStatus.AwaitingResponse}>Yanıt Bekleniyor</option>
-                    <option value={ContractStatus.Approved}>Onaylandı</option>
-                    <option value={ContractStatus.Rejected}>Reddedildi</option>
-                    <option value={ContractStatus.Active}>Aktif</option>
-                    <option value={ContractStatus.Completed}>Tamamlandı</option>
-                    <option value={ContractStatus.Cancelled}>İptal Edildi</option>
+                    <option value={ContractStatus.PendingProposalInfo}>Teklif bilgisi bekleniyor</option>
+                    <option value={ContractStatus.ProposalSentContractExpected}>Teklif iletildi - Sözleşme bekleniyor</option>
+                    <option value={ContractStatus.ProposalRejected}>Teklif reddedildi</option>
+                    <option value={ContractStatus.ContractCancelled}>Sözleşme iptal edildi</option>
+                    <option value={ContractStatus.ContractCompletedAwaitingPayment}>Sözleşme tamamlandı - ödeme bekliyor</option>
+                    <option value={ContractStatus.ContractCompletedPaymentReceived}>Sözleşme tamamlandı - Ödeme alındı</option>
+                    <option value={ContractStatus.ContractCompletedPartialPayment}>Sözleşme tamamlandı - Ödeme kısmi alındı</option>
                   </FormSelectField>
                 </Col>
               </Row>
@@ -281,23 +280,22 @@ export default function ContractsPage() {
                             </td>
                             <td>
                               <span className={`badge ${
-                                contract.status === ContractStatus.Active ? 'bg-success' :
-                                contract.status === ContractStatus.Completed ? 'bg-primary' :
-                                contract.status === ContractStatus.Cancelled ? 'bg-danger' :
-                                contract.status === ContractStatus.Approved ? 'bg-info' :
-                                contract.status === ContractStatus.Rejected ? 'bg-warning text-dark' :
-                                contract.status === ContractStatus.AwaitingResponse ? 'bg-light-warning text-dark' :
-                                contract.status === ContractStatus.ProposalSent ? 'bg-secondary' :
+                                contract.status === ContractStatus.ContractCompletedPaymentReceived ? 'bg-success' :
+                                contract.status === ContractStatus.ContractCompletedAwaitingPayment ? 'bg-primary' :
+                                contract.status === ContractStatus.ContractCancelled ? 'bg-danger' :
+                                contract.status === ContractStatus.ContractCompletedPartialPayment ? 'bg-info' :
+                                contract.status === ContractStatus.ProposalRejected ? 'bg-warning text-dark' :
+                                contract.status === ContractStatus.ProposalSentContractExpected ? 'bg-light-warning text-dark' :
+                                contract.status === ContractStatus.PendingProposalInfo ? 'bg-secondary' :
                                 'bg-secondary'
                               }`}>
-                                {contract.status === ContractStatus.Active ? 'Aktif' :
-                                 contract.status === ContractStatus.Completed ? 'Tamamlandı' :
-                                 contract.status === ContractStatus.Cancelled ? 'İptal Edildi' :
-                                 contract.status === ContractStatus.Approved ? 'Onaylandı' :
-                                 contract.status === ContractStatus.Rejected ? 'Reddedildi' :
-                                 contract.status === ContractStatus.PendingProposal ? 'Teklif Aşamasında' :
-                                 contract.status === ContractStatus.ProposalSent ? 'Teklif İletildi' :
-                                 contract.status === ContractStatus.AwaitingResponse ? 'Yanıt Bekleniyor' :
+                                {contract.status === ContractStatus.ContractCompletedPaymentReceived ? 'Sözleşme tamamlandı - Ödeme alındı' :
+                                 contract.status === ContractStatus.ContractCompletedAwaitingPayment ? 'Sözleşme tamamlandı - ödeme bekliyor' :
+                                 contract.status === ContractStatus.ContractCancelled ? 'Sözleşme iptal edildi' :
+                                 contract.status === ContractStatus.ContractCompletedPartialPayment ? 'Sözleşme tamamlandı - Ödeme kısmi alındı' :
+                                 contract.status === ContractStatus.ProposalRejected ? 'Teklif reddedildi' :
+                                 contract.status === ContractStatus.PendingProposalInfo ? 'Teklif bilgisi bekleniyor' :
+                                 contract.status === ContractStatus.ProposalSentContractExpected ? 'Teklif iletildi - Sözleşme bekleniyor' :
                                  contract.status || '-'}
                               </span>
                             </td>

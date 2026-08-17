@@ -38,7 +38,7 @@ const ContractModal: React.FC<ContractModalProps> = ({
     contract_no: '',
     start_date: '',
     end_date: '',
-    status: ContractStatus.PendingProposal
+    status: ContractStatus.PendingProposalInfo
   });
 
   const [loading, setLoading] = useState(false);
@@ -104,7 +104,7 @@ const ContractModal: React.FC<ContractModalProps> = ({
         contract_no: contract.contract_no || '',
         start_date: contract.start_date ? contract.start_date.split('T')[0] : '',
         end_date: contract.end_date ? contract.end_date.split('T')[0] : '',
-        status: contract.status || ContractStatus.PendingProposal
+        status: contract.status || ContractStatus.PendingProposalInfo
       });
       
       if (contract.employee_contracts && Array.isArray(contract.employee_contracts)) {
@@ -132,7 +132,7 @@ const ContractModal: React.FC<ContractModalProps> = ({
         contract_no: '',
         start_date: '',
         end_date: '',
-        status: ContractStatus.PendingProposal
+        status: ContractStatus.PendingProposalInfo
       });
       setSelectedEmployees([]);
       setParticipantNames({});
@@ -284,14 +284,13 @@ const ContractModal: React.FC<ContractModalProps> = ({
                   value={formData.status || ''}
                   onChange={handleInputChange}
                 >
-                  <option value={ContractStatus.PendingProposal}>Teklif Bekliyor</option>
-                  <option value={ContractStatus.ProposalSent}>Teklif İletildi</option>
-                  <option value={ContractStatus.AwaitingResponse}>Yanıt Bekleniyor</option>
-                  <option value={ContractStatus.Approved}>Onaylandı</option>
-                  <option value={ContractStatus.Active}>Aktif</option>
-                  <option value={ContractStatus.Completed}>Tamamlandı</option>
-                  <option value={ContractStatus.Rejected}>Reddedildi</option>
-                  <option value={ContractStatus.Cancelled}>İptal Edildi</option>
+                  <option value={ContractStatus.PendingProposalInfo}>Teklif bilgisi bekleniyor</option>
+                  <option value={ContractStatus.ProposalSentContractExpected}>Teklif iletildi - Sözleşme bekleniyor</option>
+                  <option value={ContractStatus.ProposalRejected}>Teklif reddedildi</option>
+                  <option value={ContractStatus.ContractCancelled}>Sözleşme iptal edildi</option>
+                  <option value={ContractStatus.ContractCompletedAwaitingPayment}>Sözleşme tamamlandı - ödeme bekliyor</option>
+                  <option value={ContractStatus.ContractCompletedPaymentReceived}>Sözleşme tamamlandı - Ödeme alındı</option>
+                  <option value={ContractStatus.ContractCompletedPartialPayment}>Sözleşme tamamlandı - Ödeme kısmi alındı</option>
                 </FormSelectField>
               </Col>
             </Row>
