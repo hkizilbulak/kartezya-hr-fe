@@ -1,15 +1,26 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Container, Row, Col, Card, Badge, Button, Spinner, Alert, ProgressBar } from 'react-bootstrap';
 import { academyService, TrainingAssignment } from '@/services/academy.service';
 import { documentService } from '@/services/document.service';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 
 export default function TrainingDetailPage() {
   const router = useRouter();
   const params = useParams();
-  const assignmentId = parseInt(params.id as string);
+  const pathname = usePathname();
+  
+  const assignmentId = useMemo(() => {
+    if (pathname) {
+      const parts = pathname.split('/').filter(Boolean);
+      const idx = parts.indexOf('academy');
+      if (idx !== -1 && parts[idx + 1]) {
+        return parseInt(parts[idx + 1]);
+      }
+    }
+    return parseInt(params.id as string);
+  }, [params.id, pathname]);
 
   const [assignment, setAssignment] = useState<TrainingAssignment | null>(null);
   const [loading, setLoading] = useState(true);

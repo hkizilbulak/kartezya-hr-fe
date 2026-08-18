@@ -21,13 +21,20 @@ export default function AcademyPage() {
   const router = useRouter();
   const [assignments, setAssignments] = useState<TrainingAssignment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'trainings' | 'surveys'>('trainings');
 
   const [surveys, setSurveys] = useState<AcademySurvey[]>([]);
+  const [votedSurveyIds, setVotedSurveyIds] = useState<number[]>([]);
   const [selectedSurveyOptions, setSelectedSurveyOptions] = useState<Record<number, number[]>>({});
   const [submittingSurvey, setSubmittingSurvey] = useState<number | null>(null);
   const [surveyMessages, setSurveyMessages] = useState<Record<number, string>>({});
   
   useEffect(() => {
+    try {
+      const stored = localStorage.getItem('votedSurveys');
+      if (stored) setVotedSurveyIds(JSON.parse(stored));
+    } catch (e) {}
+
     (async () => {
       try {
         const [assignRes, surveyRes] = await Promise.all([
@@ -55,6 +62,15 @@ export default function AcademyPage() {
     });
   };
 
+  const markSurveyAsVoted = (id: number) => {
+    setVotedSurveyIds(prev => {
+      if (prev.includes(id)) return prev;
+      const newArr = [...prev, id];
+      localStorage.setItem('votedSurveys', JSON.stringify(newArr));
+      return newArr;
+    });
+  };
+
   const handleSubmitSurvey = async (survey: AcademySurvey) => {
     const selected = selectedSurveyOptions[survey.id];
     if (!selected || selected.length === 0) return;
@@ -62,12 +78,13 @@ export default function AcademyPage() {
     try {
       await surveyService.submitVote(survey.id, selected);
       setSurveyMessages(prev => ({ ...prev, [survey.id]: 'Katılımınız için teşekkürler! Oyunuz başarıyla kaydedildi.' }));
-      // Optional: hide the survey form after success
-      setTimeout(() => {
-        setSurveys(prev => prev.filter(s => s.id !== survey.id));
-      }, 3000);
+      markSurveyAsVoted(survey.id);
     } catch (e: any) {
-      setSurveyMessages(prev => ({ ...prev, [survey.id]: e?.response?.data?.error || 'Hata oluştu' }));
+      const errorMsg = e?.response?.data?.error || 'Hata oluştu';
+      setSurveyMessages(prev => ({ ...prev, [survey.id]: errorMsg }));
+      if (errorMsg.includes('daha önce katıldınız')) {
+        markSurveyAsVoted(survey.id);
+      }
     } finally {
       setSubmittingSurvey(null);
     }
@@ -91,159 +108,217 @@ export default function AcademyPage() {
   return (
     <Container fluid className="px-4 py-4">
       {/* Header */}
-      <div className="d-flex align-items-center gap-3 mb-5">
-        <div
-          className="d-flex align-items-center justify-content-center rounded-3"
-          style={{ width: 52, height: 52, background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)', boxShadow: '0 4px 12px rgba(99,102,241,0.35)' }}
-        >
-          <i className="fe fe-book-open text-white fs-4" />
-        </div>
-        <div>
-          <h3 className="mb-0 fw-bold" style={{ color: '#1e1b4b' }}>Kartezya Akademi</h3>
-          <p className="mb-0 text-muted" style={{ fontSize: 14 }}>Size atanan eğitimler</p>
+      <div className="d-flex align-items-center justify-content-between mb-4">
+        <div className="d-flex align-items-center gap-3">
+          <div
+            className="d-flex align-items-center justify-content-center rounded-3"
+            style={{ width: 52, height: 52, background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)', boxShadow: '0 4px 12px rgba(99,102,241,0.35)' }}
+          >
+            <i className="fe fe-book-open text-white fs-4" />
+          </div>
+          <div>
+            <h3 className="mb-0 fw-bold" style={{ color: '#1e1b4b' }}>Kartezya Akademi</h3>
+            <p className="mb-0 text-muted" style={{ fontSize: 14 }}>Size atanan eğitimler ve anketler</p>
+          </div>
         </div>
       </div>
 
-      {/* Stats */}
-      <Row className="g-3 mb-5">
-        {[
-          { label: 'Devam Eden', count: grouped.inProgress.length, color: '#f59e0b', bg: '#fffbeb', icon: 'fe-play-circle' },
-          { label: 'Atanmış', count: grouped.assigned.length, color: '#6366f1', bg: '#eef2ff', icon: 'fe-inbox' },
-          { label: 'Tamamlanan', count: grouped.completed.length, color: '#10b981', bg: '#ecfdf5', icon: 'fe-award' },
-        ].map((s, i) => (
-          <Col key={i} xs={12} sm={4}>
-            <Card className="border-0 h-100" style={{ background: s.bg, borderRadius: 16 }}>
-              <Card.Body className="d-flex align-items-center gap-3 p-3">
-                <div className="d-flex align-items-center justify-content-center rounded-circle"
-                  style={{ width: 48, height: 48, background: `${s.color}22` }}>
-                  <i className={`fe ${s.icon} fs-5`} style={{ color: s.color }} />
-                </div>
-                <div>
-                  <h4 className="mb-0 fw-bold" style={{ color: s.color, fontSize: 28 }}>{s.count}</h4>
-                  <small className="text-muted">{s.label}</small>
-                </div>
-              </Card.Body>
-            </Card>
-          </Col>
-        ))}
-      </Row>
+      {/* TABS */}
+      <div className="d-flex mb-5 gap-3 border-bottom pb-2">
+        <Button 
+          variant={activeTab === 'trainings' ? 'primary' : 'light'} 
+          className={activeTab === 'trainings' ? 'fw-bold shadow-sm' : 'text-muted'}
+          onClick={() => setActiveTab('trainings')}
+          style={{ borderRadius: 8, transition: 'all 0.2s' }}
+        >
+          <i className="fe fe-book me-2" /> Eğitimlerim
+        </Button>
+        <Button 
+          variant={activeTab === 'surveys' ? 'primary' : 'light'} 
+          className={activeTab === 'surveys' ? 'fw-bold shadow-sm' : 'text-muted'}
+          onClick={() => setActiveTab('surveys')}
+          style={{ borderRadius: 8, transition: 'all 0.2s' }}
+        >
+          <i className="fe fe-bar-chart-2 me-2" /> Anketler
+        </Button>
+      </div>
 
-      {/* No assignments */}
-      {assignments.length === 0 && (
-        <div className="text-center py-5">
-          <i className="fe fe-book-open text-muted" style={{ fontSize: 64 }} />
-          <h5 className="mt-3 text-muted">Henüz size atanmış bir eğitim yok</h5>
-        </div>
+      {activeTab === 'trainings' && (
+        <>
+          {/* Stats */}
+          <Row className="g-3 mb-5">
+            {[
+              { label: 'Devam Eden', count: grouped.inProgress.length, color: '#f59e0b', bg: '#fffbeb', icon: 'fe-play-circle' },
+              { label: 'Atanmış', count: grouped.assigned.length, color: '#6366f1', bg: '#eef2ff', icon: 'fe-inbox' },
+              { label: 'Tamamlanan', count: grouped.completed.length, color: '#10b981', bg: '#ecfdf5', icon: 'fe-award' },
+            ].map((s, i) => (
+              <Col key={i} xs={12} sm={4}>
+                <Card className="border-0 h-100" style={{ background: s.bg, borderRadius: 16 }}>
+                  <Card.Body className="d-flex align-items-center gap-3 p-3">
+                    <div className="d-flex align-items-center justify-content-center rounded-circle"
+                      style={{ width: 48, height: 48, background: `${s.color}22` }}>
+                      <i className={`fe ${s.icon} fs-5`} style={{ color: s.color }} />
+                    </div>
+                    <div>
+                      <h4 className="mb-0 fw-bold" style={{ color: s.color, fontSize: 28 }}>{s.count}</h4>
+                      <small className="text-muted">{s.label}</small>
+                    </div>
+                  </Card.Body>
+                </Card>
+              </Col>
+            ))}
+          </Row>
+
+          {/* No assignments */}
+          {assignments.length === 0 && (
+            <div className="text-center py-5">
+              <i className="fe fe-book-open text-muted" style={{ fontSize: 64 }} />
+              <h5 className="mt-3 text-muted">Henüz size atanmış bir eğitim yok</h5>
+            </div>
+          )}
+
+          {/* In Progress */}
+          {grouped.inProgress.length > 0 && (
+            <div className="mb-5">
+              <h5 className="fw-bold mb-3" style={{ color: '#1e1b4b', letterSpacing: '-0.3px' }}>
+                <i className="fe fe-play-circle me-2 text-warning" />Devam Edilen Eğitimler
+              </h5>
+              <Row className="g-3">
+                {grouped.inProgress.map(a => (
+                  <Col key={a.id} xs={12} md={6} xl={4}>
+                    <TrainingCard assignment={a} onNavigate={() => router.push(`/academy/${a.id}`)} />
+                  </Col>
+                ))}
+              </Row>
+            </div>
+          )}
+
+          {/* Assigned */}
+          {grouped.assigned.length > 0 && (
+            <div className="mb-5">
+              <h5 className="fw-bold mb-3" style={{ color: '#1e1b4b' }}>
+                <i className="fe fe-inbox me-2" style={{ color: '#6366f1' }} />Bekleyen Eğitimler
+              </h5>
+              <Row className="g-3">
+                {grouped.assigned.map(a => (
+                  <Col key={a.id} xs={12} md={6} xl={4}>
+                    <TrainingCard assignment={a} onNavigate={() => router.push(`/academy/${a.id}`)} />
+                  </Col>
+                ))}
+              </Row>
+            </div>
+          )}
+
+          {/* Completed */}
+          {grouped.completed.length > 0 && (
+            <div className="mb-5">
+              <h5 className="fw-bold mb-3" style={{ color: '#1e1b4b' }}>
+                <i className="fe fe-check-circle me-2 text-success" />Tamamlanan Eğitimler
+              </h5>
+              <Row className="g-3">
+                {grouped.completed.map(a => (
+                  <Col key={a.id} xs={12} md={6} xl={4}>
+                    <TrainingCard assignment={a} onNavigate={() => router.push(`/academy/${a.id}`)} />
+                  </Col>
+                ))}
+              </Row>
+            </div>
+          )}
+        </>
       )}
 
-      
-      {/* Surveys */}
-      {surveys.length > 0 && (
-        <div className="mb-5">
-          <h5 className="fw-bold mb-3" style={{ color: '#1e1b4b' }}>
-            <i className="fe fe-bar-chart-2 me-2 text-primary" />
-            Sizin İçin Anketler
-          </h5>
-          <Row className="g-4">
-            {surveys.map(survey => {
-              const selected = selectedSurveyOptions[survey.id] || [];
-              const message = surveyMessages[survey.id];
-              return (
-                <Col xs={12} md={6} lg={4} key={survey.id}>
-                  <Card className="border-0 h-100" style={{ borderRadius: 16, boxShadow: '0 4px 20px rgba(0,0,0,0.05)', borderTop: '4px solid #6366f1' }}>
-                    <Card.Body className="p-4 d-flex flex-column">
-                      <h6 className="fw-bold mb-2">{survey.title}</h6>
-                      {survey.description && <p className="text-muted small mb-3">{survey.description}</p>}
-                      
-                      {message && message.includes('teşekkürler') ? (
-                        <Alert variant="success" className="mb-0 mt-auto small">
-                          <i className="fe fe-check-circle me-1" /> {message}
-                        </Alert>
-                      ) : (
-                        <>
-                          <div className="mb-4">
-                            {message && <Alert variant="danger" className="p-2 small mb-3">{message}</Alert>}
-                            <Form>
-                              {survey.options.map(opt => (
-                                <div key={opt.id} className="mb-2 p-2 rounded-2" style={{ backgroundColor: selected.includes(opt.id) ? '#eef2ff' : '#f8fafc', border: `1px solid ${selected.includes(opt.id) ? '#c7d2fe' : '#e2e8f0'}`, transition: 'all 0.2s' }}>
-                                  <Form.Check 
-                                    type={survey.is_multi_select ? 'checkbox' : 'radio'}
-                                    id={`opt-${opt.id}`}
-                                    label={opt.text}
-                                    checked={selected.includes(opt.id)}
-                                    onChange={() => handleOptionToggle(survey.id, opt.id, survey.is_multi_select)}
-                                    className="mb-0"
-                                  />
-                                </div>
-                              ))}
-                            </Form>
-                          </div>
+      {activeTab === 'surveys' && (
+        <>
+          {/* Pending Surveys */}
+          {surveys.filter(s => !votedSurveyIds.includes(s.id)).length > 0 && (
+            <div className="mb-5">
+              <h5 className="fw-bold mb-3" style={{ color: '#1e1b4b' }}>
+                <i className="fe fe-bar-chart-2 me-2 text-primary" />
+                Sizin İçin Anketler
+              </h5>
+              <Row className="g-4">
+                {surveys.filter(s => !votedSurveyIds.includes(s.id)).map(survey => {
+                  const selected = selectedSurveyOptions[survey.id] || [];
+                  const message = surveyMessages[survey.id];
+                  return (
+                    <Col xs={12} md={6} lg={4} key={survey.id}>
+                      <Card className="border-0 h-100" style={{ borderRadius: 16, boxShadow: '0 4px 20px rgba(0,0,0,0.05)', borderTop: '4px solid #6366f1' }}>
+                        <Card.Body className="p-4 d-flex flex-column">
+                          <h6 className="fw-bold mb-2">{survey.title}</h6>
+                          {survey.description && <p className="text-muted small mb-3">{survey.description}</p>}
                           
-                          <Button 
-                            className="w-100 mt-auto shadow-sm"
-                            style={{ background: 'linear-gradient(135deg, #6366f1, #4f46e5)', border: 'none', borderRadius: 8 }}
-                            disabled={selected.length === 0 || submittingSurvey === survey.id}
-                            onClick={() => handleSubmitSurvey(survey)}
-                          >
-                            {submittingSurvey === survey.id ? <Spinner size="sm" /> : 'Gönder'}
-                          </Button>
-                        </>
-                      )}
-                    </Card.Body>
-                  </Card>
-                </Col>
-              );
-            })}
-          </Row>
-        </div>
-      )}
+                          {message && message.includes('teşekkürler') ? (
+                            <Alert variant="success" className="mb-0 mt-auto small">
+                              <i className="fe fe-check-circle me-1" /> {message}
+                            </Alert>
+                          ) : (
+                            <>
+                              <div className="mb-4">
+                                {message && <Alert variant="danger" className="p-2 small mb-3">{message}</Alert>}
+                                <Form>
+                                  {survey.options.map(opt => (
+                                    <div key={opt.id} className="mb-2 p-2 rounded-2" style={{ backgroundColor: selected.includes(opt.id) ? '#eef2ff' : '#f8fafc', border: `1px solid ${selected.includes(opt.id) ? '#c7d2fe' : '#e2e8f0'}`, transition: 'all 0.2s' }}>
+                                      <Form.Check 
+                                        type={survey.is_multi_select ? 'checkbox' : 'radio'}
+                                        id={`opt-${opt.id}`}
+                                        label={opt.text}
+                                        checked={selected.includes(opt.id)}
+                                        onChange={() => handleOptionToggle(survey.id, opt.id, survey.is_multi_select)}
+                                        className="mb-0"
+                                      />
+                                    </div>
+                                  ))}
+                                </Form>
+                              </div>
+                              
+                              <Button 
+                                className="w-100 mt-auto shadow-sm"
+                                style={{ background: 'linear-gradient(135deg, #6366f1, #4f46e5)', border: 'none', borderRadius: 8 }}
+                                disabled={selected.length === 0 || submittingSurvey === survey.id}
+                                onClick={() => handleSubmitSurvey(survey)}
+                              >
+                                {submittingSurvey === survey.id ? <Spinner size="sm" /> : 'Gönder'}
+                              </Button>
+                            </>
+                          )}
+                        </Card.Body>
+                      </Card>
+                    </Col>
+                  );
+                })}
+              </Row>
+            </div>
+          )}
 
-      {/* In Progress */}
-      {grouped.inProgress.length > 0 && (
-        <div className="mb-5">
-          <h5 className="fw-bold mb-3" style={{ color: '#1e1b4b', letterSpacing: '-0.3px' }}>
-            <i className="fe fe-play-circle me-2 text-warning" />Devam Edilen Eğitimler
-          </h5>
-          <Row className="g-3">
-            {grouped.inProgress.map(a => (
-              <Col key={a.id} xs={12} md={6} xl={4}>
-                <TrainingCard assignment={a} onNavigate={() => router.push(`/academy/${a.id}`)} />
-              </Col>
-            ))}
-          </Row>
-        </div>
-      )}
-
-      {/* Assigned */}
-      {grouped.assigned.length > 0 && (
-        <div className="mb-5">
-          <h5 className="fw-bold mb-3" style={{ color: '#1e1b4b' }}>
-            <i className="fe fe-inbox me-2" style={{ color: '#6366f1' }} />Bekleyen Eğitimler
-          </h5>
-          <Row className="g-3">
-            {grouped.assigned.map(a => (
-              <Col key={a.id} xs={12} md={6} xl={4}>
-                <TrainingCard assignment={a} onNavigate={() => router.push(`/academy/${a.id}`)} />
-              </Col>
-            ))}
-          </Row>
-        </div>
-      )}
-
-      {/* Completed */}
-      {grouped.completed.length > 0 && (
-        <div className="mb-5">
-          <h5 className="fw-bold mb-3" style={{ color: '#1e1b4b' }}>
-            <i className="fe fe-check-circle me-2 text-success" />Tamamlanan Eğitimler
-          </h5>
-          <Row className="g-3">
-            {grouped.completed.map(a => (
-              <Col key={a.id} xs={12} md={6} xl={4}>
-                <TrainingCard assignment={a} onNavigate={() => router.push(`/academy/${a.id}`)} />
-              </Col>
-            ))}
-          </Row>
-        </div>
+          {/* Completed Surveys */}
+          {surveys.filter(s => votedSurveyIds.includes(s.id)).length > 0 && (
+            <div className="mb-5">
+              <h5 className="fw-bold mb-3" style={{ color: '#1e1b4b' }}>
+                <i className="fe fe-check-square me-2 text-success" />
+                Katıldığım Anketler
+              </h5>
+              <Row className="g-4">
+                {surveys.filter(s => votedSurveyIds.includes(s.id)).map(survey => {
+                  return (
+                    <Col xs={12} md={6} lg={4} key={survey.id}>
+                      <Card className="border-0 h-100" style={{ borderRadius: 16, boxShadow: '0 4px 20px rgba(0,0,0,0.05)', borderTop: '4px solid #10b981', opacity: 0.85 }}>
+                        <Card.Body className="p-4 d-flex flex-column align-items-center justify-content-center text-center">
+                          <div className="mb-3">
+                            <div style={{ width: 60, height: 60, borderRadius: '50%', backgroundColor: '#d1fae5', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}>
+                              <i className="fe fe-check text-success" style={{ fontSize: 30 }} />
+                            </div>
+                          </div>
+                          <h6 className="fw-bold mb-2">{survey.title}</h6>
+                          <p className="text-muted small mb-0">Bu ankete katıldınız. Katılımınız için teşekkür ederiz.</p>
+                        </Card.Body>
+                      </Card>
+                    </Col>
+                  );
+                })}
+              </Row>
+            </div>
+          )}
+        </>
       )}
     </Container>
   );
