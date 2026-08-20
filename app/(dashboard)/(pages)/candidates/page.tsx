@@ -15,6 +15,7 @@ import { cvSearchService } from '@/services/cv-search.service';
 import type {
   CandidateListItem,
   DuplicateCandidateGroup,
+  CandidateDetail,
 } from '@/models/cv-search/cv-search.models';
 import { PageHeading } from '@/widgets';
 import CustomPagination from '@/components/Pagination';
@@ -31,29 +32,51 @@ const DEFAULT_PAGE_SIZE = 20;
 const outcomeToStatus = (
   outcome: string
 ): React.ComponentProps<typeof StatusBadge>['status'] => {
-  switch (outcome) {
-    case 'passed':
-      return 'success';
-    case 'failed':
-      return 'danger';
-    case 'pending':
-      return 'pending';
-    default:
-      return 'info';
-  }
+  return outcome as any;
 };
 
 const outcomeLabel = (outcome: string): string => {
   switch (outcome) {
-    case 'passed':
-      return 'Geçti';
-    case 'failed':
-      return 'Geçemedi';
-    case 'pending':
-      return 'Beklemede';
+    case 'pre_interview': return 'Ön Görüşme';
+    case 'interview': return 'Görüşme';
+    case 'decision_pending': return 'Karar bekleniyor';
+    case 'hired': return 'İşe alım';
+    case 'rejected_pre_interview': return 'Elendi (Ön Görüşme)';
+    case 'rejected_interview': return 'Elendi (Görüşme)';
+    case 'withdrawn': return 'Süreçten Çekildi';
+    case 'pending': return 'Beklemede';
+    case 'rejected_other_team_possible': return 'Elendi (Farklı ekip)';
+    case 'reserved': return 'Reserve edildi';
+    case 'different_account': return 'Farklı Account';
+    case 'contact_for_slot': return 'Slot için İletişim';
+    
+    // Legacy maps
+    case 'passed': return 'Olumlu';
+    case 'failed': return 'Olumsuz';
+    case 'rejected': return 'Reddedildi';
     default:
       return outcome || '—';
   }
+};
+
+const interviewTypeLabel = (type: string): string => {
+  switch (type) {
+    case 'hr': return 'İK';
+    case 'technical': return 'Teknik';
+    case 'case_study': return 'Vaka Çalışması / Şirket';
+    case 'other': return 'Diğer';
+    default: return type || 'Belirtilmemiş';
+  }
+};
+
+const formatPhone = (phone?: string | null) => {
+  if (!phone) return null;
+  const digits = phone.replace(/\D/g, '');
+  const trMatch = digits.match(/(5\d{2})(\d{3})(\d{4})$/);
+  if (trMatch) {
+    return `0${trMatch[1]} ${trMatch[2]} ${trMatch[3]}`;
+  }
+  return phone;
 };
 
 const CandidatesPage = () => {
@@ -69,6 +92,36 @@ const CandidatesPage = () => {
     key: string | null;
     direction: 'ASC' | 'DESC';
   }>({ key: null, direction: 'DESC' });
+
+  // Expanded Row states
+  const [expandedRow, setExpandedRow] = useState<number | null>(null);
+  const [candidateDetailsMap, setCandidateDetailsMap] = useState<Record<number, CandidateDetail>>({});
+  const [loadingDetailsMap, setLoadingDetailsMap] = useState<Record<number, boolean>>({});
+
+  const toggleRow = async (e: React.MouseEvent, candidate: CandidateListItem) => {
+    e.stopPropagation();
+    const candidateId = candidate.id;
+    if (!candidateId) return;
+
+    if (expandedRow === candidateId) {
+      setExpandedRow(null);
+      return;
+    }
+
+    setExpandedRow(candidateId);
+    
+    if (!candidateDetailsMap[candidateId] && !loadingDetailsMap[candidateId]) {
+      setLoadingDetailsMap(prev => ({ ...prev, [candidateId]: true }));
+      try {
+        const detail = await cvSearchService.getCandidateDetail(candidateId);
+        setCandidateDetailsMap(prev => ({ ...prev, [candidateId]: detail }));
+      } catch (err) {
+        console.error('Aday detayları yüklenemedi:', err);
+      } finally {
+        setLoadingDetailsMap(prev => ({ ...prev, [candidateId]: false }));
+      }
+    }
+  };
 
   // ── Duplicate detection ────────────────────────────────────────────────────
   const [dupGroups, setDupGroups] = useState<DuplicateCandidateGroup[]>([]);
@@ -128,6 +181,19 @@ const CandidatesPage = () => {
     setPageSize(newPageSize);
     setCurrentPage(1);
   };
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      if (search.length >= 3 || search.length === 0) {
+        if (search !== appliedSearch) {
+          setAppliedSearch(search);
+          setCurrentPage(1);
+        }
+      }
+    }, 500);
+
+    return () => clearTimeout(handler);
+  }, [search, appliedSearch]);
 
   const handleSearch = () => {
     setAppliedSearch(search);
@@ -279,13 +345,8 @@ const CandidatesPage = () => {
                           >
                             Ad Soyad {getSortIcon('name')}
                           </th>
-                          <th
-                            onClick={() => handleSort('current_position')}
-                            className="sortable-header"
-                            style={{ cursor: 'pointer' }}
-                          >
-                            Mevcut Pozisyon {getSortIcon('current_position')}
-                          </th>
+                          <th style={{ width: 150 }}>E-posta</th>
+                          <th style={{ width: 130 }}>Telefon</th>
                           <th
                             onClick={() => handleSort('seniority')}
                             className="sortable-header"
@@ -322,7 +383,8 @@ const CandidatesPage = () => {
                           Array.from({ length: 8 }).map((_, idx) => (
                             <tr key={idx}>
                               <td><div className="placeholder-glow"><span className="placeholder col-8 rounded"></span></div></td>
-                              <td><div className="placeholder-glow"><span className="placeholder col-6 rounded"></span></div></td>
+                              <td><div className="placeholder-glow"><span className="placeholder col-10 rounded"></span></div></td>
+                              <td><div className="placeholder-glow"><span className="placeholder col-8 rounded"></span></div></td>
                               <td><div className="placeholder-glow"><span className="placeholder col-4 rounded"></span></div></td>
                               <td className="text-center"><div className="placeholder-glow"><span className="placeholder col-3 rounded-pill"></span></div></td>
                               <td><div className="placeholder-glow"><span className="placeholder col-5 rounded"></span></div></td>
@@ -332,43 +394,130 @@ const CandidatesPage = () => {
                           ))
                         ) : candidates.length > 0 ? (
                           candidates.map((c) => (
-                            <tr key={c.id}>
-                              <td className="fw-semibold">{c.name || '—'}</td>
-                              <td className="text-muted small">{c.current_position || '—'}</td>
-                              <td className="small">{c.seniority || '—'}</td>
-                              <td className="text-center">
-                                <span className="badge bg-secondary rounded-pill">
-                                  {c.interview_count ?? 0}
-                                </span>
-                              </td>
-                              <td>
-                                {c.latest_outcome ? (
-                                  <StatusBadge
-                                    status={outcomeToStatus(c.latest_outcome)}
-                                    text={outcomeLabel(c.latest_outcome)}
-                                    showIcon={false}
-                                    size="sm"
-                                  />
-                                ) : (
-                                  <span className="text-muted small">—</span>
-                                )}
-                              </td>
-                              <td className="small text-muted">
-                                {c.created_at
-                                  ? new Date(c.created_at).toLocaleDateString('tr-TR')
-                                  : '—'}
-                              </td>
-                              <td>
-                                <Button
-                                  variant="outline-primary"
-                                  size="sm"
-                                  title="Detay"
-                                  onClick={() => router.push(`/candidates/${c.id}`)}
-                                >
-                                  <Eye size={14} />
-                                </Button>
-                              </td>
-                            </tr>
+                            <React.Fragment key={c.id}>
+                              <tr key={`row-${c.id}`}>
+                                <td className="fw-semibold">{c.name || '—'}</td>
+                                <td className="small text-dark">{c.email?.toLowerCase() || <span className="text-muted">—</span>}</td>
+                                <td className="small text-dark">
+                                  {c.phone ? formatPhone(c.phone) : <span className="text-muted">—</span>}
+                                </td>
+                                <td className="small">{c.seniority || '—'}</td>
+                                <td className="text-center">
+                                  <span className="badge bg-secondary rounded-pill">
+                                    {c.interview_count ?? 0}
+                                  </span>
+                                </td>
+                                <td>
+                                  {c.latest_outcome ? (
+                                    <StatusBadge
+                                      status={outcomeToStatus(c.latest_outcome)}
+                                      text={outcomeLabel(c.latest_outcome)}
+                                      showIcon={false}
+                                      size="sm"
+                                    />
+                                  ) : (
+                                    <span className="text-muted small">—</span>
+                                  )}
+                                </td>
+                                <td className="small text-muted">
+                                  {c.created_at
+                                    ? new Date(c.created_at).toLocaleDateString('tr-TR')
+                                    : '—'}
+                                </td>
+                                <td>
+                                  <div className="d-flex align-items-center gap-1 justify-content-end">
+                                    <Button
+                                      variant="outline-primary"
+                                      size="sm"
+                                      title="Detay"
+                                      onClick={() => router.push(`/candidates/${c.id}`)}
+                                    >
+                                      <Eye size={14} />
+                                    </Button>
+                                    <Button
+                                      variant="outline-secondary"
+                                      size="sm"
+                                      onClick={(e) => toggleRow(e, c)}
+                                      title="Görüşme Geçmişi"
+                                    >
+                                      {expandedRow === c.id ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                                    </Button>
+                                  </div>
+                                </td>
+                              </tr>
+                              {expandedRow === c.id && (
+                                <tr style={{ background: '#f4f7fb', boxShadow: 'inset 0 4px 6px -4px rgba(0,0,0,0.05)' }}>
+                                  <td colSpan={8} className="p-3" style={{ borderTop: 'none' }}>
+                                    {loadingDetailsMap[c.id] ? (
+                                      <div className="d-flex justify-content-center py-3">
+                                        <Spinner animation="border" variant="primary" size="sm" />
+                                      </div>
+                                    ) : candidateDetailsMap[c.id] ? (
+                                      <div className="bg-white rounded p-2 shadow-sm mx-1" style={{ border: '1px solid #e9ecef', borderLeft: '4px solid var(--bs-primary)' }}>
+                                        {candidateDetailsMap[c.id].interviews && candidateDetailsMap[c.id].interviews.length > 0 ? (
+                                          <div className="position-relative py-3 px-2">
+                                            <div 
+                                              className="position-absolute" 
+                                              style={{ left: '120px', top: '24px', bottom: '24px', width: '2px', background: '#e9ecef', zIndex: 0 }}
+                                            />
+                                            {candidateDetailsMap[c.id].interviews.map((inv, idx) => (
+                                              <div key={inv.id} className="d-flex position-relative align-items-start" style={{ zIndex: 1 }}>
+                                                <div style={{ width: '115px', textAlign: 'right' }} className="pe-3 pt-1">
+                                                  <div className="fw-semibold text-dark" style={{ fontSize: '0.85rem' }}>
+                                                    {new Date(inv.interview_date).toLocaleDateString('tr-TR')}
+                                                  </div>
+                                                  <div className="text-muted text-capitalize mb-1" style={{ fontSize: '0.75rem' }}>
+                                                    {interviewTypeLabel(inv.interview_type)}
+                                                  </div>
+                                                  <div className="text-dark fw-bold mt-1" style={{ fontSize: '0.75rem', wordBreak: 'break-word' }}>
+                                                    {inv.interviewer_name || 'Görüşmeci Yok'}
+                                                  </div>
+                                                </div>
+                                                <div className="d-flex justify-content-center" style={{ width: '12px', paddingTop: '6px' }}>
+                                                  <div 
+                                                    className="rounded-circle border border-2 border-primary bg-white" 
+                                                    style={{ width: '12px', height: '12px' }}
+                                                  />
+                                                </div>
+                                                <div className="ps-4 w-100" style={{ flex: 1 }}>
+                                                  <div className="d-flex flex-column align-items-start gap-1">
+                                                    <div className="mb-1">
+                                                      <StatusBadge
+                                                        status={inv.outcome}
+                                                        text={outcomeLabel(inv.outcome)}
+                                                        showIcon={false}
+                                                        size="sm"
+                                                      />
+                                                    </div>
+                                                    <div className="text-secondary fw-medium mt-1" style={{ fontSize: '0.75rem', letterSpacing: '0.5px', color: '#495057' }}>
+                                                      {inv.team ? inv.team.toUpperCase() : 'EKİP BİLGİSİ YOK'}
+                                                    </div>
+                                                    <div className="text-secondary mt-1" style={{ fontSize: '0.85rem', lineHeight: '1.4' }}>
+                                                      {inv.notes ? (
+                                                        <span className="fst-italic">{inv.notes}</span>
+                                                      ) : (
+                                                        <span className="text-muted" style={{ opacity: 0.7 }}>Not bulunmuyor.</span>
+                                                      )}
+                                                    </div>
+                                                  </div>
+                                                  {idx !== candidateDetailsMap[c.id].interviews.length - 1 && (
+                                                    <div className="border-bottom my-4" style={{ borderColor: '#e9ecef' }} />
+                                                  )}
+                                                </div>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        ) : (
+                                          <div className="text-muted small text-center py-2">Bu aday için henüz görüşme kaydı bulunmuyor.</div>
+                                        )}
+                                      </div>
+                                    ) : (
+                                      <div className="text-danger small text-center py-2">Detaylar yüklenemedi.</div>
+                                    )}
+                                  </td>
+                                </tr>
+                              )}
+                            </React.Fragment>
                           ))
                         ) : (
                           <tr>

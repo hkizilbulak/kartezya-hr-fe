@@ -83,6 +83,8 @@ export interface BatchStatusResponse {
 export interface CandidateListItem {
   id: number
   name: string
+  email?: string
+  phone?: string
   current_position: string
   seniority: string
   interview_count: number

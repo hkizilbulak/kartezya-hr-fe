@@ -22,29 +22,26 @@ import { toast } from 'react-toastify';
 import '@/styles/table-list.scss';
 import '@/styles/components/table-common.scss';
 
-const outcomeToStatus = (
-  outcome: string
-): React.ComponentProps<typeof StatusBadge>['status'] => {
-  switch (outcome) {
-    case 'passed':
-      return 'success';
-    case 'failed':
-      return 'danger';
-    case 'pending':
-      return 'pending';
-    default:
-      return 'info';
-  }
-};
-
 const outcomeLabel = (outcome: string): string => {
   switch (outcome) {
-    case 'passed':
-      return 'Geçti';
-    case 'failed':
-      return 'Geçemedi';
-    case 'pending':
-      return 'Beklemede';
+    case 'pre_interview': return 'Ön Görüşme';
+    case 'interview': return 'Görüşme';
+    case 'decision_pending': return 'Karar bekleniyor';
+    case 'hired': return 'İşe alım';
+    case 'rejected_pre_interview': return 'Elendi (Ön Görüşme)';
+    case 'rejected_interview': return 'Elendi (Görüşme)';
+    case 'withdrawn': return 'Süreçten Çekildi';
+    case 'pending': return 'Beklemede';
+    case 'rejected_other_team_possible': return 'Elendi (Farklı ekip)';
+    case 'reserved': return 'Reserve edildi';
+    case 'different_account': return 'Farklı Account';
+    case 'contact_for_slot': return 'Slot için İletişim';
+    case 'reserved_future_hire': return 'Reserved (Geliştirip alacağız)';
+    
+    // Legacy maps
+    case 'passed': return 'Olumlu';
+    case 'failed': return 'Olumsuz';
+    case 'rejected': return 'Reddedildi';
     default:
       return outcome || '—';
   }
@@ -52,16 +49,12 @@ const outcomeLabel = (outcome: string): string => {
 
 const interviewTypeLabel = (type: string): string => {
   switch (type) {
-    case 'technical':
-      return 'Teknik';
-    case 'hr':
-      return 'İK';
-    case 'case_study':
-      return 'Vaka Çalışması';
-    case 'other':
-      return 'Diğer';
-    default:
-      return type || '—';
+    case 'hr': return 'İK';
+    case 'technical': return 'Teknik';
+    case 'case_study': return 'Vaka Çalışması / Şirket';
+    case 'company': return 'Vaka Çalışması / Şirket'; // legacy map
+    case 'other': return 'Diğer';
+    default: return type || 'Belirtilmemiş';
   }
 };
 
@@ -246,7 +239,7 @@ const CandidateDetailPage = () => {
                                   <td>
                                     {iv.outcome ? (
                                       <StatusBadge
-                                        status={outcomeToStatus(iv.outcome)}
+                                        status={iv.outcome as any}
                                         text={outcomeLabel(iv.outcome)}
                                         showIcon={false}
                                         size="sm"
