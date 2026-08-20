@@ -16,7 +16,7 @@ interface InterviewModalProps {
 const INTERVIEW_TYPES = [
   { value: 'hr', label: 'İK' },
   { value: 'technical', label: 'Teknik' },
-  { value: 'company', label: 'Şirket' },
+  { value: 'case_study', label: 'Vaka Çalışması / Şirket' },
   { value: 'other', label: 'Diğer' },
 ];
 
@@ -60,12 +60,19 @@ const InterviewModal: React.FC<InterviewModalProps> = ({
   useEffect(() => {
     if (show) {
       if (isEdit && interviewToEdit) {
+        let safeOutcome = interviewToEdit.outcome ?? 'pending';
+        if (safeOutcome === 'passed') safeOutcome = 'decision_pending';
+        else if (safeOutcome === 'failed') safeOutcome = 'rejected_interview';
+        else if (!OUTCOMES.some(o => o.value === safeOutcome)) {
+          safeOutcome = 'pending';
+        }
+
         setFormData({
           interview_date: interviewToEdit.interview_date?.slice(0, 10) ?? '',
           interview_type: interviewToEdit.interview_type ?? 'hr',
           interviewer_name: interviewToEdit.interviewer_name ?? '',
           team: interviewToEdit.team ?? '',
-          outcome: interviewToEdit.outcome ?? 'pending',
+          outcome: safeOutcome,
           notes: interviewToEdit.notes ?? '',
         });
       } else {

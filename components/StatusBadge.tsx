@@ -20,16 +20,29 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({
       case 'active':
       case 'approved':
       case 'success':
+      case 'passed': // legacy
+      case 'hired':
         return 'success';
+      case 'pre_interview':
+      case 'interview':
+      case 'info':
+        return 'info';
       case 'inactive':
       case 'rejected':
       case 'danger':
+      case 'failed': // legacy
+      case 'rejected_pre_interview':
+      case 'rejected_interview':
+      case 'withdrawn':
+      case 'rejected_other_team_possible':
         return 'danger';
       case 'pending':
       case 'warning':
+      case 'decision_pending':
+      case 'reserved':
+      case 'different_account':
+      case 'contact_for_slot':
         return 'warning';
-      case 'info':
-        return 'info';
       default:
         return 'secondary';
     }
