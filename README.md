@@ -14,7 +14,7 @@ npm run dev
 ```
 Uygulama `http://localhost:3000` adresinde çalışacaktır.
 
-### B. Go Server ile Lokal Test
+### B. Go Server ile Lokal Testt
 Go sunucusunun yerel çıktıları nasıl servis ettiğini test etmek için:
 
 ```bash
