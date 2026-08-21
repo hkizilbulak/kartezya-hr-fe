@@ -9,6 +9,7 @@ import {
   Container,
   Spinner,
   Badge,
+  Form,
 } from 'react-bootstrap';
 import { useRouter } from 'next/navigation';
 import { cvSearchService } from '@/services/cv-search.service';
@@ -88,6 +89,7 @@ const CandidatesPage = () => {
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [appliedSearch, setAppliedSearch] = useState('');
+  const [outcomeFilter, setOutcomeFilter] = useState('');
   const [sortConfig, setSortConfig] = useState<{
     key: string | null;
     direction: 'ASC' | 'DESC';
@@ -149,7 +151,8 @@ const CandidatesPage = () => {
     size: number,
     searchQuery: string,
     sortKey: string | null,
-    direction: 'ASC' | 'DESC'
+    direction: 'ASC' | 'DESC',
+    outcomeFilter: string
   ) => {
     setLoading(true);
     try {
@@ -159,6 +162,7 @@ const CandidatesPage = () => {
         search: searchQuery || undefined,
         sort: sortKey || undefined,
         direction: direction || undefined,
+        outcome: outcomeFilter || undefined,
       });
       setCandidates(data.candidates ?? []);
       setTotalCount(data.total ?? 0);
@@ -170,8 +174,8 @@ const CandidatesPage = () => {
   }, []);
 
   useEffect(() => {
-    fetchCandidates(currentPage, pageSize, appliedSearch, sortConfig.key, sortConfig.direction);
-  }, [currentPage, pageSize, appliedSearch, sortConfig, fetchCandidates]);
+    fetchCandidates(currentPage, pageSize, appliedSearch, sortConfig.key, sortConfig.direction, outcomeFilter);
+  }, [currentPage, pageSize, appliedSearch, sortConfig, outcomeFilter, fetchCandidates]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -203,6 +207,7 @@ const CandidatesPage = () => {
   const handleClearFilters = () => {
     setSearch('');
     setAppliedSearch('');
+    setOutcomeFilter('');
     setSortConfig({ key: null, direction: 'DESC' });
     setCurrentPage(1);
   };
@@ -263,7 +268,7 @@ const CandidatesPage = () => {
         loading={dupLoading}
         onRefresh={fetchDuplicates}
         onMerged={() => {
-          fetchCandidates(currentPage, pageSize, appliedSearch, sortConfig.key, sortConfig.direction);
+          fetchCandidates(currentPage, pageSize, appliedSearch, sortConfig.key, sortConfig.direction, outcomeFilter);
         }}
       />
 
@@ -286,7 +291,34 @@ const CandidatesPage = () => {
                       placeholder="Ad soyad, pozisyon veya kıdem ara..."
                     />
                   </Col>
-                  <Col lg={8} md={6} sm={12} className="text-end mb-3">
+                  <Col lg={3} md={6} sm={12}>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Son Durum</Form.Label>
+                      <Form.Select
+                        value={outcomeFilter}
+                        onChange={(e) => {
+                          setOutcomeFilter(e.target.value);
+                          setCurrentPage(1);
+                        }}
+                      >
+                        <option value="">Tüm Durumlar</option>
+                        <option value="pre_interview">Ön Görüşme</option>
+                        <option value="interview">Görüşme</option>
+                        <option value="decision_pending">Karar bekleniyor</option>
+                        <option value="hired">İşe alım</option>
+                        <option value="rejected_pre_interview">Elendi(Ön Görüşme)</option>
+                        <option value="rejected_interview">Elendi(Görüşme)</option>
+                        <option value="withdrawn">Süreçten Çekildi</option>
+                        <option value="pending">Beklemede</option>
+                        <option value="rejected_other_team_possible">Elendi (Farklı ekipte değerlendirilebilir)</option>
+                        <option value="reserved">Reserve edildi</option>
+                        <option value="different_account">Farklı Account</option>
+                        <option value="contact_for_slot">Slot için İletişim</option>
+                        <option value="reserved_future_hire">Reserved(Geliştirip alacağız)</option>
+                      </Form.Select>
+                    </Form.Group>
+                  </Col>
+                  <Col lg={5} md={12} sm={12} className="text-end mb-3">
                     <Button
                       variant="secondary"
                       size="sm"
@@ -361,13 +393,7 @@ const CandidatesPage = () => {
                           >
                             Görüşme Sayısı {getSortIcon('interview_count')}
                           </th>
-                          <th
-                            onClick={() => handleSort('latest_outcome')}
-                            className="sortable-header"
-                            style={{ cursor: 'pointer', width: 140 }}
-                          >
-                            Son Sonuç {getSortIcon('latest_outcome')}
-                          </th>
+
                           <th
                             onClick={() => handleSort('created_at')}
                             className="sortable-header"
@@ -387,7 +413,7 @@ const CandidatesPage = () => {
                               <td><div className="placeholder-glow"><span className="placeholder col-8 rounded"></span></div></td>
                               <td><div className="placeholder-glow"><span className="placeholder col-4 rounded"></span></div></td>
                               <td className="text-center"><div className="placeholder-glow"><span className="placeholder col-3 rounded-pill"></span></div></td>
-                              <td><div className="placeholder-glow"><span className="placeholder col-5 rounded"></span></div></td>
+
                               <td><div className="placeholder-glow"><span className="placeholder col-4 rounded"></span></div></td>
                               <td><div className="placeholder-glow"><span className="placeholder col-6 rounded"></span></div></td>
                             </tr>
@@ -396,7 +422,21 @@ const CandidatesPage = () => {
                           candidates.map((c) => (
                             <React.Fragment key={c.id}>
                               <tr key={`row-${c.id}`}>
-                                <td className="fw-semibold">{c.name || '—'}</td>
+                                <td className="fw-semibold">
+                                  <div className="d-flex align-items-center">
+                                    <Button
+                                      variant="light"
+                                      size="sm"
+                                      className="p-1 me-2"
+                                      onClick={(e) => toggleRow(e, c)}
+                                      title="Görüşme Geçmişi"
+                                      style={{ width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: 'none' }}
+                                    >
+                                      {expandedRow === c.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                                    </Button>
+                                    <span>{c.name || '—'}</span>
+                                  </div>
+                                </td>
                                 <td className="small text-dark">{c.email?.toLowerCase() || <span className="text-muted">—</span>}</td>
                                 <td className="small text-dark">
                                   {c.phone ? formatPhone(c.phone) : <span className="text-muted">—</span>}
@@ -407,18 +447,7 @@ const CandidatesPage = () => {
                                     {c.interview_count ?? 0}
                                   </span>
                                 </td>
-                                <td>
-                                  {c.latest_outcome ? (
-                                    <StatusBadge
-                                      status={outcomeToStatus(c.latest_outcome)}
-                                      text={outcomeLabel(c.latest_outcome)}
-                                      showIcon={false}
-                                      size="sm"
-                                    />
-                                  ) : (
-                                    <span className="text-muted small">—</span>
-                                  )}
-                                </td>
+
                                 <td className="small text-muted">
                                   {c.created_at
                                     ? new Date(c.created_at).toLocaleDateString('tr-TR')
@@ -433,14 +462,6 @@ const CandidatesPage = () => {
                                       onClick={() => router.push(`/candidates/${c.id}`)}
                                     >
                                       <Eye size={14} />
-                                    </Button>
-                                    <Button
-                                      variant="outline-secondary"
-                                      size="sm"
-                                      onClick={(e) => toggleRow(e, c)}
-                                      title="Görüşme Geçmişi"
-                                    >
-                                      {expandedRow === c.id ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                                     </Button>
                                   </div>
                                 </td>
@@ -458,7 +479,7 @@ const CandidatesPage = () => {
                                           <div className="position-relative py-3 px-2">
                                             <div 
                                               className="position-absolute" 
-                                              style={{ left: '120px', top: '24px', bottom: '24px', width: '2px', background: '#e9ecef', zIndex: 0 }}
+                                              style={{ left: '128px', top: '24px', bottom: '24px', width: '2px', background: '#e9ecef', zIndex: 0 }}
                                             />
                                             {candidateDetailsMap[c.id].interviews.map((inv, idx) => (
                                               <div key={inv.id} className="d-flex position-relative align-items-start" style={{ zIndex: 1 }}>
@@ -470,7 +491,13 @@ const CandidatesPage = () => {
                                                     {interviewTypeLabel(inv.interview_type)}
                                                   </div>
                                                   <div className="text-dark fw-bold mt-1" style={{ fontSize: '0.75rem', wordBreak: 'break-word' }}>
-                                                    {inv.interviewer_name || 'Görüşmeci Yok'}
+                                                    {inv.interviewer_name ? (
+                                                      inv.interviewer_name.split(',').map((name, i) => (
+                                                        <div key={i}>{name.trim()}</div>
+                                                      ))
+                                                    ) : (
+                                                      'Görüşmeci Yok'
+                                                    )}
                                                   </div>
                                                 </div>
                                                 <div className="d-flex justify-content-center" style={{ width: '12px', paddingTop: '6px' }}>
