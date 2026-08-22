@@ -83,6 +83,28 @@ const formatPhone = (phone?: string | null) => {
   return phone;
 };
 
+const renderNotesWithLinks = (notes?: string) => {
+  if (!notes) return '—';
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const parts = notes.split(urlRegex);
+  return parts.map((part, index) => {
+    if (part.match(urlRegex)) {
+      return (
+        <a 
+          key={index} 
+          href={part} 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          onClick={(e) => e.stopPropagation()}
+        >
+          {part}
+        </a>
+      );
+    }
+    return part;
+  });
+};
+
 const CandidatesPage = () => {
   const router = useRouter();
   const [candidates, setCandidates] = useState<CandidateListItem[]>([]);
@@ -214,7 +236,7 @@ const CandidatesPage = () => {
   const handleClearFilters = () => {
     setSearch('');
     setAppliedSearch('');
-    setOutcomeFilter('');
+    setOutcomeFilter([]);
     setSortConfig({ key: null, direction: 'DESC' });
     setCurrentPage(1);
   };
@@ -305,7 +327,11 @@ const CandidatesPage = () => {
                       name="outcomeFilter"
                       value={outcomeFilter}
                       onChange={(e: any) => {
-                        setOutcomeFilter(e.target.value);
+                        let val = e.target.value as string[];
+                        if (val.includes('')) {
+                          val = [];
+                        }
+                        setOutcomeFilter(val);
                         setCurrentPage(1);
                       }}
                     >
@@ -556,7 +582,7 @@ const CandidatesPage = () => {
                                                     </div>
                                                     <div className="text-secondary mt-1" style={{ fontSize: '0.85rem', lineHeight: '1.4' }}>
                                                       {inv.notes ? (
-                                                        <span className="fst-italic">{inv.notes}</span>
+                                                        <span className="fst-italic">{renderNotesWithLinks(inv.notes)}</span>
                                                       ) : (
                                                         <span className="text-muted" style={{ opacity: 0.7 }}>Not bulunmuyor.</span>
                                                       )}

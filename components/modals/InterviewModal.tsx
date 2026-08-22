@@ -16,9 +16,9 @@ interface InterviewModalProps {
 }
 
 const INTERVIEW_TYPES = [
-  { value: 'hr', label: 'İK' },
-  { value: 'technical', label: 'Teknik' },
+  { value: 'technical', label: 'Teknik Ön Görüşme' },
   { value: 'case_study', label: 'Kurum Görüşmesi' },
+  { value: 'hr', label: 'İK' },
   { value: 'other', label: 'Diğer' },
 ];
 
@@ -37,7 +37,7 @@ const OUTCOMES = [
 
 const emptyForm = (): InterviewRequest => ({
   interview_date: '',
-  interview_type: 'hr',
+  interview_type: '',
   interviewer_name: '',
   team: '',
   outcome: 'reserved',
@@ -54,7 +54,7 @@ const InterviewModal: React.FC<InterviewModalProps> = ({
   const isEdit = !!interviewToEdit;
   const [formData, setFormData] = useState<InterviewRequest>(emptyForm());
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<{ interview_date?: string }>({});
+  const [errors, setErrors] = useState<{ interview_date?: string; interview_type?: string }>({});
 
   useEffect(() => {
     if (show) {
@@ -69,7 +69,7 @@ const InterviewModal: React.FC<InterviewModalProps> = ({
 
         setFormData({
           interview_date: interviewToEdit.interview_date?.slice(0, 10) ?? '',
-          interview_type: interviewToEdit.interview_type ?? 'hr',
+          interview_type: interviewToEdit.interview_type ?? '',
           interviewer_name: interviewToEdit.interviewer_name ?? '',
           team: interviewToEdit.team ?? '',
           outcome: safeOutcome,
@@ -86,18 +86,36 @@ const InterviewModal: React.FC<InterviewModalProps> = ({
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => {
+      const next = { ...prev, [name]: value };
+      if (name === 'interview_type' && value !== 'case_study') {
+        next.team = '';
+      }
+      return next;
+    });
     if (errors[name as keyof typeof errors]) {
       setErrors((prev) => ({ ...prev, [name]: undefined }));
     }
   };
 
   const validate = (): boolean => {
+    let isValid = true;
+    const newErrors: typeof errors = {};
+
     if (!formData.interview_date) {
-      setErrors({ interview_date: 'Görüşme tarihi zorunludur.' });
-      return false;
+      newErrors.interview_date = 'Görüşme tarihi zorunludur.';
+      isValid = false;
     }
-    return true;
+    
+    if (!formData.interview_type) {
+      newErrors.interview_type = 'Görüşme türü zorunludur.';
+      isValid = false;
+    }
+
+    if (!isValid) {
+      setErrors(newErrors);
+    }
+    return isValid;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -135,7 +153,7 @@ const InterviewModal: React.FC<InterviewModalProps> = ({
         </Modal.Header>
         <Form onSubmit={handleSubmit}>
           <Modal.Body>
-            <Row className="mb-3">
+            <Row>
               <Col md={6}>
                 <FormDateField
                   label="Görüşme Tarihi"
@@ -148,26 +166,27 @@ const InterviewModal: React.FC<InterviewModalProps> = ({
                 />
               </Col>
               <Col md={6}>
-                <Form.Group>
-                  <FormSelectField
-                    label="Görüşme Türü"
-                    name="interview_type"
-                    value={formData.interview_type}
-                    onChange={handleChange as any}
-                  >
-                    {INTERVIEW_TYPES.map((t) => (
-                      <option key={t.value} value={t.value}>
-                        {t.label}
-                      </option>
-                    ))}
-                  </FormSelectField>
-                </Form.Group>
+                <FormSelectField
+                  label="Görüşme Türü"
+                  name="interview_type"
+                  value={formData.interview_type}
+                  onChange={handleChange as any}
+                  isInvalid={!!errors.interview_type}
+                  errorMessage={errors.interview_type}
+                >
+                  <option value="">Seçiniz...</option>
+                  {INTERVIEW_TYPES.map((t) => (
+                    <option key={t.value} value={t.value}>
+                      {t.label}
+                    </option>
+                  ))}
+                </FormSelectField>
               </Col>
             </Row>
 
-            <Row className="mb-3">
+            <Row>
               <Col md={6}>
-                <Form.Group>
+                <Form.Group className="mb-3">
                   <Form.Label>Görüşmeci</Form.Label>
                   <Form.Control
                     type="text"
@@ -178,36 +197,36 @@ const InterviewModal: React.FC<InterviewModalProps> = ({
                   />
                 </Form.Group>
               </Col>
-              <Col md={6}>
-                <Form.Group>
-                  <Form.Label>Ekip</Form.Label>
-                  <Form.Control
-                    type="text"
-                    name="team"
-                    value={formData.team}
-                    onChange={handleChange}
-                    placeholder="Ekip adı"
-                  />
-                </Form.Group>
-              </Col>
+              {formData.interview_type === 'case_study' && (
+                <Col md={6}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Ekip</Form.Label>
+                    <Form.Control
+                      type="text"
+                      name="team"
+                      value={formData.team}
+                      onChange={handleChange}
+                      placeholder="Ekip adı"
+                    />
+                  </Form.Group>
+                </Col>
+              )}
             </Row>
 
-            <Row className="mb-3">
+            <Row>
               <Col md={6}>
-                <Form.Group>
-                  <FormSelectField
-                    label="Sonuç"
-                    name="outcome"
-                    value={formData.outcome}
-                    onChange={handleChange as any}
-                  >
-                    {OUTCOMES.map((o) => (
-                      <option key={o.value} value={o.value}>
-                        {o.label}
-                      </option>
-                    ))}
-                  </FormSelectField>
-                </Form.Group>
+                <FormSelectField
+                  label="Sonuç"
+                  name="outcome"
+                  value={formData.outcome}
+                  onChange={handleChange as any}
+                >
+                  {OUTCOMES.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </FormSelectField>
               </Col>
             </Row>
 
