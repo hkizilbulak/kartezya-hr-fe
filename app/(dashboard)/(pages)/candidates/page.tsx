@@ -21,9 +21,11 @@ import type {
 import { PageHeading } from '@/widgets';
 import CustomPagination from '@/components/Pagination';
 import StatusBadge from '@/components/StatusBadge';
-import { Eye, ChevronUp, ChevronDown, GitMerge } from 'react-feather';
+import { Eye, ChevronUp, ChevronDown, GitMerge, Plus } from 'react-feather';
 import FormTextField from '@/components/FormTextField';
+import FormSelectField from '@/components/FormSelectField';
 import DuplicatesOffcanvas from '@/components/modals/DuplicatesOffcanvas';
+import InterviewModal from '@/components/modals/InterviewModal';
 import { toast } from 'react-toastify';
 import '@/styles/table-list.scss';
 import '@/styles/components/table-common.scss';
@@ -45,10 +47,11 @@ const outcomeLabel = (outcome: string): string => {
     case 'rejected_pre_interview': return 'Elendi (Ön Görüşme)';
     case 'rejected_interview': return 'Elendi (Görüşme)';
     case 'withdrawn': return 'Süreçten Çekildi';
-    case 'pending': return 'Beklemede';
-    case 'rejected_other_team_possible': return 'Elendi (Farklı ekip)';
+    case 'pending': return 'Reserve edildi';
     case 'reserved': return 'Reserve edildi';
-    case 'different_account': return 'Farklı Account';
+    case 'reserved_future_hire': return 'Reserve edildi';
+    case 'different_account': return 'Farklı ekipte değerlendirilebilir';
+    case 'rejected_other_team_possible': return 'Farklı ekipte değerlendirilebilir';
     case 'contact_for_slot': return 'Slot için İletişim';
     
     // Legacy maps
@@ -64,7 +67,7 @@ const interviewTypeLabel = (type: string): string => {
   switch (type) {
     case 'hr': return 'İK';
     case 'technical': return 'Teknik';
-    case 'case_study': return 'Vaka Çalışması / Şirket';
+    case 'case_study': return 'Kurum Görüşmesi';
     case 'other': return 'Diğer';
     default: return type || 'Belirtilmemiş';
   }
@@ -89,7 +92,7 @@ const CandidatesPage = () => {
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [appliedSearch, setAppliedSearch] = useState('');
-  const [outcomeFilter, setOutcomeFilter] = useState('');
+  const [outcomeFilter, setOutcomeFilter] = useState<string[]>([]);
   const [sortConfig, setSortConfig] = useState<{
     key: string | null;
     direction: 'ASC' | 'DESC';
@@ -99,6 +102,10 @@ const CandidatesPage = () => {
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
   const [candidateDetailsMap, setCandidateDetailsMap] = useState<Record<number, CandidateDetail>>({});
   const [loadingDetailsMap, setLoadingDetailsMap] = useState<Record<number, boolean>>({});
+
+  // Interview Modal states
+  const [showInterviewModal, setShowInterviewModal] = useState(false);
+  const [selectedCandidateIdForInterview, setSelectedCandidateIdForInterview] = useState<number | null>(null);
 
   const toggleRow = async (e: React.MouseEvent, candidate: CandidateListItem) => {
     e.stopPropagation();
@@ -152,7 +159,7 @@ const CandidatesPage = () => {
     searchQuery: string,
     sortKey: string | null,
     direction: 'ASC' | 'DESC',
-    outcomeFilter: string
+    outcomeFilter: string[]
   ) => {
     setLoading(true);
     try {
@@ -162,7 +169,7 @@ const CandidatesPage = () => {
         search: searchQuery || undefined,
         sort: sortKey || undefined,
         direction: direction || undefined,
-        outcome: outcomeFilter || undefined,
+        outcome: outcomeFilter.length > 0 ? outcomeFilter.join(',') : undefined,
       });
       setCandidates(data.candidates ?? []);
       setTotalCount(data.total ?? 0);
@@ -292,33 +299,48 @@ const CandidatesPage = () => {
                     />
                   </Col>
                   <Col lg={3} md={6} sm={12}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Son Durum</Form.Label>
-                      <Form.Select
-                        value={outcomeFilter}
-                        onChange={(e) => {
-                          setOutcomeFilter(e.target.value);
-                          setCurrentPage(1);
-                        }}
-                      >
-                        <option value="">Tüm Durumlar</option>
-                        <option value="pre_interview">Ön Görüşme</option>
-                        <option value="interview">Görüşme</option>
-                        <option value="decision_pending">Karar bekleniyor</option>
-                        <option value="hired">İşe alım</option>
-                        <option value="rejected_pre_interview">Elendi(Ön Görüşme)</option>
-                        <option value="rejected_interview">Elendi(Görüşme)</option>
-                        <option value="withdrawn">Süreçten Çekildi</option>
-                        <option value="pending">Beklemede</option>
-                        <option value="rejected_other_team_possible">Elendi (Farklı ekipte değerlendirilebilir)</option>
-                        <option value="reserved">Reserve edildi</option>
-                        <option value="different_account">Farklı Account</option>
-                        <option value="contact_for_slot">Slot için İletişim</option>
-                        <option value="reserved_future_hire">Reserved(Geliştirip alacağız)</option>
-                      </Form.Select>
-                    </Form.Group>
+                    <FormSelectField
+                      label="Son Durum"
+                      isMultiSelect
+                      name="outcomeFilter"
+                      value={outcomeFilter}
+                      onChange={(e: any) => {
+                        setOutcomeFilter(e.target.value);
+                        setCurrentPage(1);
+                      }}
+                    >
+                      <option value="">Tüm Durumlar</option>
+                      <option value="pre_interview">Ön Görüşme</option>
+                      <option value="interview">Görüşme</option>
+                      <option value="decision_pending">Karar bekleniyor</option>
+                      <option value="hired">İşe alım</option>
+                      <option value="rejected_pre_interview">Elendi(Ön Görüşme)</option>
+                      <option value="rejected_interview">Elendi(Görüşme)</option>
+                      <option value="withdrawn">Süreçten Çekildi</option>
+                      <option value="reserved">Reserve edildi</option>
+                      <option value="different_account">Farklı ekipte değerlendirilebilir</option>
+                      <option value="contact_for_slot">Slot için İletişim</option>
+                    </FormSelectField>
                   </Col>
-                  <Col lg={5} md={12} sm={12} className="text-end mb-3">
+                  <Col lg={3} md={6} sm={12} className="mb-3 pb-1 d-flex align-items-end">
+                    <Form.Check
+                      type="checkbox"
+                      id="preset-in-process"
+                      label="Görüşme sürecindekiler"
+                      className="mb-0 text-primary"
+                      style={{ fontSize: '0.85rem', whiteSpace: 'nowrap' }}
+                      checked={outcomeFilter.join(',') === 'pre_interview,interview,decision_pending,reserved,different_account,contact_for_slot'}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setOutcomeFilter(['pre_interview', 'interview', 'decision_pending', 'reserved', 'different_account', 'contact_for_slot']);
+                        } else {
+                          setOutcomeFilter([]);
+                        }
+                        setCurrentPage(1);
+                      }}
+                    />
+                  </Col>
+                  <Col lg={2} md={12} sm={12} className="text-end mb-3">
                     <Button
                       variant="secondary"
                       size="sm"
@@ -463,6 +485,19 @@ const CandidatesPage = () => {
                                     >
                                       <Eye size={14} />
                                     </Button>
+                                    <Button
+                                      variant="outline-success"
+                                      size="sm"
+                                      title="Görüşme Ekle"
+                                      onClick={() => {
+                                        if (c.id) {
+                                          setSelectedCandidateIdForInterview(c.id);
+                                          setShowInterviewModal(true);
+                                        }
+                                      }}
+                                    >
+                                      <Plus size={14} />
+                                    </Button>
                                   </div>
                                 </td>
                               </tr>
@@ -574,6 +609,30 @@ const CandidatesPage = () => {
           </div>
         </Col>
       </Row>
+
+      {/* Interview Modal */}
+      {showInterviewModal && selectedCandidateIdForInterview && (
+        <InterviewModal
+          show={showInterviewModal}
+          onHide={() => {
+            setShowInterviewModal(false);
+            setSelectedCandidateIdForInterview(null);
+          }}
+          onSave={() => {
+            fetchCandidates(currentPage, pageSize, appliedSearch, sortConfig.key, sortConfig.direction, outcomeFilter);
+            if (expandedRow === selectedCandidateIdForInterview) {
+              setLoadingDetailsMap(prev => ({ ...prev, [selectedCandidateIdForInterview]: true }));
+              cvSearchService.getCandidateDetail(selectedCandidateIdForInterview).then(detail => {
+                setCandidateDetailsMap(prev => ({ ...prev, [selectedCandidateIdForInterview]: detail }));
+                setLoadingDetailsMap(prev => ({ ...prev, [selectedCandidateIdForInterview]: false }));
+              }).catch(() => {
+                setLoadingDetailsMap(prev => ({ ...prev, [selectedCandidateIdForInterview]: false }));
+              });
+            }
+          }}
+          candidateId={selectedCandidateIdForInterview}
+        />
+      )}
     </Container>
   );
 };
