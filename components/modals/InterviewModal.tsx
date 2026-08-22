@@ -3,6 +3,8 @@ import { Modal, Button, Form, Row, Col } from 'react-bootstrap';
 import { cvSearchService } from '@/services/cv-search.service';
 import { toast } from 'react-toastify';
 import LoadingOverlay from '@/components/LoadingOverlay';
+import FormSelectField from '@/components/FormSelectField';
+import FormDateField from '@/components/FormDateField';
 import type { Interview, InterviewRequest } from '@/models/cv-search/cv-search.models';
 
 interface InterviewModalProps {
@@ -16,7 +18,7 @@ interface InterviewModalProps {
 const INTERVIEW_TYPES = [
   { value: 'hr', label: 'İK' },
   { value: 'technical', label: 'Teknik' },
-  { value: 'case_study', label: 'Vaka Çalışması / Şirket' },
+  { value: 'case_study', label: 'Kurum Görüşmesi' },
   { value: 'other', label: 'Diğer' },
 ];
 
@@ -28,12 +30,9 @@ const OUTCOMES = [
   { value: 'rejected_pre_interview', label: 'Elendi(Ön Görüşme)' },
   { value: 'rejected_interview', label: 'Elendi(Görüşme)' },
   { value: 'withdrawn', label: 'Süreçten Çekildi' },
-  { value: 'pending', label: 'Beklemede' },
-  { value: 'rejected_other_team_possible', label: 'Elendi (Farklı ekipte değerlendirilebilir)' },
   { value: 'reserved', label: 'Reserve edildi' },
-  { value: 'different_account', label: 'Farklı Account' },
-  { value: 'contact_for_slot', label: 'Slot için İletişim' },
-  { value: 'reserved_future_hire', label: 'Reserved(Geliştirip alacağız)' }
+  { value: 'different_account', label: 'Farklı ekipte değerlendirilebilir' },
+  { value: 'contact_for_slot', label: 'Slot için İletişim' }
 ];
 
 const emptyForm = (): InterviewRequest => ({
@@ -41,7 +40,7 @@ const emptyForm = (): InterviewRequest => ({
   interview_type: 'hr',
   interviewer_name: '',
   team: '',
-  outcome: 'pending',
+  outcome: 'reserved',
   notes: '',
 });
 
@@ -60,11 +59,12 @@ const InterviewModal: React.FC<InterviewModalProps> = ({
   useEffect(() => {
     if (show) {
       if (isEdit && interviewToEdit) {
-        let safeOutcome = interviewToEdit.outcome ?? 'pending';
+        let safeOutcome = interviewToEdit.outcome ?? 'reserved';
         if (safeOutcome === 'passed') safeOutcome = 'decision_pending';
         else if (safeOutcome === 'failed') safeOutcome = 'rejected_interview';
+        else if (safeOutcome === 'pending' || safeOutcome === 'reserved_future_hire') safeOutcome = 'reserved';
         else if (!OUTCOMES.some(o => o.value === safeOutcome)) {
-          safeOutcome = 'pending';
+          safeOutcome = 'reserved';
         }
 
         setFormData({
@@ -137,26 +137,20 @@ const InterviewModal: React.FC<InterviewModalProps> = ({
           <Modal.Body>
             <Row className="mb-3">
               <Col md={6}>
-                <Form.Group>
-                  <Form.Label>
-                    Görüşme Tarihi <span className="text-danger">*</span>
-                  </Form.Label>
-                  <Form.Control
-                    type="date"
-                    name="interview_date"
-                    value={formData.interview_date}
-                    onChange={handleChange}
-                    isInvalid={!!errors.interview_date}
-                  />
-                  <Form.Control.Feedback type="invalid">
-                    {errors.interview_date}
-                  </Form.Control.Feedback>
-                </Form.Group>
+                <FormDateField
+                  label="Görüşme Tarihi"
+                  name="interview_date"
+                  value={formData.interview_date}
+                  onChange={handleChange as any}
+                  isInvalid={!!errors.interview_date}
+                  errorMessage={errors.interview_date}
+                  required={true}
+                />
               </Col>
               <Col md={6}>
                 <Form.Group>
-                  <Form.Label>Görüşme Türü</Form.Label>
-                  <Form.Select
+                  <FormSelectField
+                    label="Görüşme Türü"
                     name="interview_type"
                     value={formData.interview_type}
                     onChange={handleChange as any}
@@ -166,7 +160,7 @@ const InterviewModal: React.FC<InterviewModalProps> = ({
                         {t.label}
                       </option>
                     ))}
-                  </Form.Select>
+                  </FormSelectField>
                 </Form.Group>
               </Col>
             </Row>
@@ -201,8 +195,8 @@ const InterviewModal: React.FC<InterviewModalProps> = ({
             <Row className="mb-3">
               <Col md={6}>
                 <Form.Group>
-                  <Form.Label>Sonuç</Form.Label>
-                  <Form.Select
+                  <FormSelectField
+                    label="Sonuç"
                     name="outcome"
                     value={formData.outcome}
                     onChange={handleChange as any}
@@ -212,7 +206,7 @@ const InterviewModal: React.FC<InterviewModalProps> = ({
                         {o.label}
                       </option>
                     ))}
-                  </Form.Select>
+                  </FormSelectField>
                 </Form.Group>
               </Col>
             </Row>

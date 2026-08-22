@@ -8,14 +8,15 @@ type IProps = {
     controlId?: string;
     label?: string;
     name: string;
-    value: string;
-    onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+    value: string | string[];
+    onChange: (e: React.ChangeEvent<HTMLSelectElement> | any) => void;
     children: React.ReactNode;
     disabled?: boolean;
     isInvalid?: boolean;
     errorMessage?: string;
     /** When false, hides the search input. Defaults to true. */
     searchable?: boolean;
+    isMultiSelect?: boolean;
 };
 
 const FormSelectField = ({
@@ -30,7 +31,8 @@ const FormSelectField = ({
     disabled = false,
     isInvalid = false,
     errorMessage,
-    searchable = true
+    searchable = true,
+    isMultiSelect = false
 }: IProps) => {
     const [isOpen, setIsOpen] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
@@ -179,14 +181,49 @@ const FormSelectField = ({
     };
 
     const handleOptionClick = (optionValue: string) => {
-        const syntheticEvent = {
-            target: { name, value: optionValue }
-        } as React.ChangeEvent<HTMLSelectElement>;
-        onChange(syntheticEvent);
-        setIsOpen(false);
+        if (isMultiSelect) {
+            let newValue: string[];
+            if (Array.isArray(value)) {
+                if (value.includes(optionValue)) {
+                    newValue = value.filter(v => v !== optionValue);
+                } else {
+                    newValue = [...value, optionValue];
+                }
+            } else {
+                newValue = value ? [value as string, optionValue] : [optionValue];
+            }
+            const syntheticEvent = {
+                target: { name, value: newValue }
+            };
+            onChange(syntheticEvent);
+        } else {
+            const syntheticEvent = {
+                target: { name, value: optionValue }
+            } as React.ChangeEvent<HTMLSelectElement>;
+            onChange(syntheticEvent);
+            setIsOpen(false);
+        }
     };
 
     const getSelectedLabel = () => {
+        if (isMultiSelect && Array.isArray(value)) {
+            if (value.length === 0) return 'Seçiniz';
+            const labels: string[] = [];
+            const processChildren = (children: React.ReactNode): void => {
+                React.Children.forEach(children, (child) => {
+                    if (React.isValidElement(child)) {
+                        if (child.type === 'option' && value.includes((child as any).props.value)) {
+                            labels.push((child as any).props.children);
+                        } else if ((child as any).props.children) {
+                            processChildren((child as any).props.children);
+                        }
+                    }
+                });
+            };
+            processChildren(children);
+            return labels.length > 0 ? labels.join(', ') : 'Seçiniz';
+        }
+
         let selectedLabel = '';
         
         // Fragment içindeki children'ı düzgün işlemek için
@@ -226,7 +263,9 @@ const FormSelectField = ({
                             }
                         }
                         
-                        const isSelected = (child as any).props.value === value;
+                        const isSelected = isMultiSelect && Array.isArray(value)
+                            ? value.includes((child as any).props.value)
+                            : (child as any).props.value === value;
                         options.push(
                             <button
                                 key={`${(child as any).props.value}-${index}`}
@@ -343,6 +382,7 @@ const FormSelectField = ({
 
                     {/* Hidden native select for form submission */}
                     <select
+                        multiple={isMultiSelect}
                         name={name}
                         value={value}
                         onChange={onChange}
