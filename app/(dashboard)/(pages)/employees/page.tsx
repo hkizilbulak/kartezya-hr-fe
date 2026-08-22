@@ -897,21 +897,21 @@ const EmployeesPage = () => {
                     </FormSelectField>
                   </Col>
                   <Col lg={3} md={6} sm={12}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Departman</Form.Label>
-                      <MultiSelectField
-                        name="quick-department_ids"
-                        value={quickSearchParams.department_ids ? quickSearchParams.department_ids.split(',').filter(Boolean) : []}
-                        onChange={(values: string[]) => handleQuickSearchChange('department_ids', values.join(','))}
-                        options={departments.map((dept) => ({
-                          value: String(dept.id),
-                          label: dept.name,
-                        }))}
-                        disabled={departmentsLoading || !quickSearchParams.company_id}
-                        loading={departmentsLoading}
-                        placeholder={!quickSearchParams.company_id ? "Önce şirket seçiniz" : "Departman seçiniz"}
-                      />
-                    </Form.Group>
+                    <FormSelectField
+                      label="Departman"
+                      name="quick-department_ids"
+                      isMultiSelect={true}
+                      value={quickSearchParams.department_ids ? quickSearchParams.department_ids.split(',').filter(Boolean) : []}
+                      onChange={(e: any) => handleQuickSearchChange('department_ids', e.target.value.join(','))}
+                      disabled={departmentsLoading || !quickSearchParams.company_id}
+                      placeholder={!quickSearchParams.company_id ? "Önce şirket seçiniz" : "Departman seçiniz"}
+                    >
+                      {departments.map((dept) => (
+                        <option key={dept.id} value={String(dept.id)}>
+                          {dept.name}
+                        </option>
+                      ))}
+                    </FormSelectField>
                   </Col>
                   <Col lg={3} md={6} sm={12}>
                     <FormSelectField

@@ -17,6 +17,7 @@ type IProps = {
     /** When false, hides the search input. Defaults to true. */
     searchable?: boolean;
     isMultiSelect?: boolean;
+    placeholder?: string;
 };
 
 const FormSelectField = ({
@@ -32,7 +33,8 @@ const FormSelectField = ({
     isInvalid = false,
     errorMessage,
     searchable = true,
-    isMultiSelect = false
+    isMultiSelect = false,
+    placeholder = 'Seçiniz'
 }: IProps) => {
     const [isOpen, setIsOpen] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
@@ -207,7 +209,7 @@ const FormSelectField = ({
 
     const getSelectedLabel = () => {
         if (isMultiSelect && Array.isArray(value)) {
-            if (value.length === 0) return 'Seçiniz';
+            if (value.length === 0) return placeholder;
             const labels: string[] = [];
             const processChildren = (children: React.ReactNode): void => {
                 React.Children.forEach(children, (child) => {
@@ -221,7 +223,7 @@ const FormSelectField = ({
                 });
             };
             processChildren(children);
-            return labels.length > 0 ? labels.join(', ') : 'Seçiniz';
+            return labels.length > 0 ? labels.join(', ') : placeholder;
         }
 
         let selectedLabel = '';
@@ -241,7 +243,7 @@ const FormSelectField = ({
         };
         
         processChildren(children);
-        return selectedLabel || 'Seçiniz';
+        return selectedLabel || placeholder;
     };
 
     const renderOptions = () => {

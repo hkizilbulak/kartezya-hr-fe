@@ -58,6 +58,28 @@ const interviewTypeLabel = (type: string): string => {
   }
 };
 
+const renderNotesWithLinks = (notes?: string) => {
+  if (!notes) return '—';
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const parts = notes.split(urlRegex);
+  return parts.map((part, index) => {
+    if (part.match(urlRegex)) {
+      return (
+        <a 
+          key={index} 
+          href={part} 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          onClick={(e) => e.stopPropagation()}
+        >
+          {part}
+        </a>
+      );
+    }
+    return part;
+  });
+};
+
 const CandidateDetailPage = () => {
   const params = useParams();
   const pathname = usePathname();
@@ -258,7 +280,7 @@ const CandidateDetailPage = () => {
                                     }}
                                     title={iv.notes}
                                   >
-                                    {iv.notes || '—'}
+                                    {renderNotesWithLinks(iv.notes)}
                                   </td>
                                   <td>
                                     <div className="d-flex gap-1">
