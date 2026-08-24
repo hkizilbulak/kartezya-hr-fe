@@ -148,6 +148,63 @@ export default function ContractsPage() {
     return new Date(dateStr).toLocaleDateString('tr-TR');
   };
 
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case ContractStatus.ContractCompletedPaymentReceived:
+      case 'COMPLETED':
+      case 'ACTIVE': // Mapping active to completed/payment received for consistency with combobox
+        return 'Sözleşme tamamlandı - Ödeme alındı';
+      case ContractStatus.ContractCompletedAwaitingPayment:
+      case 'APPROVED': // Mapping approved to awaiting payment
+        return 'Sözleşme tamamlandı - ödeme bekliyor';
+      case ContractStatus.ContractCancelled:
+      case 'CANCELLED':
+        return 'Sözleşme iptal edildi';
+      case ContractStatus.ContractCompletedPartialPayment:
+        return 'Sözleşme tamamlandı - Ödeme kısmi alındı';
+      case ContractStatus.ProposalRejected:
+      case 'REJECTED':
+        return 'Teklif reddedildi';
+      case ContractStatus.PendingProposalInfo:
+      case 'PENDING_PROPOSAL':
+        return 'Teklif bilgisi bekleniyor';
+      case ContractStatus.ProposalSentContractExpected:
+      case 'PROPOSAL_SENT':
+      case 'AWAITING_RESPONSE': // Mapping awaiting response to proposal sent
+        return 'Teklif iletildi - Sözleşme bekleniyor';
+      default:
+        return 'Teklif bilgisi bekleniyor'; // fallback to a default combobox option
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case ContractStatus.ContractCompletedPaymentReceived:
+      case 'COMPLETED':
+      case 'ACTIVE':
+        return 'bg-success';
+      case ContractStatus.ContractCompletedAwaitingPayment:
+      case 'APPROVED':
+        return 'bg-primary';
+      case ContractStatus.ContractCancelled:
+      case 'CANCELLED':
+        return 'bg-danger';
+      case ContractStatus.ContractCompletedPartialPayment:
+        return 'bg-info';
+      case ContractStatus.ProposalRejected:
+      case 'REJECTED':
+        return 'bg-warning text-dark';
+      case ContractStatus.ProposalSentContractExpected:
+      case 'PROPOSAL_SENT':
+      case 'AWAITING_RESPONSE':
+        return 'bg-light-warning text-dark';
+      case ContractStatus.PendingProposalInfo:
+      case 'PENDING_PROPOSAL':
+      default:
+        return 'bg-secondary';
+    }
+  };
+
   return (
     <Container fluid className="page-container">
       <LoadingOverlay show={isLoading} message="Sözleşmeler yükleniyor..." />
@@ -279,24 +336,8 @@ export default function ContractsPage() {
                               {formatDate(contract.start_date)} - {formatDate(contract.end_date)}
                             </td>
                             <td>
-                              <span className={`badge ${
-                                contract.status === ContractStatus.ContractCompletedPaymentReceived ? 'bg-success' :
-                                contract.status === ContractStatus.ContractCompletedAwaitingPayment ? 'bg-primary' :
-                                contract.status === ContractStatus.ContractCancelled ? 'bg-danger' :
-                                contract.status === ContractStatus.ContractCompletedPartialPayment ? 'bg-info' :
-                                contract.status === ContractStatus.ProposalRejected ? 'bg-warning text-dark' :
-                                contract.status === ContractStatus.ProposalSentContractExpected ? 'bg-light-warning text-dark' :
-                                contract.status === ContractStatus.PendingProposalInfo ? 'bg-secondary' :
-                                'bg-secondary'
-                              }`}>
-                                {contract.status === ContractStatus.ContractCompletedPaymentReceived ? 'Sözleşme tamamlandı - Ödeme alındı' :
-                                 contract.status === ContractStatus.ContractCompletedAwaitingPayment ? 'Sözleşme tamamlandı - ödeme bekliyor' :
-                                 contract.status === ContractStatus.ContractCancelled ? 'Sözleşme iptal edildi' :
-                                 contract.status === ContractStatus.ContractCompletedPartialPayment ? 'Sözleşme tamamlandı - Ödeme kısmi alındı' :
-                                 contract.status === ContractStatus.ProposalRejected ? 'Teklif reddedildi' :
-                                 contract.status === ContractStatus.PendingProposalInfo ? 'Teklif bilgisi bekleniyor' :
-                                 contract.status === ContractStatus.ProposalSentContractExpected ? 'Teklif iletildi - Sözleşme bekleniyor' :
-                                 contract.status || '-'}
+                              <span className={`badge ${getStatusBadge(contract.status)}`}>
+                                {getStatusLabel(contract.status)}
                               </span>
                             </td>
                             <td className="text-end">
