@@ -37,7 +37,7 @@ const ContractReportPage = () => {
 
     // UI state
     const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage] = useState(10);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
     const [isFilterOpen, setIsFilterOpen] = useState(true);
     const [sortConfig, setSortConfig] = useState<{
         key: ContractSortKey | null;
@@ -405,7 +405,10 @@ const ContractReportPage = () => {
                                     totalItems={totalItems}
                                     itemsPerPage={itemsPerPage}
                                     onPageChange={handlePageChange}
-                                    onPageSizeChange={(sz: number) => { }}
+                                    onPageSizeChange={(size: number) => {
+                                        setItemsPerPage(size);
+                                        setCurrentPage(1);
+                                    }}
                                 />
                         </div>
                     </Col>
