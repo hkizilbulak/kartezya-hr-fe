@@ -128,6 +128,11 @@ const FormSelectField = ({
                 width: window.innerWidth
             };
             
+            if (rect.bottom < 0 || rect.top > viewport.height) {
+                setIsOpen(false);
+                return;
+            }
+
             // Calculate available space below and above
             const spaceBelow = viewport.height - rect.bottom;
             const spaceAbove = rect.top;

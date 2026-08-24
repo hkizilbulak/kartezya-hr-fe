@@ -91,6 +91,30 @@ const MultiSelectField: React.FC<MultiSelectFieldProps> = ({
     };
   }, [isOpen, isMobile]);
 
+  useEffect(() => {
+    const handleScroll = () => {
+      if (isOpen && !isMobile) {
+        updateDropdownPosition();
+      }
+    };
+
+    const handleResize = () => {
+      if (isOpen && !isMobile) {
+        updateDropdownPosition();
+      }
+    };
+
+    if (isOpen) {
+      window.addEventListener('scroll', handleScroll, true);
+      window.addEventListener('resize', handleResize);
+    }
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll, true);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [isOpen, isMobile]);
+
   const updateDropdownPosition = () => {
     if (selectRef.current) {
       const rect = selectRef.current.getBoundingClientRect();
@@ -99,6 +123,11 @@ const MultiSelectField: React.FC<MultiSelectFieldProps> = ({
         width: window.innerWidth
       };
       
+      if (rect.bottom < 0 || rect.top > viewport.height) {
+        setIsOpen(false);
+        return;
+      }
+
       const spaceBelow = viewport.height - rect.bottom;
       const spaceAbove = rect.top;
       const estimatedHeight = Math.min(options.length * 40 + 8, 300);
