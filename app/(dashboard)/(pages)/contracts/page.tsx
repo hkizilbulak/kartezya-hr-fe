@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Card, Button, Container, Row, Col } from 'react-bootstrap';
+import { Card, Button, Container, Row, Col, Form } from 'react-bootstrap';
 import { contractService } from '@/services';
 import { lookupService } from '@/services/lookup.service';
 import { Contract, ContractStatus } from '@/models/hr/contract';
@@ -28,7 +28,7 @@ export default function ContractsPage() {
   // Filters
   const [search, setSearch] = useState('');
   const [customerName, setCustomerName] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string[]>([]);
 
   // Sort State
   const [sortConfig, setSortConfig] = useState<{
@@ -55,7 +55,7 @@ export default function ContractsPage() {
 
   const fetchContracts = async (
     page: number, 
-    overrideFilters?: { search?: string; customerName?: string; statusFilter?: string },
+    overrideFilters?: { search?: string; customerName?: string; statusFilter?: string[] },
     sortKey: string | null = sortConfig.key,
     sortDir: 'ASC' | 'DESC' = sortConfig.direction
   ) => {
@@ -69,7 +69,7 @@ export default function ContractsPage() {
           limit,
           ...(f.search ? { search: f.search } : {}),
           ...(f.customerName ? { customer_name: f.customerName } : {}),
-          ...(f.statusFilter ? { status: f.statusFilter } : {}),
+          ...(f.statusFilter && f.statusFilter.length > 0 ? { status: f.statusFilter.join(',') } : {}),
           ...(sortKey ? { sort: sortKey, direction: sortDir.toUpperCase() } : {})
         } as any) as any,
         lookupService.getCompaniesLookup().catch(() => ({ data: [] }))
@@ -121,10 +121,10 @@ export default function ContractsPage() {
   const handleClearFilters = () => {
     setSearch('');
     setCustomerName('');
-    setStatusFilter('');
+    setStatusFilter([]);
     setCurrentPage(1);
     setSortConfig({ key: null, direction: 'DESC' });
-    fetchContracts(1, { search: '', customerName: '', statusFilter: '' }, null, 'DESC');
+    fetchContracts(1, { search: '', customerName: '', statusFilter: [] }, null, 'DESC');
   };
 
   const handleDelete = async () => {
@@ -262,16 +262,17 @@ export default function ContractsPage() {
                   <FormSelectField
                     label="Durum"
                     name="statusFilter"
+                    isMultiSelect={true}
                     value={statusFilter}
-                    onChange={e => setStatusFilter(e.target.value)}
+                    onChange={(e: any) => setStatusFilter(e.target.value)}
+                    placeholder="Durum (Tümü)"
                   >
-                    <option value="">Tümü</option>
-                    <option value={ContractStatus.PendingProposalInfo}>Teklif bilgisi bekleniyor</option>
-                    <option value={ContractStatus.ProposalSentContractExpected}>Teklif iletildi - Sözleşme bekleniyor</option>
-                    <option value={ContractStatus.ProposalRejected}>Teklif reddedildi</option>
-                    <option value={ContractStatus.ContractCancelled}>Sözleşme iptal edildi</option>
-                    <option value={ContractStatus.ContractCompletedAwaitingPayment}>Sözleşme tamamlandı - ödeme bekliyor</option>
-                    <option value={ContractStatus.ContractCompletedPaymentReceived}>Sözleşme tamamlandı - Ödeme alındı</option>
+                    <option value="PENDING_PROPOSAL">Teklif bilgisi bekleniyor</option>
+                    <option value="PROPOSAL_SENT,AWAITING_RESPONSE">Teklif iletildi - Sözleşme bekleniyor</option>
+                    <option value="REJECTED">Teklif reddedildi</option>
+                    <option value="CANCELLED">Sözleşme iptal edildi</option>
+                    <option value="APPROVED">Sözleşme tamamlandı - ödeme bekliyor</option>
+                    <option value="COMPLETED,ACTIVE">Sözleşme tamamlandı - Ödeme alındı</option>
                     <option value={ContractStatus.ContractCompletedPartialPayment}>Sözleşme tamamlandı - Ödeme kısmi alındı</option>
                   </FormSelectField>
                 </Col>
