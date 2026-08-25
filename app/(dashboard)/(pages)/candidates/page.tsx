@@ -421,19 +421,19 @@ const CandidatesPage = () => {
                           <th
                             onClick={() => handleSort('name')}
                             className="sortable-header"
-                            style={{ cursor: 'pointer' }}
+                            style={{ cursor: 'pointer', width: 220 }}
                           >
                             Ad Soyad {getSortIcon('name')}
                           </th>
-                          <th style={{ width: 150 }}>E-posta</th>
-                          <th style={{ width: 130 }}>Telefon</th>
+                          <th style={{ width: 300 }}>Pozisyon</th>
                           <th
                             onClick={() => handleSort('seniority')}
                             className="sortable-header"
-                            style={{ cursor: 'pointer', width: 120 }}
+                            style={{ cursor: 'pointer', width: 140 }}
                           >
-                            Kıdem {getSortIcon('seniority')}
+                            Tecrübe / Kıdem {getSortIcon('seniority')}
                           </th>
+                          <th style={{ width: 150 }}>Son Durum</th>
                           <th
                             onClick={() => handleSort('interview_count')}
                             className="sortable-header"
@@ -458,8 +458,8 @@ const CandidatesPage = () => {
                             <tr key={idx}>
                               <td><div className="placeholder-glow"><span className="placeholder col-8 rounded"></span></div></td>
                               <td><div className="placeholder-glow"><span className="placeholder col-10 rounded"></span></div></td>
+                              <td><div className="placeholder-glow"><span className="placeholder col-6 rounded"></span></div></td>
                               <td><div className="placeholder-glow"><span className="placeholder col-8 rounded"></span></div></td>
-                              <td><div className="placeholder-glow"><span className="placeholder col-4 rounded"></span></div></td>
                               <td className="text-center"><div className="placeholder-glow"><span className="placeholder col-3 rounded-pill"></span></div></td>
 
                               <td><div className="placeholder-glow"><span className="placeholder col-4 rounded"></span></div></td>
@@ -485,11 +485,26 @@ const CandidatesPage = () => {
                                     <span>{c.name || '—'}</span>
                                   </div>
                                 </td>
-                                <td className="small text-dark">{c.email?.toLowerCase() || <span className="text-muted">—</span>}</td>
-                                <td className="small text-dark">
-                                  {c.phone ? formatPhone(c.phone) : <span className="text-muted">—</span>}
+                                <td className="small text-dark text-truncate" style={{ maxWidth: '300px' }} title={c.current_position || '—'}>
+                                  {c.current_position || '—'}
                                 </td>
-                                <td className="small">{c.seniority || '—'}</td>
+                                <td className="small">
+                                  {c.experience_years !== undefined && c.experience_years !== null
+                                    ? `${c.experience_years} Yıl`
+                                    : (c.seniority || '—')}
+                                </td>
+                                <td>
+                                  {c.latest_outcome ? (
+                                    <StatusBadge
+                                      status={outcomeToStatus(c.latest_outcome)}
+                                      text={outcomeLabel(c.latest_outcome)}
+                                      showIcon={false}
+                                      size="sm"
+                                    />
+                                  ) : (
+                                    <span className="text-muted small">—</span>
+                                  )}
+                                </td>
                                 <td className="text-center">
                                   <span className="badge bg-secondary rounded-pill">
                                     {c.interview_count ?? 0}
@@ -536,6 +551,23 @@ const CandidatesPage = () => {
                                       </div>
                                     ) : candidateDetailsMap[c.id] ? (
                                       <div className="bg-white rounded p-2 shadow-sm mx-1" style={{ border: '1px solid #e9ecef', borderLeft: '4px solid var(--bs-primary)' }}>
+                                        <div className="d-flex gap-4 p-2 mb-2 bg-light rounded" style={{ fontSize: '0.85rem' }}>
+                                          <div>
+                                            <span className="text-muted d-block" style={{ fontSize: '0.75rem' }}>E-Posta</span>
+                                            <span className="fw-medium">{c.email?.toLowerCase() || '—'}</span>
+                                          </div>
+                                          <div>
+                                            <span className="text-muted d-block" style={{ fontSize: '0.75rem' }}>Telefon</span>
+                                            <span className="fw-medium">{c.phone ? formatPhone(c.phone) : '—'}</span>
+                                          </div>
+                                          {c.experience_years !== undefined && c.experience_years !== null && (
+                                            <div>
+                                              <span className="text-muted d-block" style={{ fontSize: '0.75rem' }}>Kıdem</span>
+                                              <span className="fw-medium">{c.seniority || '—'}</span>
+                                            </div>
+                                          )}
+                                        </div>
+
                                         {candidateDetailsMap[c.id].interviews && candidateDetailsMap[c.id].interviews.length > 0 ? (
                                           <div className="position-relative py-3 px-2">
                                             <div 

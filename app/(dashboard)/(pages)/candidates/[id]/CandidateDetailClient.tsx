@@ -179,35 +179,33 @@ const CandidateDetailPage = () => {
               <Card className="border-0 shadow-sm">
                 <Card.Body className="p-4">
                   <Row>
-                    <Col md={3}>
+                    <Col xl={2} lg={3} md={4} sm={6} className="mb-2">
                       <div className="mb-1 text-muted small">Ad Soyad</div>
                       <div className="fw-semibold">{candidate.name || '—'}</div>
                     </Col>
-                    <Col md={3}>
+                    <Col xl={3} lg={3} md={4} sm={6} className="mb-2">
                       <div className="mb-1 text-muted small">Mevcut Pozisyon</div>
-                      <div>{candidate.current_position || '—'}</div>
+                      <div className="text-truncate" title={candidate.current_position}>{candidate.current_position || '—'}</div>
                     </Col>
-                    <Col md={2}>
+                    <Col xl={1} lg={2} md={4} sm={6} className="mb-2">
                       <div className="mb-1 text-muted small">Kıdem</div>
                       <div>{candidate.seniority || '—'}</div>
                     </Col>
-                    <Col md={2}>
+                    <Col xl={2} lg={2} md={4} sm={6} className="mb-2">
                       <div className="mb-1 text-muted small">Lokasyon</div>
                       <div>{candidate.location || '—'}</div>
                     </Col>
-                    <Col md={2}>
+                    <Col xl={2} lg={2} md={4} sm={6} className="mb-2">
                       <div className="mb-1 text-muted small">E-posta</div>
-                      <div className="small">{candidate.email || '—'}</div>
+                      <div className="small text-truncate" title={candidate.email}>{candidate.email || '—'}</div>
                     </Col>
-                  </Row>
-                  {candidate.phone && (
-                    <Row className="mt-2">
-                      <Col md={3}>
+                    {candidate.phone && (
+                      <Col xl={2} lg={2} md={4} sm={6} className="mb-2">
                         <div className="mb-1 text-muted small">Telefon</div>
-                        <div>{candidate.phone}</div>
+                        <div className="small">{candidate.phone}</div>
                       </Col>
-                    </Row>
-                  )}
+                    )}
+                  </Row>
                 </Card.Body>
               </Card>
             </Col>

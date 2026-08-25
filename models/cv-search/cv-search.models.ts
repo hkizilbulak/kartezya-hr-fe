@@ -87,6 +87,7 @@ export interface CandidateListItem {
   phone?: string
   current_position: string
   seniority: string
+  experience_years?: number
   interview_count: number
   latest_outcome: string
   created_at: string
@@ -130,6 +131,7 @@ export interface CandidateDetail {
   graph_node_id: number
   current_position: string
   seniority: string
+  experience_years?: number
   interviews: Interview[]
   original_cv_text?: string
   created_at: string
