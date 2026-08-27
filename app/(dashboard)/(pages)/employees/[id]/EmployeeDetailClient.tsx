@@ -6,13 +6,14 @@ import { employeeService, workInformationService, employeeGradeService, employee
 import { Employee, EmployeeGrade, EmployeeWorkInformation, isActiveEmployeeGrade } from '@/models/hr/hr-models';
 import { toast } from 'react-toastify';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
-import { Edit, Trash2, Download, Upload, ChevronUp, ChevronDown, User, FileText, Briefcase, Folder, Award, Clipboard, Shield, Calendar, DollarSign } from 'react-feather';
+import { Edit, Trash2, Download, Upload, ChevronUp, ChevronDown, User, FileText, Briefcase, Folder, Award, Clipboard, Shield, Calendar, DollarSign, Monitor } from 'react-feather';
 import EmployeeHeaderProfile from '@/components/employee-detail/EmployeeHeaderProfile';
 import WorkInformationModal from '@/components/modals/WorkInformationModal';
 import EmployeeGradeModal from '@/components/modals/EmployeeGradeModal';
 import EmployeeContractModal from '@/components/modals/EmployeeContractModal';
 import EmployeeLeaveRequests from '@/components/leave/EmployeeLeaveRequests';
 import EmployeeExpenseRequests from '@/components/expense/EmployeeExpenseRequests';
+import EmployeeInventory from '@/components/inventory/EmployeeInventory';
 import DeleteModal from '@/components/DeleteModal';
 import styles from './page.module.scss';
 import { genderOptions, maritalStatusOptions, emergencyContactRelationOptions, statusOptions } from '@/contants/options';
@@ -866,6 +867,12 @@ const EmployeeDetailPage = () => {
                         <Nav.Link eventKey="expense-info" className="d-flex align-items-center gap-2 py-2 px-3">
                           <DollarSign size={16} />
                           <span>Masraf Bilgileri</span>
+                        </Nav.Link>
+                      </Nav.Item>
+                      <Nav.Item className="mb-1">
+                        <Nav.Link eventKey="inventory-info" className="d-flex align-items-center gap-2 py-2 px-3">
+                          <Monitor size={16} />
+                          <span>Envanter Bilgisi</span>
                         </Nav.Link>
                       </Nav.Item>
                     </Nav>
@@ -1850,6 +1857,15 @@ const EmployeeDetailPage = () => {
                         </div>
                       )}
 
+                    </div>
+                  </Tab.Pane>
+
+                  {/* Envanter Bilgileri Tab */}
+                  <Tab.Pane eventKey="inventory-info">
+                    <div className={styles.section}>
+                      {activeTab === 'inventory-info' && (
+                        <EmployeeInventory employeeId={employeeId} canEdit={canEditEmployee} />
+                      )}
                     </div>
                   </Tab.Pane>
                     </Tab.Content>

@@ -58,6 +58,12 @@ export const HR_ENDPOINTS = {
     REQUESTS_ME: '/leave/requests/me',
     BALANCES: '/leave/balances',
     BALANCES_ME: '/leave/balances/me'
+  },
+  // Inventory Management
+  INVENTORY: {
+    BASE: '/inventory',
+    MY_ITEMS: '/inventory/my-items',
+    REPORTS: '/reports/inventory'
   }
 }
 
