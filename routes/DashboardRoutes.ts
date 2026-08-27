@@ -232,25 +232,25 @@ export const DashboardMenu: IMenuProps[] = [
         id: 'cv-management',
         title: 'CV Yönetimi',
         icon: 'file',
-        requiredCapability: Capability.CanAccessAdminModules,
+        requiredCapability: Capability.CanManageCV,
         children: [
             {
                 id: 'cv-upload',
                 name: 'CV Yükleme',
                 link: '/cv-upload',
-                requiredCapability: Capability.CanAccessAdminModules
+                requiredCapability: Capability.CanManageCV
             },
             {
                 id: 'cv-search',
                 name: 'CV Arama',
                 link: '/cv-search',
-                requiredCapability: Capability.CanAccessAdminModules
+                requiredCapability: Capability.CanManageCV
             },
             {
                 id: 'candidates',
                 name: 'Adaylar',
                 link: '/candidates',
-                requiredCapability: Capability.CanAccessAdminModules
+                requiredCapability: Capability.CanManageCV
             }
         ]
     },

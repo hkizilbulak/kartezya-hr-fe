@@ -8,7 +8,8 @@ export enum UserRole {
   ADMIN = 'ADMIN',
   EMPLOYEE = 'EMPLOYEE',
   HR = 'HR',
-  FINANCIAL = 'FINANCIAL'
+  FINANCIAL = 'FINANCIAL',
+  TEAM_LEADER = 'TEAM_LEADER'
 }
 
 export enum LeaveRequestStatus {

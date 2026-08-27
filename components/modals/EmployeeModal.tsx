@@ -11,7 +11,7 @@ import LoadingOverlay from '@/components/LoadingOverlay';
 import FormDateField from '@/components/FormDateField';
 import FormSelectField from '@/components/FormSelectField';
 
-const EMPLOYEE_CREATION_ROLES = [UserRole.EMPLOYEE, UserRole.HR, UserRole.FINANCIAL] as const;
+const EMPLOYEE_CREATION_ROLES = [UserRole.EMPLOYEE, UserRole.HR, UserRole.FINANCIAL, UserRole.TEAM_LEADER] as const;
 
 interface EmployeeModalProps {
   show: boolean;

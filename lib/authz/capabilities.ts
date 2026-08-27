@@ -16,6 +16,7 @@ export const Capability = {
   CanManageRequestTypes: 'canManageRequestTypes',
   CanAccessAdminModules: 'canAccessAdminModules',
   CanManageAcademy: 'canManageAcademy',
+  CanManageCV: 'canManageCV',
 } as const;
 
 export type Capability = (typeof Capability)[keyof typeof Capability];
@@ -31,6 +32,10 @@ export const RoleCapabilities: Record<UserRole, readonly Capability[]> = {
     Capability.CanViewExpenseManagement,
     Capability.CanPayExpense,
     Capability.CanManageExpenseTypes,
+  ],
+  [UserRole.TEAM_LEADER]: [
+    Capability.CanManageAcademy,
+    Capability.CanManageCV,
   ],
   [UserRole.EMPLOYEE]: [],
 };

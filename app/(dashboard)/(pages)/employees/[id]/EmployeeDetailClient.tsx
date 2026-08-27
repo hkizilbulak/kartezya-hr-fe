@@ -101,7 +101,7 @@ const EmployeeDetailPage = () => {
   const canEditEmployee = canManageEmployees && !(isActorHR && targetHasAdmin);
   const assignableRoles = isActorAdmin
     ? Object.values(UserRole)
-    : [UserRole.EMPLOYEE, UserRole.HR, UserRole.FINANCIAL];
+    : [UserRole.EMPLOYEE, UserRole.HR, UserRole.FINANCIAL, UserRole.TEAM_LEADER];
   const [deleteItemType, setDeleteItemType] = useState<'workinfo' | 'grade' | 'contract' | null>(null);
   const [activeTab, setActiveTab] = useState<string>('employee-info');
 
