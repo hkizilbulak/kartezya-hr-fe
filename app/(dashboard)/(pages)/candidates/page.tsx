@@ -26,6 +26,7 @@ import FormTextField from '@/components/FormTextField';
 import FormSelectField from '@/components/FormSelectField';
 import DuplicatesOffcanvas from '@/components/modals/DuplicatesOffcanvas';
 import InterviewModal from '@/components/modals/InterviewModal';
+import CandidatePreviewModal from '@/components/modals/CandidatePreviewModal';
 import { toast } from 'react-toastify';
 import '@/styles/table-list.scss';
 import '@/styles/components/table-common.scss';
@@ -128,6 +129,42 @@ const CandidatesPage = () => {
   // Interview Modal states
   const [showInterviewModal, setShowInterviewModal] = useState(false);
   const [selectedCandidateIdForInterview, setSelectedCandidateIdForInterview] = useState<number | null>(null);
+
+  // Preview Modal states
+  const [previewCandidate, setPreviewCandidate] = useState<CandidateListItem | null>(null);
+  const [previewDetail, setPreviewDetail] = useState<CandidateDetail | null>(null);
+  const [loadingPreviewDetail, setLoadingPreviewDetail] = useState(false);
+
+  const handleOpenPreview = async (candidate: CandidateListItem) => {
+    let finalCandidate: any = candidate;
+    setPreviewCandidate(finalCandidate);
+    setPreviewDetail(null);
+    setLoadingPreviewDetail(true);
+    try {
+      if (candidate.id) {
+        // Fetch detail (contact info, interviews)
+        const detailPromise = cvSearchService.getCandidateDetail(candidate.id);
+        
+        // Fetch graph enriched data (skills, companies) via hybrid search fallback
+        const searchPromise = cvSearchService.hybridSearch(candidate.name).catch(() => null);
+
+        const [detail, searchRes] = await Promise.all([detailPromise, searchPromise]);
+        setPreviewDetail(detail);
+
+        if (searchRes && searchRes.candidates) {
+          const found = searchRes.candidates.find((c: any) => c.id === candidate.id);
+          if (found) {
+            finalCandidate = found;
+            setPreviewCandidate(finalCandidate);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Aday detayları yüklenemedi:', err);
+    } finally {
+      setLoadingPreviewDetail(false);
+    }
+  };
 
   const toggleRow = async (e: React.MouseEvent, candidate: CandidateListItem) => {
     e.stopPropagation();
@@ -522,7 +559,10 @@ const CandidatesPage = () => {
                                       variant="outline-primary"
                                       size="sm"
                                       title="Detay"
-                                      onClick={() => router.push(`/candidates/${c.id}`)}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleOpenPreview(c);
+                                      }}
                                     >
                                       <Eye size={14} />
                                     </Button>
@@ -691,6 +731,19 @@ const CandidatesPage = () => {
           candidateId={selectedCandidateIdForInterview}
         />
       )}
+
+      {/* Candidate Preview Modal */}
+      <CandidatePreviewModal
+        show={!!previewCandidate}
+        onHide={() => {
+          setPreviewCandidate(null);
+          setPreviewDetail(null);
+        }}
+        candidate={previewCandidate}
+        detail={previewDetail}
+        loadingDetail={loadingPreviewDetail}
+        hideSearchMetrics={true}
+      />
     </Container>
   );
 };
