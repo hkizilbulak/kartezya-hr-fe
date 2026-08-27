@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { Modal, Row, Col, Badge, Spinner, Button, ListGroup } from 'react-bootstrap';
-import { Mail, Phone, MapPin, Calendar, Briefcase, Star, User, BookOpen, FileText } from 'react-feather';
+import { Mail, Phone, MapPin, Calendar, Briefcase, Star, User, BookOpen, FileText, Edit, Trash2 } from 'react-feather';
 import type { FusedCandidateResponse, CandidateDetail, DuplicateCandidateItem } from '@/models/cv-search/cv-search.models';
 
 const scoreColor = (score: number): string => {
@@ -27,6 +27,8 @@ interface CandidatePreviewModalProps {
   isDuplicateView?: boolean; // Flag to render duplicate-specific elements if needed
   hideSearchMetrics?: boolean; // NEW PROP to hide search metrics
   footerActions?: React.ReactNode; // Custom buttons for the footer
+  onEditInterview?: (interview: any) => void;
+  onDeleteInterview?: (interviewId: number) => void;
 }
 
 export default function CandidatePreviewModal({
@@ -38,6 +40,8 @@ export default function CandidatePreviewModal({
   isDuplicateView = false,
   hideSearchMetrics = false,
   footerActions,
+  onEditInterview,
+  onDeleteInterview,
 }: CandidatePreviewModalProps) {
   const searchCandidate = !isDuplicateView ? (candidate as FusedCandidateResponse) : null;
   const duplicateCandidate = isDuplicateView ? (candidate as DuplicateCandidateItem) : null;
@@ -199,9 +203,33 @@ export default function CandidatePreviewModal({
                       <div key={iv.id} className="p-2 border rounded bg-light small">
                         <div className="d-flex justify-content-between align-items-center mb-1">
                           <span className="fw-semibold text-dark">{iv.interviewer_name || 'Görüşmeci'}</span>
-                          <Badge bg={iv.outcome === 'passed' ? 'success' : iv.outcome === 'failed' ? 'danger' : 'warning'}>
-                            {iv.outcome === 'passed' ? 'Geçti' : iv.outcome === 'failed' ? 'Geçemedi' : 'Beklemede'}
-                          </Badge>
+                          <div className="d-flex align-items-center gap-1">
+                            <Badge bg={iv.outcome === 'passed' ? 'success' : iv.outcome === 'failed' ? 'danger' : 'warning'}>
+                              {iv.outcome === 'passed' ? 'Geçti' : iv.outcome === 'failed' ? 'Geçemedi' : 'Beklemede'}
+                            </Badge>
+                            {onEditInterview && (
+                              <Button
+                                variant="link"
+                                className="p-0 text-primary border-0 ms-1"
+                                onClick={() => onEditInterview(iv)}
+                                style={{ display: 'inline-flex', alignItems: 'center' }}
+                                title="Düzenle"
+                              >
+                                <Edit size={12} />
+                              </Button>
+                            )}
+                            {onDeleteInterview && (
+                              <Button
+                                variant="link"
+                                className="p-0 text-danger border-0 ms-1"
+                                onClick={() => onDeleteInterview(iv.id)}
+                                style={{ display: 'inline-flex', alignItems: 'center' }}
+                                title="Sil"
+                              >
+                                <Trash2 size={12} />
+                              </Button>
+                            )}
+                          </div>
                         </div>
                         <div className="text-muted d-flex align-items-center gap-1" style={{ fontSize: '0.75rem' }}>
                           <Calendar size={12} />

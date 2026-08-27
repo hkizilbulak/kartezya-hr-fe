@@ -21,7 +21,7 @@ import type {
 import { PageHeading } from '@/widgets';
 import CustomPagination from '@/components/Pagination';
 import StatusBadge from '@/components/StatusBadge';
-import { Eye, ChevronUp, ChevronDown, GitMerge, Plus } from 'react-feather';
+import { Eye, ChevronUp, ChevronDown, GitMerge, Plus, Edit, Trash2 } from 'react-feather';
 import FormTextField from '@/components/FormTextField';
 import FormSelectField from '@/components/FormSelectField';
 import DuplicatesOffcanvas from '@/components/modals/DuplicatesOffcanvas';
@@ -129,6 +129,7 @@ const CandidatesPage = () => {
   // Interview Modal states
   const [showInterviewModal, setShowInterviewModal] = useState(false);
   const [selectedCandidateIdForInterview, setSelectedCandidateIdForInterview] = useState<number | null>(null);
+  const [interviewToEdit, setInterviewToEdit] = useState<any | null>(null);
 
   // Preview Modal states
   const [previewCandidate, setPreviewCandidate] = useState<CandidateListItem | null>(null);
@@ -188,6 +189,35 @@ const CandidatesPage = () => {
       } finally {
         setLoadingDetailsMap(prev => ({ ...prev, [candidateId]: false }));
       }
+    }
+  };
+
+  const handleEditInterview = (candidateId: number, interview: any) => {
+    setSelectedCandidateIdForInterview(candidateId);
+    setInterviewToEdit(interview);
+    setShowInterviewModal(true);
+  };
+
+  const handleDeleteInterview = async (candidateId: number, interviewId: number) => {
+    try {
+      await cvSearchService.deleteInterview(candidateId, interviewId);
+      toast.success('Görüşme başarıyla silindi.');
+      fetchCandidates(currentPage, pageSize, appliedSearch, sortConfig.key, sortConfig.direction, outcomeFilter);
+      if (expandedRow === candidateId) {
+        setLoadingDetailsMap(prev => ({ ...prev, [candidateId]: true }));
+        const detail = await cvSearchService.getCandidateDetail(candidateId);
+        setCandidateDetailsMap(prev => ({ ...prev, [candidateId]: detail }));
+        setLoadingDetailsMap(prev => ({ ...prev, [candidateId]: false }));
+      }
+      if (previewCandidate && previewCandidate.id === candidateId) {
+        setLoadingPreviewDetail(true);
+        const detail = await cvSearchService.getCandidateDetail(candidateId);
+        setPreviewDetail(detail);
+        setLoadingPreviewDetail(false);
+      }
+    } catch (err: any) {
+      const msg = err?.response?.data?.error || err?.message || 'Görüşme silinirken bir hata oluştu.';
+      toast.error(msg);
     }
   };
 
@@ -641,13 +671,35 @@ const CandidatesPage = () => {
                                                 </div>
                                                 <div className="ps-4 w-100" style={{ flex: 1 }}>
                                                   <div className="d-flex flex-column align-items-start gap-1">
-                                                    <div className="mb-1">
-                                                      <StatusBadge
-                                                        status={inv.outcome}
-                                                        text={outcomeLabel(inv.outcome)}
-                                                        showIcon={false}
-                                                        size="sm"
-                                                      />
+                                                    <div className="d-flex w-100 justify-content-between align-items-center mb-1">
+                                                      <div>
+                                                        <StatusBadge
+                                                          status={outcomeToStatus(inv.outcome)}
+                                                          text={outcomeLabel(inv.outcome)}
+                                                          showIcon={false}
+                                                          size="sm"
+                                                        />
+                                                      </div>
+                                                      <div className="d-flex gap-2">
+                                                        <Button
+                                                          variant="outline-primary"
+                                                          size="sm"
+                                                          title="Düzenle"
+                                                          onClick={() => handleEditInterview(c.id, inv)}
+                                                          style={{ padding: '0.1rem 0.3rem', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center' }}
+                                                        >
+                                                          <Edit size={12} className="me-1" /> Düzenle
+                                                        </Button>
+                                                        <Button
+                                                          variant="outline-danger"
+                                                          size="sm"
+                                                          title="Sil"
+                                                          onClick={() => handleDeleteInterview(c.id, inv.id)}
+                                                          style={{ padding: '0.1rem 0.3rem', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center' }}
+                                                        >
+                                                          <Trash2 size={12} className="me-1" /> Sil
+                                                        </Button>
+                                                      </div>
                                                     </div>
                                                     <div className="text-secondary fw-medium mt-1" style={{ fontSize: '0.75rem', letterSpacing: '0.5px', color: '#495057' }}>
                                                       {inv.team ? inv.team.toUpperCase() : 'EKİP BİLGİSİ YOK'}
@@ -715,6 +767,7 @@ const CandidatesPage = () => {
           onHide={() => {
             setShowInterviewModal(false);
             setSelectedCandidateIdForInterview(null);
+            setInterviewToEdit(null);
           }}
           onSave={() => {
             fetchCandidates(currentPage, pageSize, appliedSearch, sortConfig.key, sortConfig.direction, outcomeFilter);
@@ -727,8 +780,18 @@ const CandidatesPage = () => {
                 setLoadingDetailsMap(prev => ({ ...prev, [selectedCandidateIdForInterview]: false }));
               });
             }
+            if (previewCandidate && previewCandidate.id === selectedCandidateIdForInterview) {
+              setLoadingPreviewDetail(true);
+              cvSearchService.getCandidateDetail(selectedCandidateIdForInterview).then(detail => {
+                setPreviewDetail(detail);
+                setLoadingPreviewDetail(false);
+              }).catch(() => {
+                setLoadingPreviewDetail(false);
+              });
+            }
           }}
           candidateId={selectedCandidateIdForInterview}
+          interviewToEdit={interviewToEdit}
         />
       )}
 
@@ -743,6 +806,8 @@ const CandidatesPage = () => {
         detail={previewDetail}
         loadingDetail={loadingPreviewDetail}
         hideSearchMetrics={true}
+        onEditInterview={(inv) => previewCandidate && handleEditInterview(previewCandidate.id, inv)}
+        onDeleteInterview={(id) => previewCandidate && handleDeleteInterview(previewCandidate.id, id)}
       />
     </Container>
   );
