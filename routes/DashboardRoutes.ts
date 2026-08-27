@@ -31,6 +31,12 @@ export const DashboardMenu: IMenuProps[] = [
         link: '/my-profile'
     },
     {
+        id: 'my-inventory',
+        title: 'Envanterim',
+        icon: 'monitor',
+        link: '/my-inventory'
+    },
+    {
         id: 'my-requests',
         title: 'Taleplerim',
         icon: 'file-text',
@@ -205,6 +211,12 @@ export const DashboardMenu: IMenuProps[] = [
                 id: 'contract-report',
                 link: '/reports/contract',
                 name: 'Sözleşme Raporu',
+                requiredCapability: Capability.CanAccessAdminModules
+            },
+            {
+                id: 'inventory-report',
+                link: '/reports/inventory',
+                name: 'Envanter Raporu',
                 requiredCapability: Capability.CanAccessAdminModules
             }
         ]

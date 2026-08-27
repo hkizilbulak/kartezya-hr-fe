@@ -343,3 +343,26 @@ export interface Event {
   participants?: EventParticipant[];
   createdAt: string;
 }
+
+export enum InventoryItemStatus {
+  IN_USE = 'IN_USE',
+  IN_STOCK = 'IN_STOCK',
+  DAMAGED = 'DAMAGED',
+  RETURNED = 'RETURNED'
+}
+
+export interface InventoryItem {
+  id: string; // uuid
+  employee_id: string; // uuid
+  device_type: string;
+  brand: string;
+  model: string;
+  serial_number?: string;
+  specifications: Record<string, any>;
+  assignment_date?: string;
+  status: InventoryItemStatus;
+  notes?: string;
+  created_at?: string;
+  updated_at?: string;
+  employee?: Employee;
+}
