@@ -20,11 +20,12 @@ const formatLlmScore = (score: number | null | undefined): string => {
 interface CandidatePreviewModalProps {
   show: boolean;
   onHide: () => void;
-  // Use FusedCandidateResponse for search results, DuplicateCandidateItem for duplicates
-  candidate: FusedCandidateResponse | DuplicateCandidateItem | null;
+  // Use FusedCandidateResponse for search results, DuplicateCandidateItem for duplicates, or any for candidates list
+  candidate: any;
   detail: CandidateDetail | null;
   loadingDetail: boolean;
   isDuplicateView?: boolean; // Flag to render duplicate-specific elements if needed
+  hideSearchMetrics?: boolean; // NEW PROP to hide search metrics
   footerActions?: React.ReactNode; // Custom buttons for the footer
 }
 
@@ -35,6 +36,7 @@ export default function CandidatePreviewModal({
   detail,
   loadingDetail,
   isDuplicateView = false,
+  hideSearchMetrics = false,
   footerActions,
 }: CandidatePreviewModalProps) {
   const searchCandidate = !isDuplicateView ? (candidate as FusedCandidateResponse) : null;
@@ -153,7 +155,7 @@ export default function CandidatePreviewModal({
               </div>
 
               {/* Search Metrics (Only for Search) */}
-              {!isDuplicateView && searchCandidate && (
+              {!isDuplicateView && !hideSearchMetrics && searchCandidate && (
                 <div className="border-top pt-3 mt-1">
                   <h6 className="text-secondary small fw-semibold mb-2">Arama Skorları</h6>
                   <div className="d-flex flex-wrap gap-2">
@@ -252,7 +254,7 @@ export default function CandidatePreviewModal({
           <Col md={7}>
             <div className="d-flex flex-column gap-3" style={{ paddingRight: '5px' }}>
               {/* LLM Reasoning (Only for Search) */}
-              {!isDuplicateView && searchCandidate && (
+              {!isDuplicateView && !hideSearchMetrics && searchCandidate && (
                 <div>
                   <h6 className="text-secondary small fw-semibold mb-2">LLM Aday Gerekçesi</h6>
                   <div className="p-3 bg-light rounded text-muted small" style={{ whiteSpace: 'pre-wrap', lineHeight: '1.45' }}>
