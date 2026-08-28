@@ -115,7 +115,6 @@ const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
       await html5QrCode.start(
         { 
           facingMode: 'environment',
-          advanced: [{ focusMode: 'continuous' }] as any,
           width: { ideal: 1280 },
           height: { ideal: 720 }
         },
