@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form, Row, Col, InputGroup } from 'react-bootstrap';
 import { InventoryItem, InventoryItemStatus } from '@/models/hr/hr-models';
 import { inventoryService } from '@/services/inventory.service';
-import { documentService } from '@/services/document.service';
 import { toast } from 'react-toastify';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
 import FormTextField from '@/components/FormTextField';
@@ -102,36 +101,26 @@ const InventoryFormModal: React.FC<InventoryFormModalProps> = ({
     
     setIsSubmitting(true);
     try {
-      const payload = {
+      const payload: any = {
         ...formData,
         employee_id: employeeId || undefined,
+        document_id: uploadedPhotoId || null,
       };
 
-      let response;
       if (item?.id) {
         if (employeeId) {
-           response = await inventoryService.updateMyItem(item.id, payload);
+           await inventoryService.updateMyItem(item.id, payload);
         } else {
-           response = await inventoryService.updateMyItem(item.id, payload);
+           await inventoryService.updateMyItem(item.id, payload);
         }
         toast.success('Cihaz başarıyla güncellendi');
       } else {
         if (employeeId) {
-          response = await inventoryService.createEmployeeInventory(employeeId, payload);
+          await inventoryService.createEmployeeInventory(employeeId, payload);
         } else {
-          response = await inventoryService.createMyItem(payload);
+          await inventoryService.createMyItem(payload);
         }
         toast.success('Cihaz başarıyla eklendi');
-      }
-
-      // Link scanned/uploaded photo to the device record
-      if (uploadedPhotoId && response && response.data && response.data.id) {
-        try {
-          await documentService.linkDocuments([uploadedPhotoId], 8, Number(response.data.id));
-        } catch (linkErr) {
-          console.error('Failed to link document:', linkErr);
-          toast.warning('Cihaz kaydedildi ancak yüklenen fotoğraf DYS ile ilişkilendirilemedi.');
-        }
       }
 
       onSuccess();

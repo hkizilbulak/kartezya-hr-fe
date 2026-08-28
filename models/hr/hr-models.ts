@@ -362,6 +362,7 @@ export interface InventoryItem {
   assignment_date?: string;
   status: InventoryItemStatus;
   notes?: string;
+  document_id?: string | null;
   created_at?: string;
   updated_at?: string;
   employee?: Employee;
