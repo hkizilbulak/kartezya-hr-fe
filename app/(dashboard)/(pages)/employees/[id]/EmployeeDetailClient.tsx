@@ -26,6 +26,7 @@ import '@/styles/table-list.scss';
 import '@/styles/components/table-common.scss';
 import { documentService } from '@/services/document.service';
 import { ATTACHMENT_RELATED_TYPE_EMPLOYEE, ATTACHMENT_TYPE_CV } from '@/services/document.service';
+import { getAttachmentTypeName } from '@/models/common/attachment-models';
 import axiosInstance from '@/helpers/api/axiosInstance';
 import CustomPagination from '@/components/Pagination';
 import { useAuth } from '@/hooks/useAuth';
@@ -1308,26 +1309,7 @@ const EmployeeDetailPage = () => {
                               <tr key={doc.id}>
                                 <td>{doc.file_name || '-'}</td>
                                 <td>
-                                  {doc.type === 1
-                                    ? 'Fatura'
-                                    : doc.type === 2
-                                      ? 'Sağlık Raporu'
-                                      : doc.type === 3
-                                        ? 'Profil Resmi'
-                                        : doc.type === 4
-                                          ? 'Makbuz'
-                                          : doc.type === 5
-                                            ? 'Sözleşme'
-                                            : doc.type === 6
-                                              ? 'Kimlik'
-                                              : doc.type === 7
-                                                ? 'Diploma'
-                                                : doc.type === 8
-                                                  ? 'Sertifika'
-                                                  : doc.type === 9
-                                                    ? 'CV / Özgeçmiş'
-                                                    : 'Diğer'
-                                  }
+                                  {getAttachmentTypeName(doc.type)}
                                 </td>
                                 <td>
                                   {doc.file_size

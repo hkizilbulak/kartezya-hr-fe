@@ -18,6 +18,7 @@ export enum AttachmentType {
   IDENTITY = 6,
   DIPLOMA = 7,
   CERTIFICATE = 8,
+  RESUME = 9,
   DEVICE_PHOTO = 10,
   OTHER = 99,
 }
@@ -46,8 +47,8 @@ export interface Attachment {
 }
 
 // Helper functions
-export const getAttachmentTypeName = (type: AttachmentType): string => {
-  const names: Record<AttachmentType, string> = {
+export const getAttachmentTypeName = (type: AttachmentType | number): string => {
+  const names: Record<number, string> = {
     [AttachmentType.INVOICE]: 'Fatura',
     [AttachmentType.MEDICAL_REPORT]: 'Sağlık Raporu',
     [AttachmentType.AVATAR]: 'Profil Resmi',
@@ -56,10 +57,11 @@ export const getAttachmentTypeName = (type: AttachmentType): string => {
     [AttachmentType.IDENTITY]: 'Kimlik',
     [AttachmentType.DIPLOMA]: 'Diploma',
     [AttachmentType.CERTIFICATE]: 'Sertifika',
+    [AttachmentType.RESUME]: 'CV / Özgeçmiş',
     [AttachmentType.DEVICE_PHOTO]: 'Cihaz Fotoğrafı',
     [AttachmentType.OTHER]: 'Diğer',
   };
-  return names[type] || 'Bilinmeyen';
+  return names[type] || 'Diğer';
 };
 
 export const formatFileSize = (bytes: number): string => {
