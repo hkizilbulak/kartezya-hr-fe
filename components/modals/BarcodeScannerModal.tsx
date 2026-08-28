@@ -113,12 +113,17 @@ const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
       html5QrCodeRef.current = html5QrCode;
 
       await html5QrCode.start(
-        { facingMode: 'environment' }, // Back camera
+        { 
+          facingMode: 'environment',
+          advanced: [{ focusMode: 'continuous' }] as any,
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        },
         {
           fps: 10,
           qrbox: (width, height) => ({
-            width: Math.min(width * 0.85, 300),
-            height: Math.min(height * 0.45, 150),
+            width: Math.max(50, Math.min(width * 0.85, 300)),
+            height: Math.max(50, Math.min(height * 0.45, 150)),
           }),
         },
         async (decodedText) => {

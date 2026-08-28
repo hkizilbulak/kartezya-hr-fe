@@ -621,18 +621,18 @@ const CandidatesPage = () => {
                                       </div>
                                     ) : candidateDetailsMap[c.id] ? (
                                       <div className="bg-white rounded p-2 shadow-sm mx-1" style={{ border: '1px solid #e9ecef', borderLeft: '4px solid var(--bs-primary)' }}>
-                                        <div className="d-flex gap-4 p-2 mb-2 bg-light rounded" style={{ fontSize: '0.85rem' }}>
-                                          <div>
-                                            <span className="text-muted d-block" style={{ fontSize: '0.75rem' }}>E-Posta</span>
+                                        <div className="d-flex flex-wrap gap-4 p-2 mb-2 bg-light rounded" style={{ fontSize: '0.85rem' }}>
+                                          <div className="d-flex align-items-center gap-2">
+                                            <span className="text-muted fw-semibold">E-Posta:</span>
                                             <span className="fw-medium">{c.email?.toLowerCase() || '—'}</span>
                                           </div>
-                                          <div>
-                                            <span className="text-muted d-block" style={{ fontSize: '0.75rem' }}>Telefon</span>
+                                          <div className="d-flex align-items-center gap-2">
+                                            <span className="text-muted fw-semibold">Telefon:</span>
                                             <span className="fw-medium">{c.phone ? formatPhone(c.phone) : '—'}</span>
                                           </div>
                                           {c.experience_years !== undefined && c.experience_years !== null && (
-                                            <div>
-                                              <span className="text-muted d-block" style={{ fontSize: '0.75rem' }}>Kıdem</span>
+                                            <div className="d-flex align-items-center gap-2">
+                                              <span className="text-muted fw-semibold">Kıdem:</span>
                                               <span className="fw-medium">{c.seniority || '—'}</span>
                                             </div>
                                           )}
