@@ -2,16 +2,18 @@
 
 import React, { useEffect, useState } from 'react';
 import { Container, Card, Table, Badge, Spinner, Button } from 'react-bootstrap';
-import { Monitor, Edit, Plus } from 'react-feather';
+import { Monitor, Edit, Plus, Info } from 'react-feather';
 import { InventoryItem, InventoryItemStatus } from '@/models/hr/hr-models';
 import { inventoryService } from '@/services/inventory.service';
 import { toast } from 'react-toastify';
 import InventoryFormModal from '@/components/inventory/InventoryFormModal';
+import InventoryDetailModal from '@/components/inventory/InventoryDetailModal';
 
 const MyInventoryPage = () => {
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showFormModal, setShowFormModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
 
   const fetchItems = async () => {
@@ -38,6 +40,11 @@ const MyInventoryPage = () => {
   const handleEditClick = (item: InventoryItem) => {
     setSelectedItem(item);
     setShowFormModal(true);
+  };
+
+  const handleDetailClick = (item: InventoryItem) => {
+    setSelectedItem(item);
+    setShowDetailModal(true);
   };
 
   const getStatusBadgeVariant = (status: string) => {
@@ -108,9 +115,14 @@ const MyInventoryPage = () => {
                       </Badge>
                     </td>
                     <td className="pe-4 text-end">
-                      <Button variant="light" size="sm" onClick={() => handleEditClick(item)}>
-                        <Edit size={14} />
-                      </Button>
+                      <div className="d-flex justify-content-end gap-2">
+                        <Button variant="outline-info" size="sm" onClick={() => handleDetailClick(item)} title="Detay ve Fotoğraf">
+                          <Info size={14} />
+                        </Button>
+                        <Button variant="outline-primary" size="sm" onClick={() => handleEditClick(item)} title="Düzenle">
+                          <Edit size={14} />
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -127,6 +139,14 @@ const MyInventoryPage = () => {
           onSuccess={fetchItems}
           item={selectedItem}
           isEmployeeView={true}
+        />
+      )}
+
+      {showDetailModal && (
+        <InventoryDetailModal
+          show={showDetailModal}
+          onHide={() => setShowDetailModal(false)}
+          item={selectedItem}
         />
       )}
     </Container>

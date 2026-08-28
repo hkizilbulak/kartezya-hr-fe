@@ -94,11 +94,16 @@ const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
 
   const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const scannerStateRef = useRef<'idle' | 'starting' | 'scanning' | 'stopping'>('idle');
   const elementId = 'barcode-scanner-reader-element';
 
   // Start Camera Scanning
   const startCamera = async () => {
+    if (scannerStateRef.current !== 'idle') {
+      return;
+    }
     setCameraError(null);
+    scannerStateRef.current = 'starting';
     try {
       if (html5QrCodeRef.current) {
         await stopCamera();
@@ -180,26 +185,40 @@ const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
         }
       );
 
+      scannerStateRef.current = 'scanning';
       setIsCameraActive(true);
     } catch (err: any) {
       console.error('Failed to start camera:', err);
       setCameraError('Kamera başlatılamadı. Kamera izinlerini kontrol edin.');
       setIsCameraActive(false);
+      scannerStateRef.current = 'idle';
+      html5QrCodeRef.current = null;
     }
   };
 
   // Stop Camera Scanning
   const stopCamera = async () => {
-    if (html5QrCodeRef.current) {
+    // If scanner is currently starting, wait and retry
+    if (scannerStateRef.current === 'starting') {
+      setTimeout(stopCamera, 100);
+      return;
+    }
+
+    if (scannerStateRef.current === 'scanning' && html5QrCodeRef.current) {
+      scannerStateRef.current = 'stopping';
       try {
         if (html5QrCodeRef.current.isScanning) {
           await html5QrCodeRef.current.stop();
         }
       } catch (err) {
-        console.error('Error stopping scanner:', err);
+        console.warn('Error stopping scanner:', err);
       } finally {
         html5QrCodeRef.current = null;
+        scannerStateRef.current = 'idle';
       }
+    } else {
+      html5QrCodeRef.current = null;
+      scannerStateRef.current = 'idle';
     }
   };
 

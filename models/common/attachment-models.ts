@@ -5,6 +5,7 @@ export enum AttachmentRelatedType {
   USER = 3,
   EMPLOYEE = 4,
   CONTRACT = 5,
+  INVENTORY = 8,
 }
 
 // Attachment Type Enum
@@ -17,6 +18,7 @@ export enum AttachmentType {
   IDENTITY = 6,
   DIPLOMA = 7,
   CERTIFICATE = 8,
+  DEVICE_PHOTO = 10,
   OTHER = 99,
 }
 
@@ -54,6 +56,7 @@ export const getAttachmentTypeName = (type: AttachmentType): string => {
     [AttachmentType.IDENTITY]: 'Kimlik',
     [AttachmentType.DIPLOMA]: 'Diploma',
     [AttachmentType.CERTIFICATE]: 'Sertifika',
+    [AttachmentType.DEVICE_PHOTO]: 'Cihaz Fotoğrafı',
     [AttachmentType.OTHER]: 'Diğer',
   };
   return names[type] || 'Bilinmeyen';

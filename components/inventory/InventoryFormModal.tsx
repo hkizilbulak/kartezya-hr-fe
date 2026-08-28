@@ -33,6 +33,7 @@ const InventoryFormModal: React.FC<InventoryFormModalProps> = ({
   const [showScanner, setShowScanner] = useState(false);
   const [uploadedPhotoId, setUploadedPhotoId] = useState<string | null>(null);
   const [scannedFileName, setScannedFileName] = useState<string | null>(null);
+  const [isManualInput, setIsManualInput] = useState(!!item);
   
   const [formData, setFormData] = useState({
     device_type: item?.device_type || '',
@@ -136,6 +137,7 @@ const InventoryFormModal: React.FC<InventoryFormModalProps> = ({
     if (result.fileName) {
       setScannedFileName(result.fileName);
     }
+    setIsManualInput(true); // Automatically show brand/model details when scanned successfully
   };
 
   const hideStatusField = isEmployeeView;
@@ -148,136 +150,185 @@ const InventoryFormModal: React.FC<InventoryFormModalProps> = ({
       </Modal.Header>
       <Form onSubmit={handleSubmit}>
         <Modal.Body>
-          <Row>
-            <Col md={hideStatusField ? 12 : 6}>
-              <FormSelectField
-                name="device_type"
-                label="Cihaz Türü *"
-                value={formData.device_type}
-                onChange={handleSelectChange}
-                error={errors.device_type}
-              >
-                <option value="">Seçiniz</option>
-                <option value="Laptop">Laptop / Bilgisayar</option>
-                <option value="Monitor">Monitör</option>
-                <option value="Phone">Cep Telefonu</option>
-                <option value="Tablet">Tablet</option>
-                <option value="Mouse">Mouse</option>
-                <option value="Keyboard">Klavye</option>
-                <option value="Other">Diğer</option>
-              </FormSelectField>
-            </Col>
-            {!hideStatusField && (
-              <Col md={6}>
-                <FormSelectField
-                  name="status"
-                  label="Durum *"
-                  value={formData.status}
-                  onChange={handleSelectChange}
-                  error={errors.status}
+          {!isManualInput ? (
+            <div className="text-center py-5 my-3 border border-2 border-dashed rounded-3 bg-light px-4">
+              <div className="icon-shape bg-light-primary text-primary rounded-circle p-3 d-inline-flex mb-3" style={{ fontSize: '2rem' }}>
+                <Camera size={36} className="text-primary" />
+              </div>
+              <h5 className="text-dark fw-bold mb-2">Cihaz Ekleme Yöntemi</h5>
+              <p className="text-muted mb-4 small mx-auto" style={{ maxWidth: '420px' }}>
+                Cihazınızı hızlıca kaydetmek için barkod etiketini kamerayla okutabilir/fotoğraf yükleyebilir veya bilgileri kendiniz girmek için manuel girişi seçebilirsiniz.
+              </p>
+              <div className="d-flex justify-content-center gap-3 flex-wrap">
+                <Button
+                  variant="primary"
+                  onClick={() => setShowScanner(true)}
+                  className="d-flex align-items-center gap-2 px-4 py-2.5 fw-semibold"
                 >
-                  <option value={InventoryItemStatus.IN_USE}>Kullanımda</option>
-                  <option value={InventoryItemStatus.IN_STOCK}>Stokta</option>
-                  <option value={InventoryItemStatus.DAMAGED}>Arızalı</option>
-                  <option value={InventoryItemStatus.RETURNED}>İade Edildi</option>
-                </FormSelectField>
-              </Col>
-            )}
-          </Row>
+                  <Camera size={18} />
+                  <span>Barkod Okut / Fotoğraf Seç</span>
+                </Button>
+                <Button
+                  variant="outline-secondary"
+                  onClick={() => setIsManualInput(true)}
+                  className="px-4 py-2.5 fw-semibold"
+                >
+                  Manuel Giriş Yap
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <>
+              {!item && (
+                <Button
+                  variant="link"
+                  className="p-0 mb-3 text-decoration-none small d-flex align-items-center gap-1 text-secondary"
+                  onClick={() => {
+                    setIsManualInput(false);
+                    setScannedFileName(null);
+                    setUploadedPhotoId(null);
+                  }}
+                >
+                  &larr; Giriş Seçeneklerine Dön
+                </Button>
+              )}
 
-          <Row>
-            <Col md={6}>
-              <FormTextField
-                controlId="brand"
-                name="brand"
-                label="Marka *"
-                value={formData.brand}
-                onChange={handleChange}
-                error={errors.brand}
-              />
-            </Col>
-            <Col md={6}>
-              <FormTextField
-                controlId="model"
-                name="model"
-                label="Model *"
-                value={formData.model}
-                onChange={handleChange}
-                error={errors.model}
-              />
-            </Col>
-          </Row>
-
-          <Row>
-            <Col md={6}>
-              <Form.Group className="mb-3" controlId="serial_number">
-                <Form.Label>
-                  Seri No *
-                </Form.Label>
-                <InputGroup>
-                  <Form.Control
-                    type="text"
-                    name="serial_number"
-                    value={formData.serial_number}
+              {/* Row 1: Cihaz Türü & Seri No (Side-by-side) */}
+              <Row>
+                <Col md={6}>
+                  <FormSelectField
+                    name="device_type"
+                    label="Cihaz Türü *"
+                    value={formData.device_type}
                     onChange={handleSelectChange}
-                    disabled={isEmployeeView && !!item}
-                    isInvalid={!!errors.serial_number}
-                  />
-                  <Button
-                    variant="outline-primary"
-                    type="button"
-                    onClick={() => setShowScanner(true)}
-                    disabled={isEmployeeView && !!item}
-                    title="Tarayıcıyı Aç"
-                    style={{ display: 'flex', alignItems: 'center' }}
+                    error={errors.device_type}
                   >
-                    <Camera size={18} />
-                  </Button>
-                  {errors.serial_number && (
-                    <Form.Control.Feedback type="invalid">
-                      {errors.serial_number}
-                    </Form.Control.Feedback>
-                  )}
-                </InputGroup>
-                {scannedFileName && (
-                  <div className="text-success small mt-1 d-flex align-items-center gap-1">
-                    <CheckCircle size={12} />
-                    <span>Fotoğraf hazır: {scannedFileName}</span>
-                  </div>
-                )}
-              </Form.Group>
-            </Col>
-            <Col md={6}>
-              <FormDateField
-                name="assignment_date"
-                label="Zimmet Tarihi"
-                value={formData.assignment_date}
-                onChange={handleSelectChange}
-                error={errors.assignment_date}
-                disabled={isEmployeeView && !!item}
-              />
-            </Col>
-          </Row>
+                    <option value="">Seçiniz</option>
+                    <option value="Laptop">Laptop / Bilgisayar</option>
+                    <option value="Monitor">Monitör</option>
+                    <option value="Phone">Cep Telefonu</option>
+                    <option value="Tablet">Tablet</option>
+                    <option value="Mouse">Mouse</option>
+                    <option value="Keyboard">Klavye</option>
+                    <option value="Other">Diğer</option>
+                  </FormSelectField>
+                </Col>
+                
+                <Col md={6}>
+                  <Form.Group className="mb-3" controlId="serial_number">
+                    <Form.Label>Seri No *</Form.Label>
+                    <InputGroup>
+                      <Form.Control
+                        type="text"
+                        name="serial_number"
+                        value={formData.serial_number}
+                        onChange={handleSelectChange}
+                        disabled={isEmployeeView && !!item}
+                        isInvalid={!!errors.serial_number}
+                        placeholder="Seri no girin veya taratın"
+                      />
+                      <Button
+                        variant="outline-primary"
+                        type="button"
+                        onClick={() => setShowScanner(true)}
+                        disabled={isEmployeeView && !!item}
+                        title="Kameradan Tarat veya Fotoğraf Yükle"
+                        style={{ display: 'flex', alignItems: 'center' }}
+                      >
+                        <Camera size={16} />
+                      </Button>
+                      {errors.serial_number && (
+                        <Form.Control.Feedback type="invalid">
+                          {errors.serial_number}
+                        </Form.Control.Feedback>
+                      )}
+                    </InputGroup>
+                    {scannedFileName && (
+                      <div className="text-success small mt-1 d-flex align-items-center gap-1">
+                        <CheckCircle size={12} />
+                        <span>Fotoğraf hazır: {scannedFileName}</span>
+                      </div>
+                    )}
+                  </Form.Group>
+                </Col>
+              </Row>
 
-          <Row>
-            <Col md={12}>
-              <FormTextField
-                controlId="notes"
-                name="notes"
-                label="Notlar"
-                type="textarea"
-                rows={3}
-                value={formData.notes}
-                onChange={handleChange}
-              />
-            </Col>
-          </Row>
+              {/* Row 2: Marka & Model (Side-by-side) */}
+              <Row>
+                <Col md={6}>
+                  <FormTextField
+                    controlId="brand"
+                    name="brand"
+                    label="Marka *"
+                    value={formData.brand}
+                    onChange={handleChange}
+                    error={errors.brand}
+                  />
+                </Col>
+                <Col md={6}>
+                  <FormTextField
+                    controlId="model"
+                    name="model"
+                    label="Model *"
+                    value={formData.model}
+                    onChange={handleChange}
+                    error={errors.model}
+                  />
+                </Col>
+              </Row>
+
+              {/* Row 3: Zimmet Tarihi & Durum (Always visible in form mode) */}
+              <Row>
+                <Col md={hideStatusField ? 12 : 6}>
+                  <FormDateField
+                    name="assignment_date"
+                    label="Zimmet Tarihi"
+                    value={formData.assignment_date}
+                    onChange={handleSelectChange}
+                    error={errors.assignment_date}
+                    disabled={isEmployeeView && !!item}
+                  />
+                </Col>
+                {!hideStatusField && (
+                  <Col md={6}>
+                    <FormSelectField
+                      name="status"
+                      label="Durum *"
+                      value={formData.status}
+                      onChange={handleSelectChange}
+                      error={errors.status}
+                    >
+                      <option value={InventoryItemStatus.IN_USE}>Kullanımda</option>
+                      <option value={InventoryItemStatus.IN_STOCK}>Stokta</option>
+                      <option value={InventoryItemStatus.DAMAGED}>Arızalı</option>
+                      <option value={InventoryItemStatus.RETURNED}>İade Edildi</option>
+                    </FormSelectField>
+                  </Col>
+                )}
+              </Row>
+
+              {/* Row 4: Notes (Always visible in form mode) */}
+              <Row>
+                <Col md={12}>
+                  <FormTextField
+                    controlId="notes"
+                    name="notes"
+                    label="Notlar"
+                    type="textarea"
+                    rows={3}
+                    value={formData.notes}
+                    onChange={handleChange}
+                  />
+                </Col>
+              </Row>
+            </>
+          )}
         </Modal.Body>
         <Modal.Footer>
           <Button variant="outline-secondary" onClick={onHide} disabled={isSubmitting}>
             İptal
           </Button>
-          <Button variant="primary" type="submit" disabled={isSubmitting}>
+          <Button variant="primary" type="submit" disabled={isSubmitting || !isManualInput}>
             {isSubmitting ? 'Kaydediliyor...' : 'Kaydet'}
           </Button>
         </Modal.Footer>
