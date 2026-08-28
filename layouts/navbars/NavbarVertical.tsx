@@ -139,7 +139,7 @@ const NavbarVertical = (props: IProps) => {
 				href={item.link}
 				className={`nav-link ${location === item.link ? 'active' : ''
 					}`}
-				onClick={() => (isMobile ? props.onClick(!props.showMenu) : props.showMenu)}>
+				onClick={() => { if (isMobile) props.onClick(true); }}>
 
 				{item.name}
 				{''}
@@ -158,7 +158,7 @@ const NavbarVertical = (props: IProps) => {
 		);
 	};
 
-	const isMobile = useMediaQuery({ maxWidth: 767 });
+	const isMobile = useMediaQuery({ maxWidth: 992 });
 
 	return (
 		<Fragment>
@@ -303,7 +303,7 @@ const NavbarVertical = (props: IProps) => {
 								return (
 									<Card bsPrefix="nav-item" key={index}>
 										{/* menu item without any childern items like Documentation and Changelog items*/}
-										<Link href={menu.link!} className={`nav-link ${location === menu.link ? 'active' : ''}`}>
+										<Link href={menu.link!} className={`nav-link ${location === menu.link ? 'active' : ''}`} onClick={() => { if (isMobile) props.onClick(true); }}>
 											{typeof menu.icon === 'string' ? (
 												<i className={`nav-icon fe fe-${menu.icon} me-2`}></i>
 											) : (menu.icon)}
