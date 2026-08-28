@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Button, Form, Row, Col } from 'react-bootstrap';
+import { Modal, Button, Form, Row, Col, InputGroup } from 'react-bootstrap';
 import { InventoryItem, InventoryItemStatus } from '@/models/hr/hr-models';
 import { inventoryService } from '@/services/inventory.service';
+import { documentService } from '@/services/document.service';
 import { toast } from 'react-toastify';
 import { translateErrorMessage } from '@/helpers/ErrorUtils';
 import FormTextField from '@/components/FormTextField';
 import FormSelectField from '@/components/FormSelectField';
 import FormDateField from '@/components/FormDateField';
+import BarcodeScannerModal from '@/components/modals/BarcodeScannerModal';
+import { Camera, CheckCircle } from 'react-feather';
 
 interface InventoryFormModalProps {
   show: boolean;
@@ -27,6 +30,9 @@ const InventoryFormModal: React.FC<InventoryFormModalProps> = ({
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showScanner, setShowScanner] = useState(false);
+  const [uploadedPhotoId, setUploadedPhotoId] = useState<string | null>(null);
+  const [scannedFileName, setScannedFileName] = useState<string | null>(null);
   
   const [formData, setFormData] = useState({
     device_type: item?.device_type || '',
@@ -72,21 +78,33 @@ const InventoryFormModal: React.FC<InventoryFormModalProps> = ({
         employee_id: employeeId || undefined,
       };
 
+      let response;
       if (item?.id) {
         if (employeeId) {
-           await inventoryService.updateMyItem(item.id, payload);
+           response = await inventoryService.updateMyItem(item.id, payload);
         } else {
-           await inventoryService.updateMyItem(item.id, payload);
+           response = await inventoryService.updateMyItem(item.id, payload);
         }
         toast.success('Cihaz başarıyla güncellendi');
       } else {
         if (employeeId) {
-          await inventoryService.createEmployeeInventory(employeeId, payload);
+          response = await inventoryService.createEmployeeInventory(employeeId, payload);
         } else {
-          await inventoryService.createMyItem(payload);
+          response = await inventoryService.createMyItem(payload);
         }
         toast.success('Cihaz başarıyla eklendi');
       }
+
+      // Link scanned/uploaded photo to the device record
+      if (uploadedPhotoId && response && response.data && response.data.id) {
+        try {
+          await documentService.linkDocuments([uploadedPhotoId], 8, Number(response.data.id));
+        } catch (linkErr) {
+          console.error('Failed to link document:', linkErr);
+          toast.warning('Cihaz kaydedildi ancak yüklenen fotoğraf DYS ile ilişkilendirilemedi.');
+        }
+      }
+
       onSuccess();
       onHide();
     } catch (error: any) {
@@ -96,10 +114,35 @@ const InventoryFormModal: React.FC<InventoryFormModalProps> = ({
     }
   };
 
+  const handleScanSuccess = (result: {
+    serialNumber: string;
+    brand: string;
+    model: string;
+    deviceType: string;
+    documentId?: string;
+    fileName?: string;
+  }) => {
+    setFormData(prev => ({
+      ...prev,
+      serial_number: result.serialNumber,
+      brand: result.brand || prev.brand,
+      model: result.model || prev.model,
+      device_type: result.deviceType || prev.device_type,
+    }));
+    
+    if (result.documentId) {
+      setUploadedPhotoId(result.documentId);
+    }
+    if (result.fileName) {
+      setScannedFileName(result.fileName);
+    }
+  };
+
   const hideStatusField = isEmployeeView;
 
   return (
-    <Modal show={show} onHide={onHide} size="lg" centered backdrop="static">
+    <>
+      <Modal show={show} onHide={onHide} size="lg" centered backdrop="static">
       <Modal.Header closeButton>
         <Modal.Title>{item ? 'Cihazı Düzenle' : 'Yeni Cihaz Ekle'}</Modal.Title>
       </Modal.Header>
@@ -167,15 +210,42 @@ const InventoryFormModal: React.FC<InventoryFormModalProps> = ({
 
           <Row>
             <Col md={6}>
-              <FormTextField
-                controlId="serial_number"
-                name="serial_number"
-                label="Seri No *"
-                value={formData.serial_number}
-                onChange={handleChange}
-                error={errors.serial_number}
-                disabled={isEmployeeView && !!item}
-              />
+              <Form.Group className="mb-3" controlId="serial_number">
+                <Form.Label>
+                  Seri No *
+                </Form.Label>
+                <InputGroup>
+                  <Form.Control
+                    type="text"
+                    name="serial_number"
+                    value={formData.serial_number}
+                    onChange={handleSelectChange}
+                    disabled={isEmployeeView && !!item}
+                    isInvalid={!!errors.serial_number}
+                  />
+                  <Button
+                    variant="outline-primary"
+                    type="button"
+                    onClick={() => setShowScanner(true)}
+                    disabled={isEmployeeView && !!item}
+                    title="Tarayıcıyı Aç"
+                    style={{ display: 'flex', alignItems: 'center' }}
+                  >
+                    <Camera size={18} />
+                  </Button>
+                  {errors.serial_number && (
+                    <Form.Control.Feedback type="invalid">
+                      {errors.serial_number}
+                    </Form.Control.Feedback>
+                  )}
+                </InputGroup>
+                {scannedFileName && (
+                  <div className="text-success small mt-1 d-flex align-items-center gap-1">
+                    <CheckCircle size={12} />
+                    <span>Fotoğraf hazır: {scannedFileName}</span>
+                  </div>
+                )}
+              </Form.Group>
             </Col>
             <Col md={6}>
               <FormDateField
@@ -213,6 +283,14 @@ const InventoryFormModal: React.FC<InventoryFormModalProps> = ({
         </Modal.Footer>
       </Form>
     </Modal>
+      {showScanner && (
+        <BarcodeScannerModal
+          show={showScanner}
+          onHide={() => setShowScanner(false)}
+          onScanSuccess={handleScanSuccess}
+        />
+      )}
+    </>
   );
 };
 

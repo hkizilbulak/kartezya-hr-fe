@@ -106,6 +106,8 @@ export const translateErrorMessage = (error: string): string => {
 
   // Özel durumlar için regex tabanlı kontrol
   const specialPatterns = [
+    { pattern: /idx_hr_inventory_items_serial_number/i, message: 'Bu seri numarasına sahip başka bir cihaz zaten mevcut' },
+    { pattern: /duplicate.*key.*violates.*unique.*constraint/i, message: 'Aynı benzersiz alana sahip başka bir kayıt zaten mevcut' },
     { pattern: /company.*name.*already.*exists/i, message: 'Bu şirket adı zaten kullanılıyor' },
     { pattern: /department.*name.*already.*exists/i, message: 'Bu departman adı zaten kullanılıyor' },
     { pattern: /job.*position.*title.*already.*exists/i, message: 'Bu pozisyon adı zaten kullanılıyor' },

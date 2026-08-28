@@ -62,6 +62,15 @@ class DocumentService extends BaseService<any> {
       throw error;
     }
   }
+
+  async getDownloadUrl(documentId: string) {
+    try {
+      const response = await axiosInstance.get(`${this.baseUrl}/${documentId}/download`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  }
 }
 
 export const documentService = new DocumentService();
