@@ -46,8 +46,13 @@ axiosInstance.interceptors.response.use(
     return response;
   },
   (error) => {
-    // Handle CORS errors
-    if (error.code === 'ERR_NETWORK' || error.message.includes('CORS')) {
+    // Handle Network and CORS errors
+    if (error.code === 'ERR_NETWORK') {
+      console.error('Network Error Details (Is the backend running?):', {
+        message: error.message,
+        config: error.config,
+      });
+    } else if (error.message.includes('CORS')) {
       console.error('CORS Error Details:', {
         error: error.message,
         config: error.config,

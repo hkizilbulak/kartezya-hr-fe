@@ -688,7 +688,7 @@ const CandidatesPage = () => {
                                                           onClick={() => handleEditInterview(c.id, inv)}
                                                           style={{ padding: '0.1rem 0.3rem', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center' }}
                                                         >
-                                                          <Edit size={12} className="me-1" /> Düzenle
+                                                          <Edit size={12} />
                                                         </Button>
                                                         <Button
                                                           variant="outline-danger"
@@ -697,7 +697,7 @@ const CandidatesPage = () => {
                                                           onClick={() => handleDeleteInterview(c.id, inv.id)}
                                                           style={{ padding: '0.1rem 0.3rem', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center' }}
                                                         >
-                                                          <Trash2 size={12} className="me-1" /> Sil
+                                                          <Trash2 size={12} />
                                                         </Button>
                                                       </div>
                                                     </div>
