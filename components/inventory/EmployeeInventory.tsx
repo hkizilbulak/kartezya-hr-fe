@@ -148,12 +148,12 @@ const EmployeeInventory: React.FC<EmployeeInventoryProps> = ({ employeeId, canEd
                 </td>
                 <td className="text-end">
                   <div className="d-flex justify-content-end gap-2">
-                    <Button variant="light" size="sm" onClick={() => handleDetailClick(item)}>
+                    <Button variant="outline-info" size="sm" onClick={() => handleDetailClick(item)}>
                       <Info size={14} />
                     </Button>
                     {canEdit && (
                       <>
-                        <Button variant="light" size="sm" onClick={() => handleEditClick(item)}>
+                        <Button variant="outline-primary" size="sm" onClick={() => handleEditClick(item)}>
                           <Edit size={14} />
                         </Button>
                         <Button variant="outline-danger" size="sm" onClick={() => handleDeleteClick(item)}>
@@ -189,12 +189,11 @@ const EmployeeInventory: React.FC<EmployeeInventoryProps> = ({ employeeId, canEd
 
       {showDeleteModal && (
         <DeleteModal
-          show={showDeleteModal}
-          onHide={() => setShowDeleteModal(false)}
-          onConfirm={confirmDelete}
+          onClose={() => setShowDeleteModal(false)}
+          onHandleDelete={confirmDelete}
           title="Cihazı Sil"
           message="Bu cihazı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz."
-          isDeleting={isDeleting}
+          loading={isDeleting}
         />
       )}
     </div>

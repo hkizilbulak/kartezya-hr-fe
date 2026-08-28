@@ -46,6 +46,34 @@ const InventoryFormModal: React.FC<InventoryFormModalProps> = ({
     specifications: item?.specifications || {},
   });
 
+  useEffect(() => {
+    if (show) {
+      setFormData({
+        device_type: item?.device_type || '',
+        brand: item?.brand || '',
+        model: item?.model || '',
+        serial_number: item?.serial_number || '',
+        status: item?.status || InventoryItemStatus.IN_USE,
+        assignment_date: item?.assignment_date ? item.assignment_date.split('T')[0] : new Date().toISOString().split('T')[0],
+        notes: item?.notes || '',
+        specifications: item?.specifications || {},
+      });
+      setIsManualInput(!!item);
+      setErrors({});
+      setUploadedPhotoId(null);
+      setScannedFileName(null);
+      setShowScanner(false);
+    }
+  }, [show, item]);
+
+  const handleClose = () => {
+    setShowScanner(false);
+    setIsManualInput(!!item);
+    setScannedFileName(null);
+    setUploadedPhotoId(null);
+    onHide();
+  };
+
   const handleChange = (name: string, value: any) => {
     setFormData(prev => ({ ...prev, [name]: value }));
     if (errors[name]) {
@@ -144,7 +172,7 @@ const InventoryFormModal: React.FC<InventoryFormModalProps> = ({
 
   return (
     <>
-      <Modal show={show} onHide={onHide} size="lg" centered backdrop="static">
+      <Modal show={show} onHide={handleClose} size="lg" centered backdrop="static">
       <Modal.Header closeButton>
         <Modal.Title>{item ? 'Cihazı Düzenle' : 'Yeni Cihaz Ekle'}</Modal.Title>
       </Modal.Header>
@@ -325,7 +353,7 @@ const InventoryFormModal: React.FC<InventoryFormModalProps> = ({
           )}
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="outline-secondary" onClick={onHide} disabled={isSubmitting}>
+          <Button variant="outline-secondary" onClick={handleClose} disabled={isSubmitting}>
             İptal
           </Button>
           <Button variant="primary" type="submit" disabled={isSubmitting || !isManualInput}>

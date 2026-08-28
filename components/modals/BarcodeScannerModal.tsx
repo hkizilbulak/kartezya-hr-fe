@@ -298,6 +298,9 @@ const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
         stopCamera();
         setIsCameraActive(false);
       }
+    } else {
+      stopCamera();
+      setIsCameraActive(false);
     }
     return () => {
       stopCamera();
