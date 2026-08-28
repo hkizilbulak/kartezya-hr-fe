@@ -113,11 +113,7 @@ const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
       html5QrCodeRef.current = html5QrCode;
 
       await html5QrCode.start(
-        { 
-          facingMode: 'environment',
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        },
+        { facingMode: 'environment' },
         {
           fps: 10,
           qrbox: (width, height) => ({
@@ -188,6 +184,16 @@ const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
           // Silent errors (ignore standard no-code found frame exceptions)
         }
       );
+
+      try {
+        await html5QrCode.applyVideoConstraints({
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          advanced: [{ focusMode: 'continuous' }]
+        } as any);
+      } catch (applyErr) {
+        console.warn('Yüksek çözünürlük veya odak ayarı uygulanamadı:', applyErr);
+      }
 
       scannerStateRef.current = 'scanning';
       setIsCameraActive(true);
