@@ -21,7 +21,8 @@ import { cvSearchService } from '@/services/cv-search.service';
 import type {
   DuplicateCandidateGroup,
   DuplicateCandidateItem,
-  CandidateDetail
+  CandidateDetail,
+  CandidateCV,
 } from '@/models/cv-search/cv-search.models';
 import CandidatePreviewModal from './CandidatePreviewModal';
 import { toast } from 'react-toastify';
@@ -54,6 +55,7 @@ function CandidateMiniCard({
 }) {
   const [detailOpen, setDetailOpen] = useState(false);
   const [detail, setDetail] = useState<CandidateDetail | null>(null);
+  const [cv, setCv] = useState<CandidateCV | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
 
   const handleOpenDetail = async () => {
@@ -61,8 +63,12 @@ function CandidateMiniCard({
     if (!detail) {
       setLoadingDetail(true);
       try {
-        const res = await cvSearchService.getCandidateDetail(item.candidate_id);
+        const [res, cvRes] = await Promise.all([
+          cvSearchService.getCandidateDetail(item.candidate_id),
+          cvSearchService.getCandidateCV(item.candidate_id).catch(() => null),
+        ]);
         setDetail(res);
+        setCv(cvRes);
       } catch (err) {
         toast.error('Aday detayı yüklenemedi.');
       } finally {
@@ -185,6 +191,7 @@ function CandidateMiniCard({
         onHide={() => setDetailOpen(false)}
         candidate={item}
         detail={detail}
+        cv={cv}
         loadingDetail={loadingDetail}
         isDuplicateView={true}
         footerActions={

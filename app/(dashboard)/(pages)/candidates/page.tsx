@@ -17,7 +17,9 @@ import type {
   CandidateListItem,
   DuplicateCandidateGroup,
   CandidateDetail,
+  CandidateCV,
 } from '@/models/cv-search/cv-search.models';
+import { outcomeLabel, outcomeToStatus } from '@/helpers/interviewOutcome';
 import { PageHeading } from '@/widgets';
 import CustomPagination from '@/components/Pagination';
 import StatusBadge from '@/components/StatusBadge';
@@ -33,36 +35,6 @@ import '@/styles/components/table-common.scss';
 
 const DEFAULT_PAGE_SIZE = 20;
 
-const outcomeToStatus = (
-  outcome: string
-): React.ComponentProps<typeof StatusBadge>['status'] => {
-  return outcome as any;
-};
-
-const outcomeLabel = (outcome: string): string => {
-  switch (outcome) {
-    case 'pre_interview': return 'Ön Görüşme';
-    case 'interview': return 'Görüşme';
-    case 'decision_pending': return 'Karar bekleniyor';
-    case 'hired': return 'İşe alım';
-    case 'rejected_pre_interview': return 'Elendi (Ön Görüşme)';
-    case 'rejected_interview': return 'Elendi (Görüşme)';
-    case 'withdrawn': return 'Süreçten Çekildi';
-    case 'pending': return 'Reserve edildi';
-    case 'reserved': return 'Reserve edildi';
-    case 'reserved_future_hire': return 'Reserve edildi';
-    case 'different_account': return 'Farklı ekipte değerlendirilebilir';
-    case 'rejected_other_team_possible': return 'Farklı ekipte değerlendirilebilir';
-    case 'contact_for_slot': return 'Slot için İletişim';
-    
-    // Legacy maps
-    case 'passed': return 'Olumlu';
-    case 'failed': return 'Olumsuz';
-    case 'rejected': return 'Reddedildi';
-    default:
-      return outcome || '—';
-  }
-};
 
 const interviewTypeLabel = (type: string): string => {
   switch (type) {
@@ -133,35 +105,21 @@ const CandidatesPage = () => {
 
   // Preview Modal states
   const [previewCandidate, setPreviewCandidate] = useState<CandidateListItem | null>(null);
-  const [previewDetail, setPreviewDetail] = useState<CandidateDetail | null>(null);
+  const [previewCV, setPreviewCV] = useState<CandidateCV | null>(null);
   const [loadingPreviewDetail, setLoadingPreviewDetail] = useState(false);
 
   const handleOpenPreview = async (candidate: CandidateListItem) => {
-    let finalCandidate: any = candidate;
-    setPreviewCandidate(finalCandidate);
-    setPreviewDetail(null);
+    setPreviewCandidate(candidate);
+    setPreviewCV(null);
     setLoadingPreviewDetail(true);
     try {
       if (candidate.id) {
-        // Fetch detail (contact info, interviews)
-        const detailPromise = cvSearchService.getCandidateDetail(candidate.id);
-        
-        // Fetch graph enriched data (skills, companies) via hybrid search fallback
-        const searchPromise = cvSearchService.hybridSearch(candidate.name).catch(() => null);
-
-        const [detail, searchRes] = await Promise.all([detailPromise, searchPromise]);
-        setPreviewDetail(detail);
-
-        if (searchRes && searchRes.candidates) {
-          const found = searchRes.candidates.find((c: any) => c.id === candidate.id);
-          if (found) {
-            finalCandidate = found;
-            setPreviewCandidate(finalCandidate);
-          }
-        }
+        const cv = await cvSearchService.getCandidateCV(candidate.id);
+        setPreviewCV(cv);
       }
     } catch (err) {
-      console.error('Aday detayları yüklenemedi:', err);
+      console.error('Aday CV detayı yüklenemedi:', err);
+      toast.error('Aday CV detayı yüklenemedi.');
     } finally {
       setLoadingPreviewDetail(false);
     }
@@ -211,8 +169,8 @@ const CandidatesPage = () => {
       }
       if (previewCandidate && previewCandidate.id === candidateId) {
         setLoadingPreviewDetail(true);
-        const detail = await cvSearchService.getCandidateDetail(candidateId);
-        setPreviewDetail(detail);
+        const cv = await cvSearchService.getCandidateCV(candidateId);
+        setPreviewCV(cv);
         setLoadingPreviewDetail(false);
       }
     } catch (err: any) {
@@ -782,8 +740,8 @@ const CandidatesPage = () => {
             }
             if (previewCandidate && previewCandidate.id === selectedCandidateIdForInterview) {
               setLoadingPreviewDetail(true);
-              cvSearchService.getCandidateDetail(selectedCandidateIdForInterview).then(detail => {
-                setPreviewDetail(detail);
+              cvSearchService.getCandidateCV(selectedCandidateIdForInterview).then(cv => {
+                setPreviewCV(cv);
                 setLoadingPreviewDetail(false);
               }).catch(() => {
                 setLoadingPreviewDetail(false);
@@ -800,10 +758,11 @@ const CandidatesPage = () => {
         show={!!previewCandidate}
         onHide={() => {
           setPreviewCandidate(null);
-          setPreviewDetail(null);
+          setPreviewCV(null);
         }}
         candidate={previewCandidate}
-        detail={previewDetail}
+        detail={null}
+        cv={previewCV}
         loadingDetail={loadingPreviewDetail}
         hideSearchMetrics={true}
         onEditInterview={(inv) => previewCandidate && handleEditInterview(previewCandidate.id, inv)}

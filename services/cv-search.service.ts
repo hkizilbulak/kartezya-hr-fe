@@ -6,6 +6,7 @@ import type {
   HybridSearchResponse,
   ListCandidatesResponse,
   CandidateDetail,
+  CandidateCV,
   InterviewRequest,
   SuggestionResult,
   DuplicatesResponse,
@@ -103,6 +104,33 @@ class CvSearchService {
       `${CV_SEARCH_ENDPOINTS.CANDIDATES}/${id}`
     )
     return response.data
+  }
+
+  async getCandidateCV(id: number): Promise<CandidateCV> {
+    const response = await cvSearchAxiosInstance.get<CandidateCV>(
+      CV_SEARCH_ENDPOINTS.CANDIDATE_CV(id)
+    )
+    return response.data
+  }
+
+  /** Downloads the server-rendered CV PDF and triggers the browser "save as" flow. */
+  async downloadCandidateCVPdf(id: number, fallbackName?: string): Promise<void> {
+    const response = await cvSearchAxiosInstance.get<Blob>(
+      CV_SEARCH_ENDPOINTS.CANDIDATE_CV_PDF(id),
+      { responseType: 'blob', headers: { Accept: 'application/pdf' } }
+    )
+    const disposition = response.headers['content-disposition'] as string | undefined
+    const match = disposition?.match(/filename="?([^";]+)"?/)
+    const filename = match?.[1] || `${(fallbackName || `aday_${id}`).replace(/\s+/g, '_')}_CV.pdf`
+
+    const url = URL.createObjectURL(response.data)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(url)
   }
 
   async createInterview(candidateId: number, data: InterviewRequest): Promise<void> {

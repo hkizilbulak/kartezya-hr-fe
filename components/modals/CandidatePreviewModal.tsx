@@ -1,7 +1,19 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Modal, Row, Col, Badge, Spinner, Button, ListGroup } from 'react-bootstrap';
-import { Mail, Phone, MapPin, Calendar, Briefcase, Star, User, BookOpen, FileText, Edit, Trash2 } from 'react-feather';
-import type { FusedCandidateResponse, CandidateDetail, DuplicateCandidateItem } from '@/models/cv-search/cv-search.models';
+import { Mail, Phone, MapPin, Calendar, Briefcase, Star, User, BookOpen, FileText, Edit, Trash2, Download, Globe } from 'react-feather';
+import { toast } from 'react-toastify';
+import type {
+  FusedCandidateResponse,
+  CandidateDetail,
+  DuplicateCandidateItem,
+  CandidateListItem,
+  CandidateCV,
+  CompanyNode,
+  SkillNode,
+} from '@/models/cv-search/cv-search.models';
+import { cvSearchService } from '@/services/cv-search.service';
+import StatusBadge from '@/components/StatusBadge';
+import { outcomeLabel, outcomeToStatus } from '@/helpers/interviewOutcome';
 
 const scoreColor = (score: number): string => {
   if (score == null) return '#6c757d';
@@ -20,10 +32,12 @@ const formatLlmScore = (score: number | null | undefined): string => {
 interface CandidatePreviewModalProps {
   show: boolean;
   onHide: () => void;
-  // Use FusedCandidateResponse for search results, DuplicateCandidateItem for duplicates, or any for candidates list
-  candidate: any;
+  // FusedCandidateResponse for search results, DuplicateCandidateItem for duplicates, CandidateListItem for the candidates list
+  candidate: FusedCandidateResponse | DuplicateCandidateItem | CandidateListItem | null;
   detail: CandidateDetail | null;
   loadingDetail: boolean;
+  /** Structured CV from GET /candidates/{id}/cv. When present it feeds experience, skills, education, contact and interviews. */
+  cv?: CandidateCV | null;
   isDuplicateView?: boolean; // Flag to render duplicate-specific elements if needed
   hideSearchMetrics?: boolean; // NEW PROP to hide search metrics
   footerActions?: React.ReactNode; // Custom buttons for the footer
@@ -39,33 +53,68 @@ export default function CandidatePreviewModal({
   loadingDetail,
   isDuplicateView = false,
   hideSearchMetrics = false,
+  cv = null,
   footerActions,
   onEditInterview,
   onDeleteInterview,
 }: CandidatePreviewModalProps) {
-  const searchCandidate = !isDuplicateView ? (candidate as FusedCandidateResponse) : null;
+  const searchCandidate = !isDuplicateView ? (candidate as Partial<FusedCandidateResponse> | null) : null;
   const duplicateCandidate = isDuplicateView ? (candidate as DuplicateCandidateItem) : null;
 
-  const candidateName = candidate?.name || 'Aday Detayı';
+  const candidateId =
+    cv?.candidate_id ??
+    (candidate && 'candidate_id' in candidate ? candidate.candidate_id : undefined) ??
+    (candidate && 'id' in candidate ? candidate.id : undefined);
+  const candidateName = cv?.name || candidate?.name || 'Aday Detayı';
   const rank = searchCandidate?.rank;
-  const currentPosition = searchCandidate?.current_position || duplicateCandidate?.current_position;
-  const seniority = searchCandidate?.seniority || duplicateCandidate?.seniority;
-  const totalExp = searchCandidate?.total_experience_years || duplicateCandidate?.experience_years;
+  const currentPosition = cv?.summary?.current_position || searchCandidate?.current_position || duplicateCandidate?.current_position;
+  const seniority = cv?.summary?.seniority || searchCandidate?.seniority || duplicateCandidate?.seniority;
+  const totalExp = cv?.summary?.total_experience_years ?? searchCandidate?.total_experience_years ?? duplicateCandidate?.experience_years;
 
-  // Calculate career start year for search candidates
+  // Contact + interviews come from the CV response when available, otherwise from the detail response.
+  const contact = cv ?? detail;
+  const interviews = cv?.interviews ?? detail?.interviews ?? [];
+
+  // Normalise CV experience/skills into the node shapes the existing markup renders.
+  const companies = useMemo<CompanyNode[] | undefined>(() => {
+    if (cv) {
+      return cv.experience.map((e) => ({
+        name: e.company,
+        position: e.position || '',
+        is_current: e.is_current,
+        start_year: e.start_year ?? undefined,
+        end_year: e.end_year ?? undefined,
+        duration_years: e.duration_years,
+      }));
+    }
+    return searchCandidate?.companies;
+  }, [cv, searchCandidate]);
+
+  const skills = useMemo<SkillNode[] | undefined>(() => {
+    if (cv) {
+      return cv.skills.map((s) => ({
+        name: s.name,
+        proficiency: s.proficiency || '',
+        years_of_experience: s.years ?? (undefined as unknown as number),
+      }));
+    }
+    return searchCandidate?.skills;
+  }, [cv, searchCandidate]);
+
+  // Calculate career start year
   const careerStartYear = useMemo(() => {
-    if (!searchCandidate?.companies || searchCandidate.companies.length === 0) return null;
-    const years = searchCandidate.companies
+    if (!companies || companies.length === 0) return null;
+    const years = companies
       .map(co => typeof co.start_year === 'number' ? co.start_year : parseInt(String(co.start_year), 10))
       .filter(yr => !isNaN(yr) && yr > 1900);
     if (years.length === 0) return null;
     return Math.min(...years);
-  }, [searchCandidate]);
+  }, [companies]);
 
   // Sort companies: Current first, then by start_date descending
   const sortedCompanies = useMemo(() => {
-    if (!searchCandidate?.companies) return [];
-    return [...searchCandidate.companies].sort((a, b) => {
+    if (!companies) return [];
+    return [...companies].sort((a, b) => {
       if (a.is_current && !b.is_current) return -1;
       if (!a.is_current && b.is_current) return 1;
       
@@ -74,7 +123,21 @@ export default function CandidatePreviewModal({
       
       return bStart - aStart;
     });
-  }, [searchCandidate]);
+  }, [companies]);
+
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const handleDownloadPdf = async () => {
+    if (!candidateId) return;
+    setDownloadingPdf(true);
+    try {
+      await cvSearchService.downloadCandidateCVPdf(candidateId, candidateName);
+    } catch (err) {
+      console.error('CV PDF indirilemedi:', err);
+      toast.error('CV PDF indirilemedi.');
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
 
   if (!candidate) return null;
 
@@ -138,19 +201,19 @@ export default function CandidatePreviewModal({
                     <Spinner animation="border" size="sm" variant="primary" />
                     <span className="text-muted small">İletişim bilgileri yükleniyor...</span>
                   </div>
-                ) : detail ? (
+                ) : contact ? (
                   <div className="d-flex flex-column gap-2 text-muted small">
                     <div className="d-flex align-items-center gap-2">
                       <Mail size={14} className="text-primary" />
-                      <span>{detail.email || '—'}</span>
+                      <span>{contact.email || '—'}</span>
                     </div>
                     <div className="d-flex align-items-center gap-2">
                       <Phone size={14} className="text-primary" />
-                      <span>{detail.phone || '—'}</span>
+                      <span>{contact.phone || '—'}</span>
                     </div>
                     <div className="d-flex align-items-center gap-2">
                       <MapPin size={14} className="text-primary" />
-                      <span>{detail.location || '—'}</span>
+                      <span>{contact.location || '—'}</span>
                     </div>
                   </div>
                 ) : (
@@ -197,16 +260,19 @@ export default function CandidatePreviewModal({
                 <h6 className="text-secondary small fw-semibold mb-2">Görüşme Geçmişi</h6>
                 {loadingDetail ? (
                   <span className="text-muted small">Yükleniyor...</span>
-                ) : detail?.interviews && detail.interviews.length > 0 ? (
+                ) : interviews.length > 0 ? (
                   <div className="d-flex flex-column gap-2" style={{ maxHeight: '180px', overflowY: 'auto' }}>
-                    {detail.interviews.map((iv) => (
+                    {interviews.map((iv) => (
                       <div key={iv.id} className="p-2 border rounded bg-light small">
                         <div className="d-flex justify-content-between align-items-center mb-1">
                           <span className="fw-semibold text-dark">{iv.interviewer_name || 'Görüşmeci'}</span>
                           <div className="d-flex align-items-center gap-1">
-                            <Badge bg={iv.outcome === 'passed' ? 'success' : iv.outcome === 'failed' ? 'danger' : 'warning'}>
-                              {iv.outcome === 'passed' ? 'Geçti' : iv.outcome === 'failed' ? 'Geçemedi' : 'Beklemede'}
-                            </Badge>
+                            <StatusBadge
+                              status={outcomeToStatus(iv.outcome)}
+                              text={outcomeLabel(iv.outcome)}
+                              showIcon={false}
+                              size="sm"
+                            />
                             {onEditInterview && (
                               <Button
                                 variant="link"
@@ -246,6 +312,50 @@ export default function CandidatePreviewModal({
                 )}
               </div>
               
+              {/* Education, Languages & Source file (from CV response) */}
+              {cv && !isDuplicateView && (
+                <>
+                  <div className="border-top pt-3 mt-1">
+                    <h6 className="text-secondary small fw-semibold mb-2 d-flex align-items-center gap-2"><BookOpen size={14}/>Eğitim</h6>
+                    {cv.education.length > 0 ? (
+                      <ListGroup variant="flush">
+                        {cv.education.map((e, i) => (
+                          <ListGroup.Item key={i} className="px-0 py-1 border-0" style={{ fontSize: 13 }}>
+                            <div className="fw-semibold text-dark">
+                              {[e.degree, e.field].filter(Boolean).join(', ') || e.institution}
+                            </div>
+                            <div className="text-muted">
+                              {e.institution}{e.graduation_year ? ` · ${e.graduation_year}` : ''}
+                            </div>
+                          </ListGroup.Item>
+                        ))}
+                      </ListGroup>
+                    ) : (
+                      <span className="text-muted small">—</span>
+                    )}
+                  </div>
+                  {cv.languages.length > 0 && (
+                    <div className="border-top pt-3 mt-1">
+                      <h6 className="text-secondary small fw-semibold mb-2 d-flex align-items-center gap-2"><Globe size={14}/>Diller</h6>
+                      <div className="d-flex flex-wrap gap-1">
+                        {cv.languages.map((l) => (
+                          <Badge key={l} bg="light" text="dark" className="border px-2 py-1 small">{l}</Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {cv.cv_file && (
+                    <div className="border-top pt-3 mt-1">
+                      <h6 className="text-secondary small fw-semibold mb-2 d-flex align-items-center gap-2"><FileText size={14}/>Kaynak CV</h6>
+                      <div className="small text-muted">
+                        <div className="text-dark">{cv.cv_file.filename}</div>
+                        <div>Yüklendi {new Date(cv.cv_file.uploaded_at).toLocaleDateString('tr-TR')}</div>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+
               {/* Education & Files (Only for Duplicates) */}
               {isDuplicateView && duplicateCandidate && (
                 <>
@@ -342,9 +452,9 @@ export default function CandidatePreviewModal({
                 <h6 className="text-secondary small fw-semibold mb-2 d-flex align-items-center gap-2">
                   {isDuplicateView && <Star size={14} />} Beceriler
                 </h6>
-                {!isDuplicateView && searchCandidate?.skills && searchCandidate.skills.length > 0 ? (
+                {!isDuplicateView && skills && skills.length > 0 ? (
                   <div className="d-flex flex-wrap gap-1">
-                    {searchCandidate.skills.map((sk, index) => (
+                    {skills.map((sk, index) => (
                       <Badge
                         key={index}
                         bg="light"
@@ -390,13 +500,27 @@ export default function CandidatePreviewModal({
         <div className="d-flex align-items-center gap-2">
           {footerActions}
         </div>
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={onHide}
-        >
-          Kapat
-        </Button>
+        <div className="d-flex align-items-center gap-2">
+          {candidateId && (
+            <Button
+              variant="outline-primary"
+              size="sm"
+              onClick={handleDownloadPdf}
+              disabled={downloadingPdf}
+              className="d-inline-flex align-items-center gap-1"
+            >
+              {downloadingPdf ? <Spinner animation="border" size="sm" /> : <Download size={14} />}
+              PDF indir
+            </Button>
+          )}
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={onHide}
+          >
+            Kapat
+          </Button>
+        </div>
       </Modal.Footer>
     </Modal>
   );

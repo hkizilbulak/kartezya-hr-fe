@@ -70,7 +70,7 @@ export const HR_ENDPOINTS = {
 // CV Search API
 export const CV_SEARCH_API_BASE_URL =
   process.env.NEXT_PUBLIC_CV_SEARCH_API_URL ||
-  'https://cv-search-production.up.railway.app/api'
+  'https://cv-search.up.railway.app/api'
 
 export const CV_SEARCH_ENDPOINTS = {
   BULK_UPLOAD: '/cv/bulk-upload',
@@ -80,6 +80,8 @@ export const CV_SEARCH_ENDPOINTS = {
   CANDIDATES: '/candidates',
   CANDIDATES_DUPLICATES: '/candidates/duplicates',
   CANDIDATES_MERGE: '/candidates/merge',
+  CANDIDATE_CV: (id: number) => `/candidates/${id}/cv`,
+  CANDIDATE_CV_PDF: (id: number) => `/candidates/${id}/cv.pdf`,
   // Search
   POPULAR_QUERIES: '/search/popular-queries',
   SUGGEST: '/search/suggest',
