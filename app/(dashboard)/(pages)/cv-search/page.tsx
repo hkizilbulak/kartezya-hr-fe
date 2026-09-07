@@ -8,7 +8,8 @@ import type {
   FusedCandidateResponse,
   HybridSearchResponse,
   SuggestionResult,
-  CandidateDetail
+  CandidateDetail,
+  CandidateCV,
 } from '@/models/cv-search/cv-search.models';
 import { PageHeading } from '@/widgets';
 import LoadingOverlay from '@/components/LoadingOverlay';
@@ -125,6 +126,7 @@ const CvSearchPage = () => {
   // CV Preview Modal states
   const [previewCandidate, setPreviewCandidate] = useState<FusedCandidateResponse | null>(null);
   const [previewDetail, setPreviewDetail] = useState<CandidateDetail | null>(null);
+  const [previewCV, setPreviewCV] = useState<CandidateCV | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [showRawCv, setShowRawCv] = useState(false);
 
@@ -294,12 +296,18 @@ const CvSearchPage = () => {
   const handleOpenPreview = async (candidate: FusedCandidateResponse) => {
     setPreviewCandidate(candidate);
     setPreviewDetail(null);
+    setPreviewCV(null);
     setShowRawCv(false);
     setLoadingDetail(true);
     try {
       const candidateId = candidate.id;
       if (candidateId) {
-        const detail = await cvSearchService.getCandidateDetail(candidateId);
+        // Structured CV is the primary source; detail is kept as a fallback for contact/interviews.
+        const [cv, detail] = await Promise.all([
+          cvSearchService.getCandidateCV(candidateId).catch(() => null),
+          cvSearchService.getCandidateDetail(candidateId).catch(() => null),
+        ]);
+        setPreviewCV(cv);
         setPreviewDetail(detail);
       }
     } catch (err) {
@@ -1022,9 +1030,11 @@ const CvSearchPage = () => {
         onHide={() => {
           setPreviewCandidate(null);
           setPreviewDetail(null);
+          setPreviewCV(null);
         }}
         candidate={previewCandidate}
         detail={previewDetail}
+        cv={previewCV}
         loadingDetail={loadingDetail}
       />
     </Container>

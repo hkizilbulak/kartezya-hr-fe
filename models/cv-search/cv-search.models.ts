@@ -184,3 +184,66 @@ export interface MergeCandidatesResponse {
   message: string
   master_candidate?: CandidateDetail
 }
+
+// ── Candidate CV (GET /candidates/{id}/cv) ───────────────────────────────────
+
+export interface CandidateCVSummary {
+  current_position?: string
+  seniority?: string
+  total_experience_years?: number
+}
+
+export interface CandidateCVSkill {
+  name: string
+  proficiency?: string
+  years?: number
+}
+
+export interface CandidateCVExperience {
+  company: string
+  position?: string
+  start_year: number | null
+  end_year: number | null
+  is_current: boolean
+  duration_years?: number
+}
+
+export interface CandidateCVEducation {
+  institution: string
+  degree?: string
+  field?: string
+  graduation_year: number | null
+}
+
+export interface CandidateCVFile {
+  id: number
+  filename: string
+  file_type: string
+  uploaded_at: string
+}
+
+export interface InterviewSummary {
+  id: number
+  interview_date: string
+  team?: string
+  interviewer_name?: string
+  interview_type?: string
+  outcome?: string
+}
+
+export interface CandidateCV {
+  candidate_id: number
+  name: string
+  email?: string
+  phone?: string
+  location?: string
+  summary: CandidateCVSummary
+  latest_interview?: InterviewSummary
+  interviews: Interview[]
+  skills: CandidateCVSkill[]
+  experience: CandidateCVExperience[]
+  education: CandidateCVEducation[]
+  languages: string[]
+  cv_file?: CandidateCVFile
+  generated_at: string
+}
