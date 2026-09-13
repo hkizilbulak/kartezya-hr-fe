@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter, useParams, usePathname } from 'next/navigation';
-import { Container, Spinner, Row, Col, Card, Button, Nav, Tab, Form, Table } from 'react-bootstrap';
+import { Container, Spinner, Row, Col, Card, Button, Nav, Tab, Form, Table, Modal } from 'react-bootstrap';
 import { employeeService, workInformationService, employeeGradeService, employeeContractService } from '@/services';
 import { Employee, EmployeeGrade, EmployeeWorkInformation, isActiveEmployeeGrade } from '@/models/hr/hr-models';
 import { toast } from 'react-toastify';
@@ -97,6 +97,8 @@ const EmployeeDetailPage = () => {
   const [gradeToDelete, setGradeToDelete] = useState<EmployeeGrade | null>(null);
   const [contractToDelete, setContractToDelete] = useState<any | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [showStatusConfirmModal, setShowStatusConfirmModal] = useState(false);
+  const originalStatusRef = useRef<string | null>(null);
   const [roles, setRoles] = useState<string[]>(['EMPLOYEE']);
   const targetHasAdmin = roles.includes(UserRole.ADMIN);
   const canEditEmployee = canManageEmployees && !(isActorHR && targetHasAdmin);
@@ -191,6 +193,7 @@ const EmployeeDetailPage = () => {
 
       if (response?.data) {
         setEmployee(response.data);
+        originalStatusRef.current = response.data.status;
       }
     } catch (error: any) {
       const errorMessage = error.response?.data?.error || error.message || 'Veri çekme sırasında hata oluştu';
@@ -571,6 +574,15 @@ const EmployeeDetailPage = () => {
   const handleSaveEmployee = async () => {
     if (!employee || !canEditEmployee) return;
 
+    if (originalStatusRef.current !== 'PASSIVE' && employee.status === 'PASSIVE') {
+      setShowStatusConfirmModal(true);
+      return;
+    }
+
+    await executeSave();
+  };
+
+  const executeSave = async () => {
     setIsSaving(true);
     try {
       const submitData: any = {
@@ -601,6 +613,7 @@ const EmployeeDetailPage = () => {
 
       await employeeService.update(employee.id, submitData);
       toast.success('Çalışan başarıyla güncellendi');
+      originalStatusRef.current = employee.status;
       fetchEmployeeDetails();
     } catch (error: any) {
       let errorMessage = '';
@@ -1950,6 +1963,31 @@ const EmployeeDetailPage = () => {
           message="Sözleşmeyi silmek istediğinize emin misiniz?"
         />
       )}
+
+      {/* Statü Değişim Onay Modalı */}
+      <Modal show={showStatusConfirmModal} onHide={() => setShowStatusConfirmModal(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title className="text-danger">Erişim Engelleme Uyarısı</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p>Bu çalışanın statüsünü <strong>Ayrıldı</strong> olarak değiştirmek üzeresiniz. Çalışan artık sisteme giriş yapamayacaktır. Onaylıyor musunuz?</p>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowStatusConfirmModal(false)}>
+            İptal
+          </Button>
+          <Button
+            variant="danger"
+            onClick={() => {
+              setShowStatusConfirmModal(false);
+              executeSave();
+            }}
+            disabled={isSaving}
+          >
+            {isSaving ? 'Kaydediliyor...' : 'Evet, Onaylıyorum'}
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </Container>
   );
 };

@@ -161,9 +161,8 @@ const EmployeesPage = () => {
         }
   );
 
-  // Status filter - default to ACTIVE
   const [statusFilter, setStatusFilter] = useState(
-    hasFreshCache() ? _employeeListCache!.statusFilter : 'ACTIVE'
+    hasFreshCache() ? _employeeListCache!.statusFilter : ''
   );
 
   const [quickSearchParams, setQuickSearchParams] = useState(
