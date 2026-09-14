@@ -112,10 +112,15 @@ export const authService = {
       
       throw new Error('Invalid login response format');
     } catch (error: any) {
-      
       let errorMessage = "Bilinmeyen hata oluştu";
-      if (error.response && error.response.status === 401) {
-        errorMessage = 'E-posta adresiniz yada şifreniz hatalı';
+      if (error.response) {
+        if (error.response.status === 401) {
+          errorMessage = 'E-posta adresiniz yada şifreniz hatalı';
+        } else if (error.response.status === 403 && error.response.data?.error) {
+          errorMessage = error.response.data.error;
+        } else if (error.response.data?.error) {
+          errorMessage = error.response.data.error;
+        }
       }
       
       const customError = new Error(String(errorMessage));
@@ -273,10 +278,14 @@ export const authService = {
       throw new Error('Invalid Yandex login response format');
     } catch (error: any) {
       let errorMessage = "Yandex ile giriş yapılırken hata oluştu";
-      if (error.response && error.response.status === 401) {
-        errorMessage = 'Yandex yetkilendirmesi başarısız';
-      } else if (error.response?.data?.error) {
-        errorMessage = error.response.data.error;
+      if (error.response) {
+        if (error.response.status === 401) {
+          errorMessage = 'Yandex yetkilendirmesi başarısız';
+        } else if (error.response.status === 403 && error.response.data?.error) {
+          errorMessage = error.response.data.error;
+        } else if (error.response.data?.error) {
+          errorMessage = error.response.data.error;
+        }
       }
       
       const customError = new Error(String(errorMessage));
