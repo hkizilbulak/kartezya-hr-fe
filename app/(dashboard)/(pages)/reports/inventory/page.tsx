@@ -14,7 +14,7 @@ const InventoryReportPage = () => {
   const [items, setItems] = useState<any[]>([]); // Using any for now to handle nested employee object
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(1);
-  const [limit] = useState(10);
+  const [limit, setLimit] = useState(10);
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   
@@ -283,7 +283,7 @@ const InventoryReportPage = () => {
                 </tbody>
               </Table>
               
-              {totalPages > 1 && (
+              {items.length > 0 && (
                 <div className="p-3 border-top">
                   <CustomPagination
                     currentPage={page}
@@ -291,6 +291,10 @@ const InventoryReportPage = () => {
                     totalItems={totalItems}
                     itemsPerPage={limit}
                     onPageChange={(p) => setPage(p)}
+                    onPageSizeChange={(newLimit) => {
+                      setLimit(newLimit);
+                      setPage(1);
+                    }}
                   />
                 </div>
               )}

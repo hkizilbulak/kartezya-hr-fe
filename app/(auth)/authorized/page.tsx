@@ -66,7 +66,7 @@ const AuthorizedContent = () => {
             <div className="d-flex flex-column justify-content-center align-items-center">
               <div className="mb-4">
                 <img 
-                  src="https://kartezya.com/wp-content/uploads/2025/02/togetherBoyut2.svg" 
+                  src="/images/brand/logo/togetherBoyut2.svg" 
                   alt="Kartezya HR" 
                   style={{ minWidth: '300px', maxWidth: '400px', height: 'auto' }}
                 />
