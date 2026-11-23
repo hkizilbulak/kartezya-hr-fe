@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { Container, Card, Table, Badge, Spinner, Row, Col, Form, Button } from 'react-bootstrap';
-import { Monitor, Search, Download } from 'react-feather';
+import { Monitor, Search, Download, Info } from 'react-feather';
+import InventoryDetailModal from '@/components/inventory/InventoryDetailModal';
 import { InventoryItem, InventoryItemStatus } from '@/models/hr/hr-models';
 import { inventoryService } from '@/services/inventory.service';
 import { toast } from 'react-toastify';
@@ -17,6 +18,8 @@ const InventoryReportPage = () => {
   const [limit] = useState(10);
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+  const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
   
   // Filters
   const [filters, setFilters] = useState({
@@ -245,7 +248,8 @@ const InventoryReportPage = () => {
                     <th>Marka / Model</th>
                     <th>Seri No</th>
                     <th>Zimmet Tarihi</th>
-                    <th className="pe-4">Durum</th>
+                    <th>Durum</th>
+                    <th className="pe-4 text-end">İşlemler</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -273,10 +277,23 @@ const InventoryReportPage = () => {
                       <td>{item.brand} {item.model}</td>
                       <td>{item.serial_number || '-'}</td>
                       <td>{item.assignment_date ? new Date(item.assignment_date).toLocaleDateString('tr-TR') : '-'}</td>
-                      <td className="pe-4">
+                      <td>
                         <Badge bg={getStatusBadgeVariant(item.status)}>
                           {getStatusText(item.status)}
                         </Badge>
+                      </td>
+                      <td className="pe-4 text-end">
+                        <Button
+                          variant="outline-info"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedItem(item);
+                            setShowDetailModal(true);
+                          }}
+                          title="Detay ve Zimmet Geçmişi"
+                        >
+                          <Info size={14} />
+                        </Button>
                       </td>
                     </tr>
                   ))}
@@ -298,6 +315,14 @@ const InventoryReportPage = () => {
           )}
         </Card.Body>
       </Card>
+
+      {showDetailModal && (
+        <InventoryDetailModal
+          show={showDetailModal}
+          onHide={() => setShowDetailModal(false)}
+          item={selectedItem}
+        />
+      )}
     </Container>
   );
 };

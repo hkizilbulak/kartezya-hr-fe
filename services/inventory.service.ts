@@ -1,6 +1,6 @@
 import { HR_ENDPOINTS } from '@/contants/urls';
 import { BaseService, APIResponse, PaginatedResponse, PaginationParams } from './base.service';
-import { InventoryItem } from '@/models/hr/hr-models';
+import { InventoryItem, InventoryAssignmentHistory } from '@/models/hr/hr-models';
 import axiosInstance from '@/helpers/api/axiosInstance';
 
 export interface InventoryReportFilters extends PaginationParams {
@@ -79,6 +79,26 @@ class InventoryService extends BaseService<InventoryItem> {
   async getInventoryReport(params?: InventoryReportFilters): Promise<PaginatedResponse<InventoryItem>> {
     try {
       const response = await axiosInstance.get(HR_ENDPOINTS.INVENTORY.REPORTS, { params });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // Get item by ID (with preloaded histories)
+  async getItemById(id: string | number): Promise<APIResponse<InventoryItem>> {
+    try {
+      const response = await axiosInstance.get(`${HR_ENDPOINTS.INVENTORY.ITEMS}/${id}`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // Get item assignment history
+  async getItemHistories(id: string | number): Promise<APIResponse<InventoryAssignmentHistory[]>> {
+    try {
+      const response = await axiosInstance.get(`${HR_ENDPOINTS.INVENTORY.ITEMS}/${id}/history`);
       return response.data;
     } catch (error) {
       throw error;

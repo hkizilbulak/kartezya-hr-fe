@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Button, Row, Col, Badge, Spinner } from 'react-bootstrap';
-import { InventoryItem, InventoryItemStatus } from '@/models/hr/hr-models';
+import { Modal, Button, Row, Col, Badge, Spinner, Table } from 'react-bootstrap';
+import { InventoryItem, InventoryItemStatus, InventoryAssignmentHistory } from '@/models/hr/hr-models';
 import { documentService } from '@/services/document.service';
-import { Image as ImageIcon, Monitor, Calendar, Tag, Key, Info } from 'react-feather';
+import { inventoryService } from '@/services/inventory.service';
+import { Image as ImageIcon, Monitor, Calendar, Tag, Key, Info, Clock, User } from 'react-feather';
 
 interface InventoryDetailModalProps {
   show: boolean;
@@ -13,25 +14,32 @@ interface InventoryDetailModalProps {
 const InventoryDetailModal: React.FC<InventoryDetailModalProps> = ({ show, onHide, item }) => {
   const [loadingDocs, setLoadingDocs] = useState(false);
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
+  const [histories, setHistories] = useState<InventoryAssignmentHistory[]>([]);
+  const [loadingHistories, setLoadingHistories] = useState(false);
 
   useEffect(() => {
     if (show && item?.id) {
+      // 1. Load Photos in parallel
       const fetchPhotos = async () => {
         setLoadingDocs(true);
         setPhotoUrls([]);
         try {
           const res = await documentService.getRelatedDocuments(8, Number(item.id));
-          if (res && res.data && res.data.length > 0) {
-            const urls: string[] = [];
-            for (const doc of res.data) {
-              if (doc.content_type.startsWith('image/')) {
+          if (res?.data && res.data.length > 0) {
+            const imageDocs = res.data.filter((doc: any) => doc.content_type?.startsWith('image/'));
+            const downloadPromises = imageDocs.map(async (doc: any) => {
+              try {
                 const downloadRes = await documentService.getDownloadUrl(doc.id);
-                if (downloadRes && downloadRes.success && downloadRes.data?.url) {
-                  urls.push(downloadRes.data.url);
+                if (downloadRes?.success && downloadRes?.data?.url) {
+                  return downloadRes.data.url;
                 }
+              } catch (e) {
+                console.warn('Failed to load photo url for doc:', doc.id, e);
               }
-            }
-            setPhotoUrls(urls);
+              return null;
+            });
+            const resolvedUrls = await Promise.all(downloadPromises);
+            setPhotoUrls(resolvedUrls.filter((u): u is string => u !== null));
           }
         } catch (err) {
           console.error('Failed to load device photos:', err);
@@ -39,9 +47,36 @@ const InventoryDetailModal: React.FC<InventoryDetailModalProps> = ({ show, onHid
           setLoadingDocs(false);
         }
       };
+
+      // 2. Load Assignment History
+      const fetchHistories = async () => {
+        setLoadingHistories(true);
+        try {
+          const res = await inventoryService.getItemHistories(Number(item.id));
+          if (res && res.data) {
+            setHistories(res.data);
+          } else if (item.histories) {
+            setHistories(item.histories);
+          } else {
+            setHistories([]);
+          }
+        } catch (err) {
+          console.error('Failed to load inventory histories:', err);
+          if (item.histories) {
+            setHistories(item.histories);
+          } else {
+            setHistories([]);
+          }
+        } finally {
+          setLoadingHistories(false);
+        }
+      };
+
       fetchPhotos();
+      fetchHistories();
     } else {
       setPhotoUrls([]);
+      setHistories([]);
     }
   }, [show, item]);
 
@@ -67,6 +102,16 @@ const InventoryDetailModal: React.FC<InventoryDetailModalProps> = ({ show, onHid
     }
   };
 
+  const getActionBadge = (action: string) => {
+    switch (action) {
+      case 'ASSIGNED': return <Badge bg="success">Zimmetlendi</Badge>;
+      case 'RETURNED': return <Badge bg="secondary">İade Edildi</Badge>;
+      case 'TRANSFERRED': return <Badge bg="info">Devredildi</Badge>;
+      case 'DAMAGED': return <Badge bg="danger">Arızalandı</Badge>;
+      default: return <Badge bg="light" text="dark">{action}</Badge>;
+    }
+  };
+
   const getDeviceIcon = (type: string) => {
     switch (type?.toLowerCase()) {
       case 'laptop':
@@ -80,7 +125,7 @@ const InventoryDetailModal: React.FC<InventoryDetailModalProps> = ({ show, onHid
   };
 
   return (
-    <Modal show={show} onHide={onHide} centered className="inventory-detail-modal">
+    <Modal show={show} onHide={onHide} size="lg" centered className="inventory-detail-modal">
       <Modal.Header closeButton className="bg-light border-0 pb-2">
         <Modal.Title className="fs-5 fw-bold text-dark d-flex align-items-center gap-2">
           {getDeviceIcon(item.device_type)}
@@ -166,6 +211,91 @@ const InventoryDetailModal: React.FC<InventoryDetailModalProps> = ({ show, onHid
           <div className="text-dark small lh-base" style={{ whiteSpace: 'pre-wrap' }}>
             {item.notes || <span className="text-muted italic">Açıklama girilmemiş.</span>}
           </div>
+        </div>
+
+        {/* Assignment History Section */}
+        <div className="border rounded-3 p-3 bg-white shadow-sm mb-4">
+          <div className="d-flex align-items-center justify-content-between mb-3">
+            <div className="text-dark fw-bold small d-flex align-items-center gap-1.5">
+              <Clock size={16} className="text-primary" />
+              <span>Zimmet ve Kullanım Geçmişi</span>
+            </div>
+            {histories.length > 0 && (
+              <Badge bg="light" text="dark" className="border">
+                {histories.length} Kayıt
+              </Badge>
+            )}
+          </div>
+
+          {loadingHistories ? (
+            <div className="d-flex align-items-center justify-content-center gap-2 py-3">
+              <Spinner animation="border" size="sm" variant="primary" />
+              <span className="text-muted small">Tarihçe yükleniyor...</span>
+            </div>
+          ) : histories.length === 0 ? (
+            <div className="text-center py-3 text-muted small">
+              Bu cihaza ait geçmiş kullanım kaydı bulunamadı.
+            </div>
+          ) : (
+            <div className="table-responsive">
+              <Table size="sm" hover className="align-middle mb-0">
+                <thead className="table-light small">
+                  <tr>
+                    <th>Çalışan</th>
+                    <th>İşlem</th>
+                    <th>Zimmet Tarihi</th>
+                    <th>İade Tarihi</th>
+                    <th>Durum</th>
+                    <th>Not</th>
+                  </tr>
+                </thead>
+                <tbody className="small">
+                  {histories.map((h, idx) => (
+                    <tr key={h.id || idx}>
+                      <td>
+                        {h.employee ? (
+                          <div className="d-flex align-items-center gap-2">
+                            <div className="bg-light rounded-circle p-1 d-flex align-items-center justify-content-center text-primary fw-bold" style={{ width: 26, height: 26, fontSize: '0.75rem' }}>
+                              <User size={14} />
+                            </div>
+                            <div>
+                              <div className="fw-semibold text-dark">{h.employee.first_name} {h.employee.last_name}</div>
+                              {(h.employee.work_information?.department_name || (h.employee as any).employee_work_information?.[0]?.department?.name) && (
+                                <div className="text-muted" style={{ fontSize: '0.75rem' }}>
+                                  {h.employee.work_information?.department_name || (h.employee as any).employee_work_information?.[0]?.department?.name}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-muted">-</span>
+                        )}
+                      </td>
+                      <td>{getActionBadge(h.action)}</td>
+                      <td>{h.assignment_date ? new Date(h.assignment_date).toLocaleDateString('tr-TR') : '-'}</td>
+                      <td>
+                        {h.return_date ? (
+                          new Date(h.return_date).toLocaleDateString('tr-TR')
+                        ) : (
+                          <Badge bg="success" className="bg-opacity-10 text-success border border-success border-opacity-25">
+                            Aktif Zimmet
+                          </Badge>
+                        )}
+                      </td>
+                      <td>
+                        <Badge bg={getStatusBadgeVariant(h.status)}>
+                          {getStatusText(h.status)}
+                        </Badge>
+                      </td>
+                      <td className="text-muted text-truncate" style={{ maxWidth: 120 }} title={h.notes || ''}>
+                        {h.notes || '-'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+            </div>
+          )}
         </div>
 
         {/* Photo Section */}

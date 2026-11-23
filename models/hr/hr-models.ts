@@ -351,6 +351,19 @@ export enum InventoryItemStatus {
   RETURNED = 'RETURNED'
 }
 
+export interface InventoryAssignmentHistory {
+  id: string | number;
+  inventory_item_id: string | number;
+  employee_id?: string | number | null;
+  status: InventoryItemStatus;
+  action: 'ASSIGNED' | 'RETURNED' | 'TRANSFERRED' | 'DAMAGED' | 'DELETED' | string;
+  assignment_date?: string;
+  return_date?: string | null;
+  notes?: string;
+  created_at?: string;
+  employee?: Employee;
+}
+
 export interface InventoryItem {
   id: string; // uuid
   employee_id: string; // uuid
@@ -366,4 +379,5 @@ export interface InventoryItem {
   created_at?: string;
   updated_at?: string;
   employee?: Employee;
+  histories?: InventoryAssignmentHistory[];
 }
