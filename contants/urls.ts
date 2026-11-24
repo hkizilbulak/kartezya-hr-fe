@@ -63,6 +63,7 @@ export const HR_ENDPOINTS = {
   INVENTORY: {
     BASE: '/inventory',
     MY_ITEMS: '/inventory/my-items',
+    ITEMS: '/inventory/items',
     REPORTS: '/reports/inventory'
   }
 }

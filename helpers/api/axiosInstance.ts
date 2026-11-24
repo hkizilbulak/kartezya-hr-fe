@@ -21,7 +21,7 @@ const axiosInstance = axios.create({
   baseURL: getBaseUrl(), // Backend API base URL
   headers,
   withCredentials: false, // CORS için false yaptık
-  timeout: 10000 // 10 saniye timeout
+  timeout: 30000 // 30 saniye timeout (uzak DB ve S3 bağlantı gecikmeleri için)
 });
 
 // Request interceptor
